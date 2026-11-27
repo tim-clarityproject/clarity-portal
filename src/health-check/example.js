@@ -1,6 +1,6 @@
 // The example report: Quillmark, an invented software company backed by
 // private equity (Tim, 27 Oct, 15:35), exactly as in the mock-up (M7b
-// version 46, with its CSF levels and the suggested line of 50%). Adie checks
+// version 46, with its CSF levels and the suggested line of 50%). A coach checks
 // it reads like a real leadership team.
 
 const CSF = [

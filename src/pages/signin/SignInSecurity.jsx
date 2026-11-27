@@ -6,12 +6,11 @@ import { needsConnection, isOffline } from '../../lib/friendlyError';
 import { CODES_DIDNT_MAKE, CODES_NOT_YET, codesLeftSummary, COACH_AUTH_PATHS, COACH_AUTH_WORDS, onSinceLine } from '../../lib/signIn/coachAuth';
 import { loadCoachAuth, makeRecoveryCodes } from '../../lib/signIn/coachAuthData';
 import { CodeField, keepSixDigit, Line, MainButton, Message, Note, TextLink, Wait } from '../../components/signin/SignInParts';
-import { AccountPage } from './AccountPages';
-import { SIGN_IN_LINES } from '../../content/pageLines/signin';
 import { checkSixDigits, holdCodes } from './CoachAuth';
 import { goToStop } from '../../lib/signIn/flow';
+import { useCoachRole } from '../../lib/coach/role';
 
-// My Account, Sign-in security (Phase 6a run 5; M26 seq 7, "My Account,
+// Sign-in security (Phase 6a run 5; M26 seq 7, "My Account,
 // sign-in security"): coaches only. Authenticator app, "On since …", and
 // Set up on a new phone; Recovery codes, "9 of 10 left", and Make new
 // codes, with "Making new codes stops the old ones working." Both need a
@@ -20,7 +19,19 @@ import { goToStop } from '../../lib/signIn/flow';
 // The current-code step both links open in place (aria-controls, so what opens is found: rule 29aq).
 const STEP_ID = 'si-current-code';
 
+// Stage D, item 13 (Tim, 27 Nov): Sign-in security lives in the coach portal, Settings, Sign-in security
+// (/coach/settings/sign-in-security, in the coach frame: CoachSignInSecurity below, drawn by Settings.jsx). The old
+// My Account address forwards there for a coach, keeping what it was told (`said`), and to My Account for anyone else.
 export default function SignInSecurity() {
+  const location = useLocation();
+  const { coach, loading } = useCoachRole();
+  if (loading) return <div className="ui-root"><Wait>{' '}</Wait></div>;
+  if (!coach) return <Navigate to="/my-account" replace />;
+  return <Navigate to={`${COACH_AUTH_PATHS.security}${location.search}${location.hash}`} state={location.state} replace />;
+}
+
+/** Settings, Sign-in security in the coach portal: the authenticator, the recovery codes and Make new codes. */
+export function CoachSignInSecurity() {
   const { user } = useContext(AuthContext);
   return <SecurityPage key={user?.id || 'nobody'} />;
 }
@@ -44,7 +55,7 @@ function SecurityPage() {
     return () => { live = false; };
   }, [user]);
 
-  if (auth && auth.isCoach === false) return <Navigate to="/my-account" replace />;
+  if (auth && auth.isCoach === false) return <Navigate to="/coach" replace />;
 
   const ask = (what) => {
     setMessage(null);
@@ -79,8 +90,8 @@ function SecurityPage() {
   };
 
   const offline = auth && auth.isCoach === null;
-  return (
-    <AccountPage title={W.title} line={SIGN_IN_LINES.security} onSubmit={carryOn}>
+  const body = (
+    <>
       {auth === null ? <Wait>{' '}</Wait> : null}
       {offline ? <Line>{needsConnection(COACH_AUTH_WORDS.offline.security)}</Line> : null}
       {auth && !offline ? (
@@ -110,6 +121,8 @@ function SecurityPage() {
           ) : null}
         </>
       ) : null}
-    </AccountPage>
+    </>
   );
+  // The section's own title and line are drawn by Settings (SIGN_IN_LINES.security); this is its form.
+  return <form className="si-col si-col--account si-col--settings" onSubmit={carryOn} noValidate>{body}</form>;
 }

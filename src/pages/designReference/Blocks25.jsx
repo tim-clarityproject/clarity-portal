@@ -120,7 +120,7 @@ export default function Blocks25() {
             <Row name="Strategic Alignment Health Check" value="March" />
             <MoreLink href="#blocks">Read the agreement</MoreLink>
           </Card>
-          <SectionTabs tabs={[{ key: 'profile', label: 'Profile' }, { key: 'coaching', label: 'Coaching' }, { key: 'mission', label: 'Mission' }, { key: 'look', label: 'Look' }, { key: 'settings', label: 'Settings' }, { key: 'questions', label: 'Questions' }]} value={tab} onChange={setTab} />
+          <SectionTabs tabs={[{ key: 'profile', label: 'Profile' }, { key: 'coaching', label: 'Coaching' }, { key: 'mission', label: 'Mission' }, { key: 'appearance', label: 'Appearance' }, { key: 'settings', label: 'Settings' }, { key: 'questions', label: 'Questions' }]} value={tab} onChange={setTab} />
         </section>
 
         <section className="b25-sec" id="calendar">

@@ -999,3 +999,8 @@
   color: var(--error-text);
 }
 .ui-root .si-err:not(#_) > b { display: none; }
+
+/* Sign-in security inside the coach portal's Settings (Stage D, item 13): the pane's own card holds it, so the column
+   takes the card's width and no line sits straight under the card's label (CLAUDE.md rule 4a). */
+.ui-root .si-col.si-col--settings { max-width: none; margin-inline: 0; }
+.ui-root .si-col--settings .si-srows > .si-srow:first-child { border-top: 0; padding-top: 0; }

@@ -1,458 +1,185 @@
-import { useState, useContext, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
-import { discardDecisionDraft } from '../lib/discardDraft';
-import FormTool from './toolFocus/FormTool';
-import DiscardDialog from '../components/ui/DiscardDialog';
-import { DatePicker, DisclosureArrow, IconButton, SaveStatus, TextBox, AddButton, Button, useToast } from '../components/design';
-import { clearDraft as forgetDraft, useDraft } from '../lib/drafts';
-import { saveDecisionOrQueue } from '../lib/decisionSave';
-import { useQueuedSave } from '../lib/syncQueue';
-import { limitTitle, TITLE_TOO_LONG } from '../lib/titleLimit';
+import { Choice, GuidedSummary, GuidedTool, MultiChoice, TextBox, dayLabel } from '../components/design';
+import DecisionFlow from './toolFocus/DecisionFlow';
+import { BoxAndWhen, ListAnswer, PairRows } from './toolFocus/Draft6Parts';
+import useRoleWords from '../lib/useRoleWords';
+import { filled } from '../lib/draft6Tools/shared';
+import * as MP from '../lib/draft6Tools/meetingPlanner';
 
-const SECTION_OPTIONS = [
-  { id: 'context', label: 'Meeting context' },
-  { id: 'pre-reads', label: 'Attendee preparation' },
-];
-
-
-function calcEndTime(time, totalMinutes) {
-  if (!time) return 'Not set';
-  const [hours, minutes] = time.split(':').map(Number);
-  const start = new Date();
-  start.setHours(hours, minutes, 0, 0);
-  const end = new Date(start.getTime() + totalMinutes * 60000);
-  const hh = String(end.getHours()).padStart(2, '0');
-  const mm = String(end.getMinutes()).padStart(2, '0');
-  return `${hh}:${mm}`;
-}
+// The Meeting planner (Polish 1, Stage D item 1): Draft 6's screens, word for
+// word, one question per screen in focus mode (GuidedTool), at /plan-meeting.
+// [board] is in the person's own words for their role and country
+// (useRoleWords: "board", "board or owners", "owners or front office").
+// Politics in the room adds "Who's with you, and who'll push back?" and
+// "What won't you give up?"; a meeting with the [board] adds what they'll
+// ask and what they need to hear early. It opens every plan the older page
+// saved and keeps all of it (src/lib/draft6Tools/meetingPlanner.js). Every
+// question can be skipped but the last, "What will you do before the
+// meeting, and when?". The summary's button saves it and opens its summary
+// page, with the PDF.
 
 export default function PlanMeeting() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useContext(AuthContext);
-  const [decisionId, setDecisionId] = useState(location.state?.decisionId || null);
+  return (
+    <DecisionFlow model={MP} draftName="meeting" closeTo="/interpersonal">
+      {(flow) => <MeetingTool {...flow} />}
+    </DecisionFlow>
+  );
+}
 
-  const [title, setTitle] = useState('');
-  const [titleNote, setTitleNote] = useState(false); // shown after typing past the title limit
-  const [chair, setChair] = useState('');
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [objectives, setObjectives] = useState([{ id: 1, text: '' }]);
-  const [nextObjectiveId, setNextObjectiveId] = useState(2);
-  const [flowItems, setFlowItems] = useState([{ id: 1, item: '', aim: '', lead: '', length: '' }]);
-  const [nextItemId, setNextItemId] = useState(2);
-  const [sections, setSections] = useState(['agenda']);
-  const [meetingContext, setMeetingContext] = useState('');
-  const [preReads, setPreReads] = useState('');
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
-  const [discardOpen, setDiscardOpen] = useState(false);
-  const toast = useToast();
-  // A plan opened from My Plans is ready once it has loaded; a new one at once.
-  const [loaded, setLoaded] = useState(!location.state?.decisionId);
-  const [draftName, setDraftName] = useState(() => `meeting:${location.state?.decisionId || 'new'}`);
-  const [syncState, markQueued] = useQueuedSave();
-  // A double tap starts one save, not two.
-  const savingRef = useRef(false);
+const NOT_YET = 'Not answered yet.';
 
-  const menuRef = useRef(null);
+function MeetingTool({ answers: a, onAnswers, draftKey, initialStep, onClose, onFinish }) {
+  const { words } = useRoleWords();
+  const set = (patch) => onAnswers((s) => ({ ...s, ...patch }));
+  const box = (key) => <TextBox lines="many" ariaLabel={MP.QUESTIONS[key]} value={a[key]} onChange={(v) => set({ [key]: v })} />;
 
-  // Typing survives a refresh or a closed tab (Tim, 26 Oct).
-  const { clear: clearDraft } = useDraft({
-    userId: user?.id,
-    name: draftName,
-    value: { title, chair, date, time, objectives, flowItems, sections, meetingContext, preReads },
-    ready: loaded,
-    onRestore: (v) => {
-      setTitle(v.title || '');
-      setChair(v.chair || '');
-      setDate(v.date || '');
-      setTime(v.time || '');
-      setMeetingContext(v.meetingContext || '');
-      setPreReads(v.preReads || '');
-      if (v.sections) setSections(v.sections);
-      if (v.objectives?.length) {
-        setObjectives(v.objectives);
-        setNextObjectiveId(Math.max(...v.objectives.map((o) => o.id || 0)) + 1);
-      }
-      if (v.flowItems?.length) {
-        setFlowItems(v.flowItems);
-        setNextItemId(Math.max(...v.flowItems.map((i) => i.id || 0)) + 1);
-      }
+  const steps = [
+    {
+      key: 'kind',
+      name: 'Type of meeting',
+      question: MP.QUESTIONS.kind,
+      // One tap moves on (rule 21).
+      oneTap: true,
+      render: (tool) => (
+        <Choice
+          form="rows"
+          tick
+          ariaLabel={MP.QUESTIONS.kind}
+          options={MP.kinds(words)}
+          value={a.kind}
+          onChange={(kind) => set({ kind })}
+          onChoose={() => tool.next()}
+        />
+      ),
     },
-  });
-
-  // A save that waited on the device has reached the server: the draft
-  // can go. (A refused one keeps it, so the typing comes back.)
-  useEffect(() => {
-    if (syncState === 'saved') clearDraft();
-  }, [syncState, clearDraft]);
-
-  useEffect(() => {
-    if (!decisionId || !user || loaded) return;
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from('decisions')
-        .select('*')
-        .eq('id', decisionId)
-        .eq('user_id', user.id)
-        .single();
-      if (cancelled) return;
-      if (error) {
-        console.error('[PlanMeeting] load failed:', error);
-        setLoaded(true);
-        return;
-      }
-      const formData = data?.form_data || {};
-      setTitle(formData.title || '');
-      setChair(formData.chair || '');
-      setDate(formData.date || '');
-      setTime(formData.time || '');
-      setMeetingContext(formData.meetingContext || '');
-      setPreReads(formData.preReads || '');
-      if (formData.sections) setSections(formData.sections);
-      if (formData.objectives?.length) {
-        setObjectives(formData.objectives);
-        setNextObjectiveId(Math.max(...formData.objectives.map((o) => o.id || 0)) + 1);
-      }
-      if (formData.flowItems?.length) {
-        setFlowItems(formData.flowItems);
-        setNextItemId(Math.max(...formData.flowItems.map((i) => i.id || 0)) + 1);
-      }
-      setLoaded(true);
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [decisionId, user?.id]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handlePointerDown = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
-    };
-    const handleKey = (e) => {
-      if (e.key === 'Escape') setMenuOpen(false);
-    };
-    document.addEventListener('mousedown', handlePointerDown);
-    window.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      window.removeEventListener('keydown', handleKey);
-    };
-  }, [menuOpen]);
-
-  const addSection = (id) => {
-    if (!sections.includes(id)) setSections([...sections, id]);
-    setMenuOpen(false);
-  };
-
-  const removeSection = (id) => setSections(sections.filter((s) => s !== id));
-
-  const addObjective = () => {
-    setObjectives([...objectives, { id: nextObjectiveId, text: '' }]);
-    setNextObjectiveId(nextObjectiveId + 1);
-  };
-  const removeObjective = (id) => {
-    if (objectives.length > 1) setObjectives(objectives.filter((o) => o.id !== id));
-  };
-  const changeObjective = (id, text) => {
-    setObjectives(objectives.map((o) => (o.id === id ? { ...o, text } : o)));
-  };
-
-  const addAgendaItem = () => {
-    setFlowItems([...flowItems, { id: nextItemId, item: '', aim: '', lead: '', length: '' }]);
-    setNextItemId(nextItemId + 1);
-  };
-  const removeAgendaItem = (id) => {
-    if (flowItems.length > 1) setFlowItems(flowItems.filter((i) => i.id !== id));
-  };
-  const changeAgendaItem = (id, field, value) => {
-    setFlowItems(flowItems.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
-  };
-
-  const totalLength = flowItems.reduce((sum, item) => sum + (parseInt(item.length, 10) || 0), 0);
-  const endTime = calcEndTime(time, totalLength);
-
-  const persist = async (draft) => {
-    const formData = { title, date, time, chair, objectives, flowItems, sections, meetingContext, preReads };
-    const payload = {
-      form_data: formData,
-      title: title || `Meeting on ${date}`,
-      draft,
-      status: draft ? 'draft' : 'completed',
-      updated_at: new Date().toISOString(),
-    };
-
-    // Offline, it is kept on the device and sent when the connection is
-    // back ("Will sync", then "Saved").
-    const result = await saveDecisionOrQueue({ userId: user.id, decisionId, toolType: 'plan_meeting', payload });
-    setDecisionId(result.id);
-    // A new plan now has its id (made on the device when offline): the
-    // page's history and its draft follow it, so a refresh and a second
-    // save update this plan rather than make another.
-    if (!location.state?.decisionId) {
-      navigate(location.pathname, { replace: true, state: { ...location.state, decisionId: result.id } });
-      forgetDraft(user.id, draftName);
-      setDraftName(`meeting:${result.id}`);
-    }
-    // The draft stays until the server has it: a save waiting on the
-    // device is cleared once it has gone (below), and kept if refused.
-    if (result.status === 'queued') markQueued(result.qid);
-    else clearDraft();
-    return result;
-  };
-
-  const handleFinish = async () => {
-    if (!user || isSaving || savingRef.current) return;
-    savingRef.current = true;
-    setSaveError('');
-    setIsSaving(true);
-    try {
-      const saved = await persist(false);
-      // Kept on the device for now: stay here, showing "Will sync".
-      if (saved.status === 'saved') navigate('/meeting-summary', { state: { decisionId: saved.id, toast: 'Saved.' } });
-    } catch (error) {
-      console.error('[PlanMeeting] Finish failed:', error);
-      setSaveError('That didn’t save. Check your connection and try again.');
-    } finally {
-      savingRef.current = false;
-      setIsSaving(false);
-    }
-  };
-
-  const handleSaveDraft = async () => {
-    if (!user || isSaving || savingRef.current) return;
-    savingRef.current = true;
-    setSaveError('');
-    setIsSaving(true);
-    try {
-      const saved = await persist(true);
-      if (saved.status === 'saved') {
-        toast.show('Draft saved.');
-        navigate('/my-plans');
-      }
-    } catch (error) {
-      console.error('[PlanMeeting] Save as draft failed:', error);
-      setSaveError('That didn’t save. Check your connection and try again.');
-    } finally {
-      savingRef.current = false;
-      setIsSaving(false);
-    }
-  };
-
-  // Deletes the saved row only if it is still a draft - a completed
-  // plan is never deleted by walking away from it. The condition lives
-  // in the query (see discardDraft.js), so a completed row matches
-  // nothing even though this page does not track its status (patch D1).
-  const handleDiscard = async () => {
-    setDiscardOpen(false);
-    if (decisionId) {
-      try {
-        await discardDecisionDraft(user.id, decisionId);
-      } catch (error) {
-        console.error('[PlanMeeting] draft delete on discard failed:', error);
-      }
-    }
-    clearDraft();
-    navigate('/my-plans');
-  };
-
-  const bothAdded = sections.includes('context') && sections.includes('pre-reads');
+    { key: 'agreed', name: 'What’s been agreed', question: MP.QUESTIONS.agreed, render: () => box('agreed') },
+    {
+      key: 'room',
+      name: 'Who’s in the room',
+      question: MP.QUESTIONS.room,
+      render: () => (
+        <PairRows
+          rows={a.people}
+          onRows={(people) => set({ people })}
+          fields={[{ key: 'name', label: 'Name' }, { key: 'wants', label: 'What they want' }]}
+          itemName="person"
+        />
+      ),
+    },
+    ...(a.kind === 'politics' ? [
+      {
+        key: 'sides',
+        name: 'Who’s with you',
+        question: MP.QUESTIONS.sides,
+        render: () => (
+          <div className="d6-when">
+            <ListAnswer label="With you" list={a.allies} onList={(allies) => set({ allies })} itemLabel={(n) => `With you ${n}`} />
+            <ListAnswer label="Will push back" list={a.pushback} onList={(pushback) => set({ pushback })} itemLabel={(n) => `Will push back ${n}`} />
+          </div>
+        ),
+      },
+      { key: 'wontGive', name: 'What you won’t give up', question: MP.QUESTIONS.wontGive, render: () => box('wontGive') },
+    ] : []),
+    ...(a.kind === 'board' ? [
+      { key: 'ask', name: 'What they’ll ask', question: MP.QUESTIONS.ask, render: () => box('ask') },
+      {
+        key: 'early',
+        name: 'What they need early',
+        question: MP.QUESTIONS.early,
+        render: () => (
+          <div className="d6-when">
+            {!a.earlyNothing && box('early')}
+            <MultiChoice
+              ariaLabel={MP.NOTHING}
+              options={[{ value: 'nothing', label: MP.NOTHING }]}
+              values={a.earlyNothing ? ['nothing'] : []}
+              onChange={(v) => set({ earlyNothing: v.includes('nothing') })}
+            />
+          </div>
+        ),
+      },
+    ] : []),
+    { key: 'decision', name: 'The decision', question: MP.QUESTIONS.decision, render: () => box('decision') },
+    { key: 'opening', name: 'How you’ll open', question: MP.QUESTIONS.opening, render: () => box('opening') },
+    {
+      key: 'before',
+      name: 'Before the meeting',
+      question: MP.QUESTIONS.before,
+      // The commit question: the one that can't be skipped (question rule 34).
+      required: true,
+      check: () => MP.beforeProblem(a),
+      render: () => (
+        <BoxAndWhen
+          question={MP.QUESTIONS.before}
+          text={a.before.text}
+          onText={(t) => set({ before: { ...a.before, text: t } })}
+          date={a.before.date}
+          onDate={(date) => set({ before: { ...a.before, date } })}
+        />
+      ),
+    },
+    {
+      key: 'sum',
+      name: 'Your meeting plan',
+      title: 'Your meeting plan',
+      noProgress: true,
+      wide: true,
+      nextLabel: 'Save my plan',
+      render: (tool) => <GuidedSummary stacked rows={summaryRows(a)} onChange={(key, opts) => tool.go(tool.steps.findIndex((s) => s.key === key), opts)} />,
+    },
+  ];
 
   return (
-    <div className="ui-root">
-      <FormTool
-        name="Meeting planner"
-        question="What’s the meeting?"
-        hint="Plan it in a few minutes: who, when, what it must achieve and the agenda."
-        onNext={() => { if (!isSaving) handleFinish(); }}
-        nextLabel="Finish"
-        saveError={saveError}
-        onSaveDraft={() => { if (!isSaving) handleSaveDraft(); }}
-        onDiscard={() => setDiscardOpen(true)}
-        closeTo="/strategic"
-        wide
-        className="pm-tool"
-      >
-        <div className="plan-field">
-          <TextBox
-            id="meeting-title"
-            label="What’s it called?"
-            lines="one"
-            placeholder="Type here"
-            value={title}
-            onChange={(next) => {
-              const { value, over } = limitTitle(next);
-              setTitle(value);
-              setTitleNote(over);
-            }}
-            aria-describedby={titleNote ? 'meeting-title-note' : undefined}
-          />
-          {titleNote && <p id="meeting-title-note" className="ds-hint" role="status">{TITLE_TOO_LONG}</p>}
-        </div>
-
-        <div className="plan-field">
-          <TextBox id="meeting-chair" label="Who’s chairing it?" lines="one" placeholder="Type here" value={chair} onChange={setChair} />
-        </div>
-
-        <div className="plan-field-row">
-          <div className="plan-field">
-            <DatePicker label="What day is it?" value={date} onChange={(key) => setDate(key)} min="1900-01-01" />
-          </div>
-          <div className="plan-field">
-            <label htmlFor="meeting-time">What time does it start?</label>
-            <input id="meeting-time" type="time" className="plan-input" value={time} onChange={(e) => setTime(e.target.value)} />
-          </div>
-        </div>
-
-        <p className="plan-endline">
-          Ends at <b>{endTime}</b>
-          <span>Worked out from the start time and agenda lengths.</span>
-        </p>
-
-        {sections.includes('context') && (
-          <div className="plan-section">
-            <div className="plan-section-top">
-              <label htmlFor="meeting-context">Meeting context</label>
-              <Button type="button" variant="text" onClick={() => removeSection('context')}>Remove</Button>
-            </div>
-            <TextBox
-              id="meeting-context"
-              lines="many"
-              placeholder="Type here"
-              value={meetingContext}
-              onChange={setMeetingContext}
-            />
-          </div>
-        )}
-
-        {sections.includes('pre-reads') && (
-          <div className="plan-section">
-            <div className="plan-section-top">
-              <label htmlFor="meeting-prereads">Attendee preparation</label>
-              <Button type="button" variant="text" onClick={() => removeSection('pre-reads')}>Remove</Button>
-            </div>
-            <TextBox
-              id="meeting-prereads"
-              lines="many"
-              placeholder="Type here"
-              value={preReads}
-              onChange={setPreReads}
-            />
-          </div>
-        )}
-
-        {!bothAdded && (
-          <div className="plan-menu" ref={menuRef}>
-            <Button
-              type="button"
-              variant="outline"
-              aria-expanded={menuOpen}
-              aria-haspopup="menu"
-              onClick={() => setMenuOpen(!menuOpen)}
-            >
-              Add section
-              {/* Beside the button's words, in sentence case since 18 Nov, so centred on their x-height (rule 29ao). */}
-              <DisclosureArrow open={menuOpen} beside="words" />
-            </Button>
-            {menuOpen && (
-              <div className="plan-menu-list" role="menu">
-                {SECTION_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    role="menuitem"
-                    className="plan-menu-option"
-                    disabled={sections.includes(opt.id)}
-                    onClick={() => addSection(opt.id)}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="plan-label-row">
-          <span className="ft-label">What must it achieve, most important first?</span>
-        </div>
-        {objectives.map((obj, index) => (
-          <div className="plan-obj-row" key={obj.id}>
-            <span className="plan-obj-num">{index + 1}.</span>
-            <TextBox
-              lines="one"
-              placeholder="Type here"
-              ariaLabel={`Objective ${index + 1}`}
-              value={obj.text}
-              onChange={(v) => changeObjective(obj.id, v)}
-            />
-            {!(objectives.length === 1) ? <IconButton label={`Remove objective ${index + 1}`} onClick={() => removeObjective(obj.id)} /> : <span className="pm-bin-space" />}
-          </div>
-        ))}
-        <AddButton onClick={addObjective}>
-          Add objective
-        </AddButton>
-
-        <div className="plan-label-row">
-          <span className="ft-label">What’s on the agenda?</span>
-          <span className="pm-total">{`Total: ${totalLength} minutes`}</span>
-        </div>
-
-        <div className="plan-ag-head">
-          <span>Item</span>
-          <span>Aim</span>
-          <span>Lead</span>
-          <span>Length</span>
-          <span />
-        </div>
-        {flowItems.map((item, index) => (
-          <div className="plan-ag-row" key={item.id}>
-            <div className="plan-ag-field plan-ag-field--item">
-              <label>Item</label>
-              <TextBox lines="one" ariaLabel={`Agenda item ${index + 1}`} placeholder="Type here" value={item.item} onChange={(v) => changeAgendaItem(item.id, 'item', v)} />
-            </div>
-            <div className="plan-ag-field plan-ag-field--aim">
-              <label>Aim</label>
-              <TextBox lines="one" ariaLabel={`Aim of agenda item ${index + 1}`} placeholder="Type here" value={item.aim} onChange={(v) => changeAgendaItem(item.id, 'aim', v)} />
-            </div>
-            <div className="plan-ag-field">
-              <label>Lead</label>
-              <TextBox lines="one" ariaLabel={`Lead for agenda item ${index + 1}`} placeholder="Type here" value={item.lead} onChange={(v) => changeAgendaItem(item.id, 'lead', v)} />
-            </div>
-            <div className="plan-ag-field">
-              <label>Length in minutes</label>
-              <input
-                className="plan-input"
-                type="number"
-                min="0"
-                inputMode="numeric"
-                placeholder="0"
-                value={item.length}
-                onChange={(e) => changeAgendaItem(item.id, 'length', e.target.value)}
-              />
-            </div>
-            {!(flowItems.length === 1) ? <IconButton label={`Remove agenda item ${index + 1}`} onClick={() => removeAgendaItem(item.id)} /> : <span className="pm-bin-space" />}
-          </div>
-        ))}
-        <AddButton onClick={addAgendaItem}>
-          Add agenda item
-        </AddButton>
-
-        <SaveStatus state={syncState} />
-      </FormTool>
-
-      <DiscardDialog
-        isOpen={discardOpen}
-        title="Discard this plan?"
-        message="Anything you have not saved will be lost."
-        onKeep={() => setDiscardOpen(false)}
-        onDiscard={handleDiscard}
-      />
-    </div>
+    <GuidedTool
+      name={MP.TOOL_NAME}
+      steps={steps}
+      draftKey={draftKey}
+      initialStep={initialStep}
+      onClose={onClose}
+      onFinish={onFinish}
+      finishLabel="Save my plan"
+    />
   );
+}
+
+// The summary (Draft 6): the outcome, the room, your opening and the decision,
+// and what you'll do before it. The PDF is on the saved plan's page.
+function summaryRows(a) {
+  const people = MP.peopleIn(a);
+  const rows = [
+    { key: 'agreed', step: 'agreed', label: 'What’s been agreed', lines: [{ text: a.agreed.trim() || NOT_YET }] },
+    {
+      key: 'room',
+      step: 'room',
+      label: 'Who’s in the room',
+      lines: people.length ? people.map((p) => ({ text: `${p.name || ''}`.trim() || 'Someone', sub: `${p.wants || ''}`.trim() || undefined })) : [{ text: NOT_YET }],
+    },
+  ];
+  if (a.kind === 'politics') {
+    const allies = filled(a.allies).map((r) => r.text.trim());
+    const pushback = filled(a.pushback).map((r) => r.text.trim());
+    rows.push({
+      key: 'sides',
+      step: 'sides',
+      label: 'Who’s with you',
+      lines: [
+        { text: allies.length ? allies.join(', ') : NOT_YET, sub: pushback.length ? `Will push back: ${pushback.join(', ')}` : undefined },
+      ],
+    });
+    rows.push({ key: 'wontGive', step: 'wontGive', label: 'What you won’t give up', lines: [{ text: a.wontGive.trim() || NOT_YET }] });
+  }
+  if (a.kind === 'board') {
+    rows.push({ key: 'ask', step: 'ask', label: 'What they’ll ask', lines: [{ text: a.ask.trim() || NOT_YET }] });
+    rows.push({ key: 'early', step: 'early', label: 'What they need early', lines: [{ text: a.earlyNothing ? MP.NOTHING : a.early.trim() || NOT_YET }] });
+  }
+  rows.push(
+    { key: 'opening', step: 'opening', label: 'How you’ll open', lines: [{ text: a.opening.trim() || NOT_YET }] },
+    { key: 'decision', step: 'decision', label: 'The decision you need', lines: [{ text: a.decision.trim() || NOT_YET }] },
+    {
+      key: 'before',
+      step: 'before',
+      label: 'Before the meeting',
+      lines: [{ text: a.before.text.trim() || NOT_YET, sub: a.before.date ? dayLabel(a.before.date) : undefined }],
+    },
+  );
+  return rows;
 }

@@ -171,7 +171,7 @@ function PackagePanel({ pkg, vatOn, onClose, done, userId }) {
   const personal = read(form.personal);
   const orgHr = org ? perHourWords(org, pkg.hours) : '';
   const perHr = personal ? perHourWords(personal, pkg.hours, { includesVat: vatOn }) : '';
-  const note = orgHr && perHr ? `That’s ${orgHr.toLowerCase()} for organisations and ${perHr.slice(6)} paying personally.` : orgHr ? `That’s ${orgHr.toLowerCase()} for organisations.` : '';
+  const note = orgHr && perHr ? `That’s ${orgHr.toLowerCase()} for organisations and ${perHr.slice(6)} for self-funded clients.` : orgHr ? `That’s ${orgHr.toLowerCase()} for organisations.` : '';
   const save = async () => {
     if ((String(form.org).trim() && org == null) || (String(form.personal).trim() && personal == null)) { setProblem('Type each price as an amount, such as 13,460.'); return; }
     const ok = await done(() => saveRow(userId, 'pricing_packages', { ...pkg, org_price_minor: org, personal_price_minor: personal }), 'Saved.', () => saveRow(userId, 'pricing_packages', pkg));
@@ -182,7 +182,7 @@ function PackagePanel({ pkg, vatOn, onClose, done, userId }) {
       footer={<div className="cc-panel-foot"><TextLink onClick={onClose}>Cancel</TextLink><Button variant="primary" onClick={save}>Save</Button></div>}>
       <div className="cc-field cc-two">
         <TextField label={vatOn ? 'Organisations, + VAT' : 'Organisations'} inputMode="decimal" value={form.org} placeholder="£" autoComplete="off" onChange={(e) => { setForm({ ...form, org: e.target.value }); setProblem(null); }} />
-        <TextField label={vatOn ? 'Paying personally, including VAT' : 'Paying personally'} inputMode="decimal" value={form.personal} placeholder="£" autoComplete="off" onChange={(e) => { setForm({ ...form, personal: e.target.value }); setProblem(null); }} />
+        <TextField label={vatOn ? 'Self-funded, including VAT' : 'Self-funded'} inputMode="decimal" value={form.personal} placeholder="£" autoComplete="off" onChange={(e) => { setForm({ ...form, personal: e.target.value }); setProblem(null); }} />
       </div>
       {note && <p className="cc-note">{note}</p>}
       {problem && <p className="cc-problem" role="alert">{problem}</p>}

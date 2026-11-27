@@ -633,7 +633,7 @@ if (part(3)) {
   const rc = await signedIn({ day: FIXED_TODAY, time: '13:00' });
   try {
     pass('Recovery: the banner', Boolean(await until(async () => /You’re in recovery until/.test(await text(rc.page, '.home-recovery')), 15000)), await text(rc.page, '.home-recovery'));
-    pass('Recovery: What would help you recharge today?', (await text(rc.page, '.home-recovery')).includes('What would help you recharge today?'));
+    pass('Recovery: What will help you recharge today? (Stage D, Draft 11)', (await text(rc.page, '.home-recovery')).includes('What will help you recharge today?'));
     pass('Recovery: no Today and no week line', (await rc.page.locator('.home-today').count()) === 0 && (await rc.page.locator('#log-today, .home-score').count()) === 0);
     pass('Recovery: Daily plan isn’t suggested', !/plan your day|review your day/.test(await cardQuestion(rc.page)), await cardQuestion(rc.page));
     await shot(rc.page, 'state-recovery');

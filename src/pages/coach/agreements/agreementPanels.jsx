@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { InlineChoice, TextField, ToolFrame, useToast } from '../../../components/design';
 import { Card, Row, Rows } from '../../../components/design/Blocks';
-import { AGREEMENT_LINES } from '../../../content/pageLines/coach';
+import { AGREEMENT_LINES, insideLine, insideSay, insideToast } from '../../../content/pageLines/coach';
 import { ask } from '../../../lib/agreements/askClient';
 import { moneyText } from '../../../lib/agreements/currency';
-import { endEarlyProblem, extendOptions, pauseMove, pauseProblem } from '../../../lib/agreements/endDate';
+import { endEarlyProblem, extendOptions, pauseMove, pauseProblem, sessionsInPause } from '../../../lib/agreements/endDate';
 import { ownSessions, refund14, sessionRanges, windowEnds } from '../../../lib/agreements/coolingOff';
 import { usedCount } from '../../../lib/agreements/sessionOutcome';
 import {
   endEarlyOptions, endEarlySentence, hoursState, paidOn, pauseFromOptions, pauseToOptions, penceFrom, perSessionMinor, settledInvoices,
 } from '../../../lib/agreements/duringAgreement';
-import { dayKeyWords } from '../../../lib/time/index.js';
+import { dayIn, dayKeyWords } from '../../../lib/time/index.js';
 import { futureSessionsPlan } from '../../../lib/coach/calendar';
 import { kindOf } from '../../../lib/agreements/terms';
 import { useCalendar } from '../calendarParts';
@@ -94,7 +94,8 @@ function useExtend({ a, name, end, today, done }) {
   };
 }
 
-function usePause({ a, t, end, today, done }) {
+function usePause({ a, t, name, end, today, done }) {
+  const p = useCoachPortal();
   const froms = pauseFromOptions(today, end);
   const [from, setFrom] = useState(froms[0]?.value);
   const tos = pauseToOptions(from, today);
@@ -105,20 +106,31 @@ function usePause({ a, t, end, today, done }) {
   const moved = end ? pauseMove(end, from, to, today) : { ok: Boolean(to > from), line: '' };
   // This year's dates without their year (writing rule 28).
   const words = (d) => (d ? dayKeyWords(d, { year: true, today }) : '');
+  // Stage D item 16: the coaching sessions already booked inside it, on the client's clock as the server reads them.
+  // None moves or cancels by itself: the coach does each one next, from the agreement's page.
+  const first = firstOf(name);
+  const zone = pauseZone(p, a);
+  const inside = from && to && to > from ? sessionsInPause(p.sessions, { from, to, profileId: a.profile_id, zone, now: p.now }) : [];
   return {
     name: 'Pause coaching',
+    facts: inside.length ? [insideLine(inside.map((s) => words(dayIn(zone, new Date(s.starts_at)))))] : null,
     problem,
     steps: [
       { key: 'from', question: 'Pause from when?', body: (next) => <Pick question="Pause from when?" options={froms} value={from} onChange={(x) => { setFrom(x); setProblem(null); }} onNext={next} />, check: `Coaching pauses from ${words(from)}.` },
       { key: 'to', question: 'Until when?', body: (next) => <Pick question="Until when?" options={tos} value={to} onChange={(x) => { setTo(x); setProblem(null); }} onNext={next} />, check: `It starts again after ${words(to)}.` },
     ],
-    say: [moved.line, t?.kind === 'retainer' ? 'Its monthly invoices pause too.' : ''].filter(Boolean).join(' '),
+    say: [moved.line, t?.kind === 'retainer' ? 'Its monthly invoices pause too.' : '', inside.length ? insideSay(first) : ''].filter(Boolean).join(' '),
     finish: 'Pause coaching',
     go: () => {
       // The server's own refusals, asked here first (F6).
       const stop = pauseProblem({ from, to, today, end, paused: a.paused_from ? { from: a.paused_from, to: a.paused_to || null } : null });
       if (stop || !moved.ok) { setProblem(stop || 'Choose an Until date after From.'); return; }
-      run(() => ask('agreements', 'pause', { agreementId: a.id, from, to }), (ans) => (ans.endsOn || moved.end ? `Paused. It now ends on ${words(ans.endsOn || moved.end)}.` : 'Paused.'), setProblem);
+      run(() => ask('agreements', 'pause', { agreementId: a.id, from, to }), (ans) => {
+        // The server's own count of those inside (its answer's ids); a stand-in answers none, so the device's.
+        const n = Array.isArray(ans?.inside) ? ans.inside.length : inside.length;
+        const said = ans.endsOn || moved.end ? `Paused. It now ends on ${words(ans.endsOn || moved.end)}.` : 'Paused.';
+        return n ? `${said} ${insideToast(n)}` : said;
+      }, setProblem);
     },
   };
 }
@@ -275,6 +287,12 @@ function useCancel14({ a, v, t, name, signed, sessions, firstV, today, zone = 'E
     },
   };
 }
+
+/**
+ * The clock a pause's days are read on: the client's own time zone, as the server reads them (coach-agreements.js's
+ * pause), else London.
+ */
+export const pauseZone = (p, a) => (p.clients || []).find((c) => c.id === a?.profile_id)?.time_zone || 'Europe/London';
 
 const FLOWS = { extend: useExtend, pause: usePause, end: useEndEarly, refund: useRefund, cancel14: useCancel14 };
 

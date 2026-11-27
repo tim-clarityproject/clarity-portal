@@ -326,7 +326,7 @@ part('signin', async ({ browser, w, mode, tag }) => {
   // The right code opens the first question.
   await page.getByLabel('Access code').fill(session.code);
   await page.locator('.hc-wide-btn').click();
-  pass(`${tag}, email and code: the right code opens the first question`, await onQuestion(page, 'What is your team trying to achieve?'));
+  pass(`${tag}, email and code: the right code opens the first question`, await onQuestion(page, 'What’s your team trying to achieve?'));
   noProblems(b, `${tag}, email and code`);
   await b.ctx.close();
 });
@@ -336,7 +336,7 @@ part('new', async ({ browser, w, mode, tag }) => {
   const b = await appPage(browser, w, mode, { data: {}, scale: 2 });
   const { page, session } = b;
   await signIn(page, session);
-  pass(`${tag}, new: it opens on the first question`, await onQuestion(page, 'What is your team trying to achieve?'));
+  pass(`${tag}, new: it opens on the first question`, await onQuestion(page, 'What’s your team trying to achieve?'));
   await checkScreen(b, `${tag}, objective`, { back: true });
   await checkIcons(page, `${tag}, the first question`, '.ds-guide-question');
   await checkFonts(b, `${tag}, the first question`, [['the question', '.ds-guide-question', 'DM Sans'], ['the line under it', '.ds-guide-nudge', 'DM Sans'], ['the tool’s name', '.ds-guide-name', 'Nekst'], ['Next', '.ds-guide-next', 'DM Sans'], ['the box', '.ds-guide-body textarea', 'DM Sans']]);
@@ -377,7 +377,7 @@ part('new', async ({ browser, w, mode, tag }) => {
   pass(`${tag}, weights: on a ${w <= 600 ? 'phone' : 'laptop'} the three levels are one control`, (await page.locator('.hc-weight .ds-seg-btn').count()) === 6);
   await checkScreen(b, `${tag}, weights`, { back: true });
   await pressNext(page);
-  pass(`${tag}, new: then the projects`, await onQuestion(page, 'What is your team working on?'));
+  pass(`${tag}, new: then the projects`, await onQuestion(page, 'What’s your team working on?'));
   await calm('projects', 'Add at least one project to carry on.');
   await typeRows([PR[0].t, PR[1].t]);
   await checkScreen(b, `${tag}, projects`, { back: true });
@@ -447,7 +447,7 @@ part('new', async ({ browser, w, mode, tag }) => {
   // Going away and back to the results doesn't ask for the email again.
   await sleep(450);
   await page.getByRole('button', { name: 'Edit the objective' }).click();
-  await onQuestion(page, 'What is your team trying to achieve?');
+  await onQuestion(page, 'What’s your team trying to achieve?');
   await sleep(450);
   await page.locator('.ds-guide-back').click();
   await onQuestion(page, 'Strategic Alignment Health Check');
@@ -460,7 +460,7 @@ part('new', async ({ browser, w, mode, tag }) => {
 part('back', async ({ browser, w, mode, tag }) => {
   const p2 = `“${PR[1].t}”`;
   const cases = [
-    ['csf', 'What is your team trying to achieve?'],
+    ['csf', 'What’s your team trying to achieve?'],
     ['weight', 'How will you achieve your objective?'],
     ['projects', 'How much does each Success Factor matter'],
     ['contrib', `How much resource does “${PR[0].t}” need?`],
@@ -527,7 +527,7 @@ part('edits', async ({ browser, w, mode, tag }) => {
   const nextWords = async () => (await page.locator('.ds-guide-next').innerText()).trim().toLowerCase();
   // The objective.
   await page.getByRole('button', { name: 'Edit the objective' }).click();
-  pass(`${tag}, edits: the objective’s Edit opens its question`, await onQuestion(page, 'What is your team trying to achieve?'));
+  pass(`${tag}, edits: the objective’s Edit opens its question`, await onQuestion(page, 'What’s your team trying to achieve?'));
   pass(`${tag}, edits: the button reads “Save my edit”`, (await nextWords()) === 'save my edit', await nextWords());
   await page.locator('.ds-guide-body textarea').fill('Treble recurring revenue by 2029');
   await pressNext(page);
@@ -539,7 +539,7 @@ part('edits', async ({ browser, w, mode, tag }) => {
   // A blank objective can't be saved: the calm line.
   await sleep(450);
   await page.getByRole('button', { name: 'Edit the objective' }).click();
-  await onQuestion(page, 'What is your team trying to achieve?');
+  await onQuestion(page, 'What’s your team trying to achieve?');
   await page.locator('.ds-guide-body textarea').fill('');
   await pressNext(page);
   pass(`${tag}, edits: a blank objective gets the calm line, not a save`, await until(async () => (await page.locator('.ds-guide .ds-error').innerText()).includes('Type your objective to carry on.'), 3000));
@@ -562,7 +562,7 @@ part('edits', async ({ browser, w, mode, tag }) => {
   // The projects: add one, and only its questions are asked.
   await sleep(450);
   await page.getByRole('button', { name: 'Edit the list of projects' }).click();
-  pass(`${tag}, edits: the projects’ Edit opens their list`, await onQuestion(page, 'What is your team working on?'));
+  pass(`${tag}, edits: the projects’ Edit opens their list`, await onQuestion(page, 'What’s your team working on?'));
   await page.locator('.ds-rowlist-add').click();
   await page.locator('.ds-rowlist .ds-text').last().fill('Brand refresh');
   const asked = [];
@@ -851,8 +851,8 @@ part('return', async ({ browser, w, mode, tag }) => {
   pass(`${tag}, return: a reload in the same tab opens straight there, with no email and code`, await onQuestion(page, here), await questionText(page));
   // Drafts: type, reload, the answers are there.
   await sleep(450);
-  for (let i = 0; i < 40; i += 1) { await page.locator('.ds-guide-back').click(); await sleep(450); if ((await questionText(page)).includes('What is your team trying to achieve?')) break; }
-  await onQuestion(page, 'What is your team trying to achieve?');
+  for (let i = 0; i < 40; i += 1) { await page.locator('.ds-guide-back').click(); await sleep(450); if ((await questionText(page)).includes('What’s your team trying to achieve?')) break; }
+  await onQuestion(page, 'What’s your team trying to achieve?');
   const saves = session.saves;
   const box = page.locator('.ds-guide-body textarea');
   await box.fill('');
@@ -873,7 +873,7 @@ part('return', async ({ browser, w, mode, tag }) => {
   await tab.getByLabel('Email').fill(session.email);
   await tab.getByLabel('Access code').fill(session.code.toLowerCase());
   await tab.locator('form button[type=submit]').click();
-  pass(`${tag}, return: the same email and code carry on at the step it was left on`, await onQuestion(tab, 'What is your team trying to achieve?') && (await tab.locator('.ds-guide-body textarea').inputValue()) === 'Treble revenue by 2030, and keep every client', await questionText(tab));
+  pass(`${tag}, return: the same email and code carry on at the step it was left on`, await onQuestion(tab, 'What’s your team trying to achieve?') && (await tab.locator('.ds-guide-body textarea').inputValue()) === 'Treble revenue by 2030, and keep every client', await questionText(tab));
   pass(`${tag}, return: no page errors in the new tab`, tabProblems.length === 0, tabProblems.join(' | '));
   await tab.close();
   // Close: saves, the return visit's screen, "Saved".
@@ -888,7 +888,7 @@ part('return', async ({ browser, w, mode, tag }) => {
   pass(`${tag}, return: and what was typed just before is saved`, session.saves > before && session.data?.objective === 'Treble revenue by 2030, and keep every client.', session.data?.objective);
   await checkScreen(b, `${tag}, the return visit`, { layer: '.ds-guest' });
   await page.locator('form button[type=submit]').click();
-  pass(`${tag}, return: “Pick up where you left off” opens where it was`, await onQuestion(page, 'What is your team trying to achieve?'), await questionText(page));
+  pass(`${tag}, return: “Pick up where you left off” opens where it was`, await onQuestion(page, 'What’s your team trying to achieve?'), await questionText(page));
   noProblems(b, `${tag}, return`);
   await b.ctx.close();
 });
@@ -968,7 +968,7 @@ part('guide', async ({ browser, w, mode, phone, tag }) => {
   pass(`${tag}, guide: the slider can be focused and takes the arrow keys`, await page.evaluate((sel) => document.activeElement === document.querySelector(`${sel} [role=slider]`), DIALOG));
   await page.locator(`${DIALOG} [aria-label=Close]`).click();
   pass(`${tag}, guide: Close shuts the panel and stops the video`, await until(async () => (await page.locator(DIALOG).count()) === 0 && (await page.locator('video').count()) === 0, 5000));
-  pass(`${tag}, guide: the first question is still there`, (await questionText(page)).includes('What is your team trying to achieve?'));
+  pass(`${tag}, guide: the first question is still there`, (await questionText(page)).includes('What’s your team trying to achieve?'));
   // Escape closes it too.
   await sleep(300);
   await page.locator('.ds-guide-question .ds-play').click();

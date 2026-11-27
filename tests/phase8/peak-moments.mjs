@@ -344,7 +344,7 @@ try {
     await onQ(page, 'What helped your energy and focus most?');
     await page.locator('.ds-guide-body .ds-text').first().fill('A quiet evening before.');
     await pressNext(page);
-    await onQ(page, 'What would you keep or change for next time?');
+    await onQ(page, 'What will you keep, and what will you change?'); // Stage D, Draft 11
     await page.locator('.ds-guide-body .ds-text').first().fill('Start the early nights a week out.');
     await pressNext(page);
     await onQ(page, 'Your review');

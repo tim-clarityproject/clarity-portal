@@ -1,5 +1,5 @@
-/* Emotional wash (M10, version 5.6). Only what the shared parts don't
-   carry: the summary's title straight under the bar. Class prefix ew-. */
+/* Emotional wash (Polish 1, Stage D: Draft 6 and Draft 7). Only what the
+   shared parts don't carry. Class prefix ew-. */
 
 .ui-root .ew-summary .ds-guide-title {
   margin-top: 0 !important;
@@ -7,4 +7,36 @@
 
 .ui-root .ew-summary .ds-guide-body {
   margin-top: 0;
+}
+
+/* "Something else" at the foot of the family's words, opening a box for their own word (Draft 7). */
+.ui-root .ew-own {
+  margin-top: var(--space-3);
+}
+
+.ui-root .ew-own .ds-textbox,
+.ui-root .ew-own textarea,
+.ui-root .ew-own input {
+  margin-top: var(--space-2);
+}
+
+/* The commit screen: the step, its day, then where its to-do goes, one under another. */
+.ui-root .ew-commit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* "Want to talk this through with Maya?" under Your wash (Draft 6). */
+.ui-root .ew-talk {
+  margin: var(--space-4) 0 0;
+}
+
+.ui-root .ew-own-link,
+.ui-root .ew-talk-link {
+  min-height: var(--tap-min);
+  color: var(--text-2);
+  text-decoration: underline;
+  text-decoration-thickness: var(--line-w);
+  text-underline-offset: var(--space-1);
 }

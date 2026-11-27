@@ -87,7 +87,7 @@ export function withHelpShown(hidden, key) {
 }
 export const hiddenHelpCount = (hidden) => Object.keys(cleanHidden(hidden)).length;
 
-/** My Account's line under "Hidden help" (the coach portal's Settings, Look, says the same). */
+/** My Account's line under "Hidden help" (the coach portal's Settings, Appearance, says the same). */
 export function hiddenHelpWords(count) {
   if (!count) return 'Nothing is hidden.';
   return count === 1 ? '1 explanation is hidden.' : `${count} explanations are hidden.`;

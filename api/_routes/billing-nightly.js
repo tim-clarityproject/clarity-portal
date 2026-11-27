@@ -4,7 +4,8 @@
 //   GET /api/billing-nightly   Authorization: Bearer <CRON_SECRET>
 //
 // For every active coach: the instalments that have fallen due drafted in Stripe (never sent: they wait for the coach's
-// Send), and the overdue reminders drafted at 3, 7 and 14 days (never sent either). Then Stripe's catch-up: the last 3
+// Send), and the overdue reminders drafted at 3, 7 and 14 days (never sent either; drafted without Stripe too, Stage D
+// item 15: remindersNightly). Then Stripe's catch-up: the last 3
 // days of its messages read back from Stripe and handled through the webhook's own rules, so a message that never
 // arrived still lands and one that did is found already claimed (stripe_events). Then any payment still without the
 // pounds that landed and Stripe's fee is looked up again (fillLanded). Nothing here sends anything.
@@ -49,6 +50,20 @@ export async function nightlyRound({ server, stripe, now = () => new Date() }) {
   }
   // Payments still without the pounds that landed and Stripe's fee (Stripe couldn't be asked when they came in).
   try { out.landed = await fillLanded({ server, stripe, now }); } catch { out.problems += 1; }
+  return out;
+}
+
+/**
+ * The overdue reminders alone, for every active coach (Stage D, item 15). They need no Stripe, so they are drafted
+ * even when Stripe isn't connected (the round above, which also drafts them, runs only with Stripe's key): an invoice
+ * first seen 9 days overdue gets its 7-day reminder at once, the latest one only. Sends nothing.
+ */
+export async function remindersNightly({ server, now = () => new Date() }) {
+  const out = { reminders: 0, problems: 0 };
+  const { data: coaches } = await server.from('coaches').select('id, role, active').eq('active', true);
+  for (const coach of coaches || []) {
+    try { out.reminders += (await billing({ server, stripe: null, coach, now }).draftReminders()).drafted; } catch { out.problems += 1; }
+  }
   return out;
 }
 
@@ -134,7 +149,7 @@ export default async function handler(req, res, env = process.env) {
     const server = serverClient(env);
     // The agreements' drafts and the reference rates need no Stripe; the invoices' part does.
     const agreements = await agreementsNightly({ server });
-    if (!keyAllowed(env.STRIPE_SECRET_KEY || '')) return reply(res, 200, { ok: false, reason: 'not_connected', agreements });
+    if (!keyAllowed(env.STRIPE_SECRET_KEY || '')) return reply(res, 200, { ok: false, reason: 'not_connected', agreements, ...(await remindersNightly({ server })) });
     return reply(res, 200, { ok: true, ...(await nightlyRound({ server, stripe: stripeApi(env.STRIPE_SECRET_KEY) })), agreements });
   } catch {
     return reply(res, 500, { ok: false });

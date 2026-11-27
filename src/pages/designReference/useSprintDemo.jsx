@@ -102,7 +102,7 @@ function sprintSteps(a, set, role, openCalendar) {
           </button>
           <div>
             <TextBox
-              label="What would you like to call it?"
+              label="What do you want to call it?"
               who="me"
               maxLength={40}
               lines="one"

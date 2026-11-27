@@ -61,7 +61,7 @@ const SIGNED_IN = [
   ['about', '/about'],
   ['coaching', '/coaching'],
   ['dashboard-customise', '/dashboard', press(/^Customise/)],
-  ['my-account-security', '/my-account/sign-in-security'],
+  ['my-account-security', '/my-account/sign-in-security'], // a client: forwarded to My Account (a coach's is Settings, Sign-in security since Stage D, item 13)
 ];
 const SIGNED_OUT = [
   ['sign-in', '/auth/login'],

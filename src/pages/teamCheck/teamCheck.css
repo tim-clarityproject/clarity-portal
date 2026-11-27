@@ -135,3 +135,50 @@
     fill: CanvasText;
   }
 }
+
+/* Decide who decides (Stage D, item 4): the three colours of the autonomy
+   question, each a small traffic light in the portal's data colours, never
+   coral. Green: the top light filled mint; Amber: the middle light a mint
+   ring; Red: the bottom light filled grey. The unlit lights are outlines. */
+.ui-root .tpc-decide {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ui-root .tpc-decide-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-px14) 0;
+  border-top: var(--line-w) solid var(--line);
+}
+.ui-root .tpc-decide-row:first-child { border-top: 0; }
+.ui-root .tpc-decide-words {
+  display: grid;
+  gap: var(--space-px2);
+  font-size: var(--fs-text);
+}
+.ui-root .tpc-decide-words b { font-weight: 500; color: var(--text); }
+.ui-root .tpc-decide-words span { color: var(--text-2); }
+.ui-root .tpc-light {
+  flex: none;
+  display: grid;
+  gap: var(--space-px2);
+}
+.ui-root .tpc-light-dot {
+  width: var(--space-px10);
+  height: var(--space-px10);
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: var(--line-w) solid var(--field-line);
+}
+.ui-root .tpc-light-dot--green { background: var(--good); border-color: var(--good); }
+.ui-root .tpc-light-dot--amber { border: var(--space-px2) solid var(--good); }
+.ui-root .tpc-light-dot--red { background: var(--text-2); border-color: var(--text-2); }
+
+@media (forced-colors: active) {
+  .ui-root .tpc-light-dot { forced-color-adjust: none; border-color: CanvasText; background: Canvas; }
+  .ui-root .tpc-light-dot--green,
+  .ui-root .tpc-light-dot--red { background: CanvasText; }
+  .ui-root .tpc-light-dot--amber { border-width: var(--space-px3); }
+}

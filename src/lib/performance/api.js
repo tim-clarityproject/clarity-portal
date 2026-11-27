@@ -635,6 +635,25 @@ export async function startSprint(userId, p) {
       },
     });
   }
+  // The commit answer (Stage D, Draft 11): a to-do in week 1 for the Strategy it serves.
+  if (p.firstTodo) {
+    await send({
+      table: 'todos',
+      kind: 'upsert',
+      values: {
+        id: p.firstTodo.id,
+        user_id: userId,
+        strategy_id: p.firstTodo.strategyId,
+        text: p.firstTodo.text,
+        impact: 2,
+        sprint_id: p.sprintId,
+        planned_week: 1,
+        created_on: p.firstTodo.createdOn,
+        source: 'other_tool',
+        source_id: null,
+      },
+    });
+  }
   return { queued };
 }
 
@@ -1016,7 +1035,7 @@ export function changeRecovery(userId, recoveryId, values) {
 }
 
 /**
- * Today's answer to "What would help you recharge today?" (one per day,
+ * Today's answer to "What will help you recharge today?" (one per day,
  * found by its Recovery and day, so a change keeps the same row); an
  * empty answer removes it. `shared` is whether the coach sees it.
  */

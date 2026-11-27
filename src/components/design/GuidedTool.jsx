@@ -18,6 +18,7 @@ import { useFocusMode } from './Frame';
 import { endWithIcon, titleWithAside } from './keepWords';
 import useInfoToggle from './useInfoToggle';
 import { inSentence } from '../../lib/performance/words.js';
+import { examplesOf } from './examples.js';
 import './design.css';
 
 // The guided-step component: every tool people work through in order,
@@ -51,7 +52,7 @@ import './design.css';
 //   info,                 one line of why behind the "i" (optional)
 //   question | title,     the heading: a question, or a short Nekst title
 //   nudges: [],           one or two short lines under it
-//   example,              text, or { ceo, coach, leader } by role
+//   example,              text, or 2 or 3 as an array (or { ceo, coach, leader }), all shown
 //   tip: { key, text },   a one-off tip
 //   nudgeInfo: { label, text } an "i" at the end of the last nudge,
 //              opening its one line in place (M19's Close the day);
@@ -162,13 +163,7 @@ function writeJson(key, value) {
   }
 }
 
-// The example for the person's role (Tim, 23 Oct): CEO or executive,
-// Head coach or Leader; Other gets the Leader version.
-function exampleFor(example, role) {
-  if (!example || typeof example === 'string') return example;
-  const key = role === 'ceo' || role === 'coach' ? role : 'leader';
-  return example[key] ?? example.leader;
-}
+
 
 function Tip({ tip, onClosed }) {
   const [shown, setShown] = useState(() => !readJson(TIP_PREFIX + tip.key, false));
@@ -189,7 +184,7 @@ function Tip({ tip, onClosed }) {
   );
 }
 
-function StepHead({ step, headingRef, positionId, role, name }) {
+function StepHead({ step, headingRef, positionId, name }) {
   // The "i" opens as every "i" does (useInfoToggle), and Escape closes open help first.
   const { open: infoOpen, buttonRef: infoButtonRef, panelRef: infoPanelRef, buttonProps: infoProps } = useInfoToggle();
   const { open: nudgeOpen, buttonRef: nudgeButtonRef, panelRef: nudgePanelRef, buttonProps: nudgeProps } = useInfoToggle();
@@ -198,7 +193,8 @@ function StepHead({ step, headingRef, positionId, role, name }) {
   const infoId = useId();
   const exampleId = useId();
   useEscapeLayer(exampleOpen, () => setExampleOpen(false));
-  const example = exampleFor(step.example, role);
+  const examples = examplesOf(step.example);
+  const example = examples.length > 0;
   const Heading = 'h2';
   // The small grey line over the question (the example's eyebrow, Polish 1):
   // the step's own stage name where it has one ("Goal"), else the tool's name.
@@ -270,7 +266,13 @@ function StepHead({ step, headingRef, positionId, role, name }) {
           >
             {exampleOpen ? 'Hide the example' : 'See an example'}
           </button>
-          {exampleOpen && <div id={exampleId} className="ds-guide-example">{`For example: ${example}`}</div>}
+          {exampleOpen && (examples.length === 1
+            ? <div id={exampleId} className="ds-guide-example">{`For example: ${examples[0]}`}</div>
+            : (
+              <ul id={exampleId} className="ds-guide-example ds-guide-examples" aria-label="Examples">
+                {examples.map((x) => <li key={x}>{x}</li>)}
+              </ul>
+            ))}
         </>
       )}
       {step.tip && <Tip tip={step.tip} onClosed={() => headingRef.current?.focus({ preventScroll: true })} />}
@@ -713,7 +715,7 @@ export default function GuidedTool({
                   step.render(tool)
                 ) : (
                   <>
-                    <StepHead step={step} headingRef={headingRef} positionId={positionId} role={role} name={name} />
+                    <StepHead step={step} headingRef={headingRef} positionId={positionId} name={name} />
                     <div className="ds-guide-body">{step.render(tool)}</div>
                     {/* Never a greyed-out button: a calm line says what is needed (M9). */}
                     {problem && (

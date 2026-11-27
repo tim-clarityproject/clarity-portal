@@ -424,12 +424,12 @@ async function chatButton(page) {
 }
 if (part(6)) {
   {
-    const { context, page } = await newContext({ width: 1280, coach: { name: 'Adie', ways: ['whatsapp'] } });
+    const { context, page } = await newContext({ width: 1280, coach: { name: 'Rhys', ways: ['whatsapp'] } });
     try {
       await open(page);
       const b = await chatButton(page);
       await until(async () => (await b.count()) === 1, 10000);
-      pass('chat, one way: "Chat to Adie"', (await b.innerText()).trim() === 'Chat to Adie', await b.innerText());
+      pass('chat, one way: "Chat to Rhys"', (await b.innerText()).trim() === 'Chat to Rhys', await b.innerText());
       const pos = await page.evaluate(() => {
         const r = document.querySelector('.hdr-frame-chat .ds-chat').getBoundingClientRect();
         const h = document.querySelector('.ds-frame-main').getBoundingClientRect();
@@ -479,7 +479,7 @@ if (part(6)) {
     }
   }
   {
-    const { context, page } = await newContext({ width: 1280, coach: { name: 'Adie', ways: ['whatsapp'] } });
+    const { context, page } = await newContext({ width: 1280, coach: { name: 'Rhys', ways: ['whatsapp'] } });
     try {
       await open(page);
       const b = await chatButton(page);
@@ -503,7 +503,7 @@ if (part(6)) {
     // The coach can't be fetched (no connection): the device's copy from
     // the last visit still shows the button. (Opening the whole portal
     // with no connection comes in Step 8.)
-    const { context, page } = await newContext({ width: 1280, coach: { name: 'Adie', ways: ['whatsapp'] } });
+    const { context, page } = await newContext({ width: 1280, coach: { name: 'Rhys', ways: ['whatsapp'] } });
     try {
       await open(page);
       await until(async () => (await page.locator('.hdr-frame-chat .ds-chat').count()) === 1, 10000);
@@ -518,12 +518,12 @@ if (part(6)) {
   }
   {
     // A phone: in My Account, not the header.
-    const { context, page } = await newContext({ width: 390, coach: { name: 'Adie', ways: ['whatsapp'] } });
+    const { context, page } = await newContext({ width: 390, coach: { name: 'Rhys', ways: ['whatsapp'] } });
     try {
       // Polish 1: My Account's Coaching tab holds it (one section at a time).
       await open(page, '/my-account?tab=coaching');
       pass('chat, phone: not in the header', (await page.locator('.hdr .ds-chat:visible').count()) === 0);
-      pass('chat, phone: in My Account', Boolean(await until(async () => (await page.locator('.account-page').getByRole('button', { name: 'Chat to Adie' }).count()) === 1, 10000)));
+      pass('chat, phone: in My Account', Boolean(await until(async () => (await page.locator('.account-page').getByRole('button', { name: 'Chat to Rhys' }).count()) === 1, 10000)));
     } finally {
       await context.close();
     }

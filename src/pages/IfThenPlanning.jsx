@@ -1,271 +1,253 @@
-import { useState, useContext, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
-import { discardDecisionDraft } from '../lib/discardDraft';
-import { clearProgress } from '../lib/saveProgress';
-import FormTool from './toolFocus/FormTool';
-import DiscardDialog from '../components/ui/DiscardDialog';
-import NameDialog from '../components/ui/NameDialog';
-import { IconButton, SaveStatus, TextBox, AddButton, useToast } from '../components/design';
-import { clearDraft as forgetDraft, useDraft } from '../lib/drafts';
-import { saveDecisionOrQueue } from '../lib/decisionSave';
-import { useQueuedSave } from '../lib/syncQueue';
+import { useState } from 'react';
+import {
+  Button, Choice, DatePicker, GuidedSummary, GuidedTool, MultiChoice, TextBox, ToolTodoPanel, dayLabel,
+} from '../components/design';
+import DecisionFlow from './toolFocus/DecisionFlow';
+import { BoxAndWhen, ListAnswer, PairRows } from './toolFocus/Draft6Parts';
+import { newId } from '../lib/syncQueue';
+import { formatClockTime } from '../lib/dateFormatter';
+import { quote } from '../lib/draft6Tools/shared';
+import * as PP from '../lib/draft6Tools/pressurePlan';
 
-const MAX_NAME_LENGTH = 60;
-
-
-// Smallest sensible suggestion: the start of the situation text, cut to
-// 60 characters (the old Save-as-draft named everything "If-Then
-// Planning (Draft)" with no way to change it - see build summary).
-function suggestNameFrom(situation) {
-  const trimmed = (situation || '').trim();
-  if (!trimmed) return 'New Pressure plan';
-  return trimmed.length > MAX_NAME_LENGTH ? trimmed.slice(0, MAX_NAME_LENGTH) : trimmed;
-}
+// The Pressure plan (Polish 1, Stage D item 1): Draft 6's eleven screens,
+// word for word, one question per screen in focus mode (GuidedTool), at
+// /pressure-plan. A Reset tool: shorter and steadier, one thing at a time.
+// It opens every plan the older page saved (its situation and if-then
+// plans; src/lib/draft6Tools/pressurePlan.js). Every question can be
+// skipped but the last, "When will you rehearse your routine?". What they
+// control can go into this week as a to-do (the one shared add panel,
+// "Where should it go?", rule 31). The summary's button saves it and opens
+// its summary page, with Breathe one tap away.
 
 export default function IfThenPlanning() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useContext(AuthContext);
-  const [decisionId, setDecisionId] = useState(location.state?.decisionId || null);
-
-  const [situation, setSituation] = useState('');
-  const [items, setItems] = useState([{ id: 1, ifCondition: '', thenAction: '' }]);
-  const [nextId, setNextId] = useState(2);
-  const [currentTitle, setCurrentTitle] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
-  const [discardOpen, setDiscardOpen] = useState(false);
-  const [nameDialog, setNameDialog] = useState(null); // null | 'finish' | 'draft'
-  const toast = useToast();
-  // A plan opened from My Plans is ready once it has loaded; a new one at once.
-  const [loaded, setLoaded] = useState(!location.state?.decisionId);
-  const [draftName, setDraftName] = useState(() => `if-then:${location.state?.decisionId || 'new'}`);
-  const [syncState, markQueued] = useQueuedSave();
-  // A double tap starts one save, not two.
-  const savingRef = useRef(false);
-
-  // Typing survives a refresh or a closed tab (Tim, 26 Oct).
-  const { clear: clearDraft } = useDraft({
-    userId: user?.id,
-    name: draftName,
-    value: { situation, items },
-    ready: loaded,
-    onRestore: (v) => {
-      setSituation(v.situation || '');
-      if (v.items?.length) {
-        setItems(v.items);
-        setNextId(Math.max(...v.items.map((i) => i.id || 0)) + 1);
-      }
-    },
-  });
-
-  // A save that waited on the device has reached the server: the draft
-  // can go. (A refused one keeps it, so the typing comes back.)
-  useEffect(() => {
-    if (syncState === 'saved') clearDraft();
-  }, [syncState, clearDraft]);
-
-  useEffect(() => {
-    if (!decisionId || !user || loaded) return;
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from('decisions')
-        .select('*')
-        .eq('id', decisionId)
-        .eq('user_id', user.id)
-        .single();
-      if (cancelled) return;
-      if (error) {
-        console.error('[IfThenPlanning] load failed:', error);
-        setLoaded(true);
-        return;
-      }
-      if (data?.title) setCurrentTitle(data.title);
-      const formData = data?.form_data || {};
-      if (formData.situation) setSituation(formData.situation);
-      if (formData.items?.length) {
-        setItems(formData.items);
-        setNextId(Math.max(...formData.items.map((i) => i.id || 0)) + 1);
-      }
-      setLoaded(true);
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [decisionId, user?.id]);
-
-  const addItem = () => {
-    setItems([...items, { id: nextId, ifCondition: '', thenAction: '' }]);
-    setNextId(nextId + 1);
-  };
-  const removeItem = (id) => {
-    if (items.length > 1) setItems(items.filter((i) => i.id !== id));
-  };
-  const changeItem = (id, field, value) => {
-    setItems(items.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
-  };
-
-  const persist = async (draft, name) => {
-    const payload = {
-      form_data: { situation, items },
-      title: name,
-      draft,
-      status: draft ? 'draft' : 'completed',
-      updated_at: new Date().toISOString(),
-    };
-
-    // Offline, it is kept on the device and sent when the connection is
-    // back ("Will sync", then "Saved").
-    const result = await saveDecisionOrQueue({ userId: user.id, decisionId, toolType: 'if_then_planning', payload });
-    setDecisionId(result.id);
-    // A new plan now has its id (made on the device when offline): the
-    // page's history and its draft follow it, so a refresh and a second
-    // save update this plan rather than make another.
-    if (!location.state?.decisionId) {
-      navigate(location.pathname, { replace: true, state: { ...location.state, decisionId: result.id } });
-      forgetDraft(user.id, draftName);
-      setDraftName(`if-then:${result.id}`);
-    }
-    // The draft stays until the server has it: a save waiting on the
-    // device is cleared once it has gone (below), and kept if refused.
-    if (result.status === 'queued') markQueued(result.qid);
-    else clearDraft();
-    return result;
-  };
-
-  const handleNameConfirm = async (name) => {
-    if (!user || isSaving || savingRef.current) return;
-    savingRef.current = true;
-    const mode = nameDialog;
-    setSaveError('');
-    setIsSaving(true);
-    try {
-      const saved = await persist(mode === 'draft', name);
-      const savedId = saved.id;
-      setCurrentTitle(name);
-      setNameDialog(null);
-      if (saved.status === 'queued') {
-        // Kept on the device for now: stay here, showing "Will sync".
-        clearProgress();
-      } else if (mode === 'draft') {
-        toast.show(`Draft saved as ${name}.`);
-        clearProgress();
-        navigate('/my-plans');
-      } else {
-        clearProgress();
-        navigate('/pressure-plan/summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
-      }
-    } catch (error) {
-      console.error('[IfThenPlanning] save failed:', error);
-      setNameDialog(null);
-      setSaveError('That didn’t save. Check your connection and try again.');
-    } finally {
-      savingRef.current = false;
-      setIsSaving(false);
-    }
-  };
-
-  // Deletes the saved row only if it is still a draft - a completed
-  // plan is never deleted by walking away from it. The condition lives
-  // in the query (see discardDraft.js), so a completed row matches
-  // nothing even though this page does not track its status (patch D1).
-  const handleDiscard = async () => {
-    setDiscardOpen(false);
-    if (decisionId) {
-      try {
-        await discardDecisionDraft(user.id, decisionId);
-      } catch (error) {
-        console.error('[IfThenPlanning] draft delete on discard failed:', error);
-      }
-    }
-    clearDraft();
-    navigate('/my-plans');
-  };
-
-  const suggestedName = currentTitle || suggestNameFrom(situation);
-
   return (
-    <div className="ui-root">
-      <FormTool
-        name="Pressure plan"
-        question="Which situation are you concerned about?"
-        hint="Then plan what you’ll do if each thing you fear happens."
-        onNext={() => { if (!isSaving) setNameDialog('finish'); }}
-        nextLabel="Finish"
-        saveError={saveError}
-        onSaveDraft={() => { if (!isSaving) setNameDialog('draft'); }}
-        onDiscard={() => setDiscardOpen(true)}
-        closeTo="/personal/reset"
-        className="pp-tool"
-      >
-        <div className="ft-field">
-          <TextBox
-            id="ift-situation"
-            ariaLabel="Which situation are you concerned about?"
-            lines="many"
-            focusMode
-            who="me"
-            placeholder="Type here"
-            value={situation}
-            onChange={setSituation}
+    <DecisionFlow model={PP} draftName="if-then" closeTo="/personal/reset">
+      {(flow) => <PressurePlanTool {...flow} />}
+    </DecisionFlow>
+  );
+}
+
+const NOT_YET = 'Not answered yet.';
+
+function PressurePlanTool({ answers: a, onAnswers, draftKey, initialStep, onClose, onFinish, decisionId }) {
+  const set = (patch) => onAnswers((s) => ({ ...s, ...patch }));
+  const [adding, setAdding] = useState(null); // the controlled item whose add panel is open
+  const [firstPair] = useState(newId);
+  const items = PP.mindItems(a);
+  const hard = PP.hardest(a);
+  const ifThenQ = PP.ifThenQuestion(hard?.text);
+  // The first If is what they quoted, until they write their own.
+  const pairs = a.items.length ? a.items : [{ id: firstPair, ifCondition: hard ? quote(hard.text) : '', thenAction: '' }];
+
+  const steps = [
+    {
+      key: 'moment',
+      name: 'The moment',
+      question: PP.QUESTIONS.moment,
+      example: PP.MOMENT_EXAMPLES,
+      render: () => <TextBox lines="many" ariaLabel={PP.QUESTIONS.moment} value={a.moment} onChange={(moment) => set({ moment })} />,
+    },
+    {
+      key: 'when',
+      name: 'When it is',
+      question: PP.QUESTIONS.when,
+      render: () => (
+        <div className="d6-when">
+          <DatePicker label="Which day?" value={a.noDate ? '' : a.date} onChange={(date) => set({ date, noDate: false })} />
+          <MultiChoice
+            ariaLabel={PP.NO_DATE}
+            options={[{ value: 'none', label: PP.NO_DATE }]}
+            values={a.noDate ? ['none'] : []}
+            onChange={(v) => set({ noDate: v.includes('none'), date: v.includes('none') ? '' : a.date })}
           />
         </div>
-
-        <div className="ft-label">What will you do if it happens?</div>
-        {items.map((item, index) => {
-          return (
-            <div className="plan-sc-row" key={item.id}>
-              <div className="plan-sc-pair">
-                <div>
-                  <TextBox
-                    id={`ift-if-${item.id}`}
-                    label="If this happens…"
-                    lines="one"
-                    placeholder="Type here"
-                    value={item.ifCondition}
-                    onChange={(v) => changeItem(item.id, 'ifCondition', v)}
-                  />
-                </div>
-                <div>
-                  <TextBox
-                    id={`ift-then-${item.id}`}
-                    label="Then I will…"
-                    lines="one"
-                    placeholder="Type here"
-                    value={item.thenAction}
-                    onChange={(v) => changeItem(item.id, 'thenAction', v)}
-                  />
-                </div>
+      ),
+    },
+    {
+      key: 'well',
+      name: 'When you did it well',
+      question: PP.QUESTIONS.well,
+      render: () => <TextBox lines="many" ariaLabel={PP.QUESTIONS.well} value={a.well} onChange={(well) => set({ well })} />,
+    },
+    {
+      key: 'mind',
+      name: 'On your mind',
+      question: PP.QUESTIONS.mind,
+      render: () => <ListAnswer list={a.mind} onList={(mind) => set({ mind })} itemLabel={(n) => `On your mind ${n}`} />,
+    },
+    // One screen for each thing on their mind: one tap moves on (rule 21).
+    ...items.map((m, n) => ({
+      key: `hold-${m.id}`,
+      name: `Which is true ${n + 1}`,
+      question: PP.holdQuestion(m.text),
+      oneTap: true,
+      render: (tool) => (
+        <Choice
+          form="rows"
+          tick
+          ariaLabel={PP.holdQuestion(m.text)}
+          options={PP.HOLDS}
+          value={m.hold}
+          onChange={(hold) => set({ mind: a.mind.map((x) => (x.id === m.id ? { ...x, hold } : x)) })}
+          onChoose={() => tool.next()}
+        />
+      ),
+    })),
+    // What they control: what they'll do, which can go into this week.
+    ...PP.controlled(a).map((m, n) => ({
+      key: `act-${m.id}`,
+      name: `What you’ll do ${n + 1}`,
+      question: PP.actQuestion(m.text),
+      render: () => (
+        <div className="d6-when">
+          <TextBox
+            lines="many"
+            ariaLabel={PP.actQuestion(m.text)}
+            value={a.acts[m.id] || ''}
+            onChange={(v) => set({ acts: { ...a.acts, [m.id]: v } })}
+          />
+          {a.todos[m.id]
+            ? <p className="ds-guide-nudge" role="status">It’s in your to-dos.</p>
+            : (
+              <div>
+                <Button variant="outline" onClick={() => setAdding(m.id)}>Add to this week</Button>
               </div>
-              {items.length > 1 ? <IconButton label={`Remove scenario ${index + 1}`} onClick={() => removeItem(item.id)} /> : <span className="pm-bin-space" />}
-            </div>
-          );
-        })}
-        <AddButton onClick={addItem}>
-          Add scenario
-        </AddButton>
+            )}
+        </div>
+      ),
+    })),
+    {
+      key: 'chance',
+      name: 'The chance to show',
+      question: PP.QUESTIONS.chance,
+      render: () => <TextBox lines="many" ariaLabel={PP.QUESTIONS.chance} value={a.chance} onChange={(chance) => set({ chance })} />,
+    },
+    {
+      key: 'ifthen',
+      name: 'If it happens',
+      question: ifThenQ,
+      example: PP.IF_THEN_EXAMPLES,
+      render: () => (
+        <PairRows
+          rows={pairs}
+          onRows={(rows) => set({ items: rows })}
+          fields={[{ key: 'ifCondition', label: 'If' }, { key: 'thenAction', label: 'Then' }]}
+          itemName="plan"
+        />
+      ),
+    },
+    {
+      key: 'routine',
+      name: 'Your routine',
+      question: PP.QUESTIONS.routine,
+      render: () => (
+        <div className="d6-when">
+          {PP.ROUTINE.map((r) => (
+            <TextBox
+              key={r.key}
+              label={r.label}
+              lines="one"
+              value={a.routine[r.key]}
+              onChange={(v) => set({ routine: { ...a.routine, [r.key]: v } })}
+            />
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: 'rehearse',
+      name: 'When you’ll rehearse',
+      question: PP.QUESTIONS.rehearse,
+      // The commit question: the one that can't be skipped (question rule 34).
+      required: true,
+      check: () => PP.rehearseProblem(a),
+      render: () => (
+        <BoxAndWhen
+          question={PP.QUESTIONS.rehearse}
+          date={a.rehearse.date}
+          onDate={(date) => set({ rehearse: { ...a.rehearse, date } })}
+          time={a.rehearse.time}
+          onTime={(time) => set({ rehearse: { ...a.rehearse, time } })}
+        />
+      ),
+    },
+    {
+      key: 'sum',
+      name: 'Your pressure plan',
+      title: 'Your pressure plan',
+      noProgress: true,
+      wide: true,
+      nextLabel: 'Save my plan',
+      render: (tool) => <GuidedSummary stacked rows={summaryRows(a)} onChange={(key, opts) => tool.go(tool.steps.findIndex((s) => s.key === key), opts)} />,
+    },
+  ];
 
-        <SaveStatus state={syncState} />
-      </FormTool>
+  const open = adding ? items.find((m) => m.id === adding) : null;
 
-      <NameDialog
-        open={nameDialog !== null}
-        title={nameDialog === 'draft' ? 'Name this draft' : 'Name this plan'}
-        message="Give it a name so you can find it in My plans."
-        suggestedName={suggestedName}
-        onConfirm={handleNameConfirm}
-        onCancel={() => setNameDialog(null)}
+  return (
+    <>
+      <GuidedTool
+        name={PP.TOOL_NAME}
+        steps={steps}
+        draftKey={draftKey}
+        initialStep={initialStep}
+        onClose={onClose}
+        onFinish={onFinish}
+        finishLabel="Save my plan"
       />
-
-      <DiscardDialog
-        isOpen={discardOpen}
-        title="Discard this plan?"
-        message="Anything you have not saved will be lost."
-        onKeep={() => setDiscardOpen(false)}
-        onDiscard={handleDiscard}
+      <ToolTodoPanel
+        open={Boolean(open)}
+        onClose={() => setAdding(null)}
+        startText={open ? (a.acts[open.id] || '').trim() : ''}
+        startWhere="week"
+        sourceId={decisionId}
+        item={open?.id}
+        onDone={({ id }) => {
+          if (open && id) set({ todos: { ...a.todos, [open.id]: id } });
+          setAdding(null);
+        }}
       />
-    </div>
+    </>
   );
+}
+
+/** "Mon 30 Nov, 07:30": the day, and the time where there is one (times only through formatClockTime, rule 19). */
+function whenWords(date, time) {
+  if (!date) return '';
+  const [y, m, d] = date.split('-').map(Number);
+  const [h, min] = (time || '').split(':').map(Number);
+  return time ? `${dayLabel(date)}, ${formatClockTime(new Date(y, m - 1, d, h, min))}` : dayLabel(date);
+}
+
+// An If or Then as it reads after its own word, whether or not they typed the word themselves.
+const after = (word, text) => `${text || ''}`.trim().replace(new RegExp(`^${word}\\b[,\\s]*`, 'i'), '');
+
+// The summary (Draft 6): the moment and its date, what you control, your
+// if-then plans and your routine; Breathe is one tap away on the saved plan.
+function summaryRows(a) {
+  const controlled = PP.controlled(a);
+  const plans = PP.ifThens(a);
+  const routine = PP.ROUTINE.filter((r) => a.routine[r.key].trim()).map((r) => ({ text: a.routine[r.key].trim(), sub: r.label }));
+  return [
+    {
+      key: 'moment',
+      step: 'moment',
+      label: 'The moment',
+      lines: [{ text: a.moment.trim() || NOT_YET, sub: a.noDate ? PP.NO_DATE : a.date ? dayLabel(a.date) : undefined }],
+    },
+    {
+      key: 'control',
+      step: 'mind',
+      label: 'What you control',
+      lines: controlled.length ? controlled.map((m) => ({ text: m.text.trim(), sub: (a.acts[m.id] || '').trim() || undefined })) : [{ text: NOT_YET }],
+    },
+    {
+      key: 'ifthen',
+      step: 'ifthen',
+      label: 'If it happens',
+      lines: plans.length ? plans.map((p) => ({ text: `If ${after('if', p.ifCondition)}`, sub: `${p.thenAction || ''}`.trim() ? `Then ${after('then', p.thenAction)}` : undefined })) : [{ text: NOT_YET }],
+    },
+    { key: 'routine', step: 'routine', label: 'Your routine', lines: routine.length ? routine : [{ text: NOT_YET }] },
+    { key: 'rehearse', step: 'rehearse', label: 'When you’ll rehearse', lines: [{ text: whenWords(a.rehearse.date, a.rehearse.time) || NOT_YET }] },
+  ];
 }

@@ -1,5 +1,46 @@
 import { formatDocDate, parseDbTimestamp } from '../../dateFormatter';
 
+const words = (v) => (typeof v === 'string' ? v.trim() : '');
+const listed = (rows) => (Array.isArray(rows) ? rows.map((r) => words(r?.text)).filter(Boolean) : []);
+
+// A plan made to Draft 6 (Polish 1, Stage D item 1; src/lib/draft6Tools/
+// meetingPlanner.js): the outcome, the room, your opening and the decision,
+// and what you'll do before it, ahead of anything an older plan kept.
+function draft6(data) {
+  const people = (Array.isArray(data.people) ? data.people : []).filter((p) => words(p?.name) || words(p?.wants));
+  const before = data.before && typeof data.before === 'object' ? data.before : {};
+  const glance = [
+    ...(people.length ? [{ label: 'In the room', value: String(people.length) }] : []),
+    ...(before.date ? [{ label: 'Before the meeting', value: formatDocDate(before.date) }] : []),
+  ];
+  const text = (title, value) => ({ title, blocks: [{ type: 'text', text: words(value) }] });
+  return {
+    glance,
+    sections: [
+      text('What’s been agreed', data.agreed),
+      {
+        title: 'Who’s in the room',
+        blocks: people.length ? [{
+          type: 'table',
+          columns: [{ label: 'Name', width: 3 }, { label: 'What they want', width: 6.7 }],
+          rows: people.map((p) => [words(p.name), words(p.wants)]),
+        }] : [],
+      },
+      { title: 'Who’s with you', blocks: [{ type: 'list', items: listed(data.allies) }] },
+      { title: 'Who’ll push back', blocks: [{ type: 'list', items: listed(data.pushback) }] },
+      text('What you won’t give up', data.wontGive),
+      text('What they’ll ask', data.ask),
+      text('What they need early', data.earlyNothing ? 'Nothing' : data.early),
+      text('How you’ll open', data.opening),
+      text('The decision you need', data.decision),
+      {
+        title: 'Before the meeting',
+        blocks: words(before.text) ? [{ type: 'text', text: before.date ? `${words(before.text)} (${formatDocDate(before.date)})` : words(before.text) }] : [],
+      },
+    ],
+  };
+}
+
 // A meeting plan as a document for the shared PDF template. Same content and
 // order as the meeting plan summary page: date, start, end and chair, then the
 // context, attendee preparation, objectives and agenda.
@@ -25,13 +66,15 @@ export function meetingPlanPdf({ meeting, personName = '' }) {
   const objectives = (data.objectives || []).map((o) => (o.text || '').trim()).filter(Boolean);
   const agenda = (data.flowItems || []).filter((r) => `${r.item || ''}${r.aim || ''}${r.lead || ''}${r.length || ''}`.trim());
   const total = agenda.reduce((sum, item) => sum + (parseInt(item.length, 10) || 0), 0);
-  const title = (data.title || '').trim() || 'Meeting plan';
+  const title = (data.title || '').trim() || (data.v >= 6 ? (meeting.title || '').trim() : '') || 'Meeting plan';
+  const d6 = data.v >= 6 ? draft6(data) : null;
   const who = personName.trim() || null;
   const end = meetingEndTime(data.time, data.flowItems);
   const changed = meeting.updated_at && meeting.created_at
     && parseDbTimestamp(meeting.updated_at).getTime() - parseDbTimestamp(meeting.created_at).getTime() > 60000;
 
   const glance = [
+    ...(d6 ? d6.glance : []),
     { label: 'Date', value: data.date ? formatDocDate(data.date) : '' },
     { label: 'Start time', value: data.time || '' },
     { label: 'End time', value: end },
@@ -53,6 +96,7 @@ export function meetingPlanPdf({ meeting, personName = '' }) {
     subject: 'Meeting plan',
     glance,
     sections: [
+      ...(d6 ? d6.sections : []),
       { title: 'Meeting context', blocks: [{ type: 'text', text: data.meetingContext || '' }] },
       { title: 'Attendee preparation', blocks: [{ type: 'text', text: data.preReads || '' }] },
       { title: 'Objectives in priority order', blocks: [{ type: 'list', ordered: true, items: objectives }] },

@@ -27,8 +27,6 @@ export default function ProtectedLayout() {
   const asked = `${location.pathname}${location.search}${location.hash}`;
   const prevStateRef = useRef({ isLoading: true, userExists: false });
 
-  console.log('[ProtectedLayout] Rendered - user:', user?.email || 'null', 'isLoading:', isLoading);
-
   // Log state changes
   useEffect(() => {
     const prevIsLoading = prevStateRef.current.isLoading;
@@ -48,16 +46,10 @@ export default function ProtectedLayout() {
 
   useEffect(() => {
     // Only check after auth is fully loaded
-    if (isLoading) {
-      console.log('[ProtectedLayout] Auth loading, showing spinner');
-      return;
-    }
-
-    console.log('[ProtectedLayout] Auth check complete - user:', user?.email || 'null');
+    if (isLoading) return;
 
     // If no valid user after auth check complete, redirect to login immediately
     if (!user) {
-      console.log('[ProtectedLayout] No user, redirecting to login');
       // Where they were heading goes with them, so signing in lands them
       // there (Tim, 11 Nov): the path with its query and hash.
       // Not after a deliberate Sign out: the next person to sign in here
@@ -74,8 +66,6 @@ export default function ProtectedLayout() {
         state: justSignedOut() ? { fromDirect: true } : { returnTo: asked, fromDirect: true, ...(ended ? { message: SIGN_IN_AGAIN } : {}) },
         replace: true
       });
-    } else {
-      console.log('[ProtectedLayout] User authenticated, rendering child routes');
     }
   }, [isLoading, user, navigate, asked, location.pathname]);
 

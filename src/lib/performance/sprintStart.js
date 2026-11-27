@@ -185,7 +185,7 @@ export function sprintAnswersFrom(setup, nextMonday) {
  *
  * @param {() => string} makeId newId on the device
  */
-export function pendingStart({ planId, number, startOn, lengthWeeks, standard, label = null, habits = [], finish = null, endRecovery = null }, makeId) {
+export function pendingStart({ planId, number, startOn, lengthWeeks, standard, label = null, habits = [], finish = null, endRecovery = null, firstTodo = null }, makeId) {
   return {
     endRecovery: endRecovery ? { id: endRecovery.id, values: { ...endRecovery.values } } : null,
     sprintId: makeId(),
@@ -197,6 +197,10 @@ export function pendingStart({ planId, number, startOn, lengthWeeks, standard, l
     label: label || null,
     finish: finish ? { sprintId: finish.sprintId, number: finish.number, endOn: finish.endOn } : null,
     habits: habits.map((h, i) => ({ ...h, sprintHabitId: makeId(), settingId: makeId(), sortOrder: i })),
+    // The commit answer (Stage D, Draft 11), a to-do in week 1 with its own id, so a resend writes the same row.
+    firstTodo: firstTodo?.text && firstTodo.strategyId
+      ? { id: firstTodo.id || makeId(), text: firstTodo.text, strategyId: firstTodo.strategyId, createdOn: firstTodo.createdOn || startOn }
+      : null,
     at: Date.now(),
   };
 }

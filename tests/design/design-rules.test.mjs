@@ -488,6 +488,9 @@ test('duplicate (walk B, item 10): one action offered twice fails; each row’s 
   let r = await check('<p>No leads yet.</p><button class="ds-more ds-more--bare">Import from a spreadsheet</button><div class="cc-pfoot"><button class="ds-more ds-more--bare">Import from a spreadsheet</button></div>');
   assert.match(all(r), /duplicate: "Import from a spreadsheet" is offered 2 times/);
   r = await check('<section class="ds-card"><div class="ds-card-head"><h2 class="ds-label">Needs you</h2></div><div class="ds-li"><span class="ds-li-name">Invoice 1031</span><button class="ds-more ds-more--bare">View the invoice</button></div><div class="ds-li"><span class="ds-li-name">Invoice 1032</span><button class="ds-more ds-more--bare">View the invoice</button></div></section>');
+  assert.ok(!has(r, 'duplicate'), all(r));  // Stage D, Draft 11: each chosen to-do's own "Move to top" beside its pick row is that row's.
+  const pickRow = (n) => `<div class="ds-pick-wrap"><button class="ds-answer ds-answer--pick" aria-pressed="true">To-do ${n}</button><button class="ds-pick-act" aria-label="Move “To-do ${n}” to the top">Move to top</button></div>`;
+  r = await check(`<div class="ds-rows ds-rows--pick" role="group" aria-label="What will you do today?">${pickRow(1)}${pickRow(2)}${pickRow(3)}</div>`);
   assert.ok(!has(r, 'duplicate'), all(r));
 });
 

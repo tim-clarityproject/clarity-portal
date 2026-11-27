@@ -440,14 +440,15 @@ try {
       await page.locator('.ds-guide-body .ds-text').first().fill(M9.goal);
       await page.locator('.ds-guide-question').click();
       await one('goal');
-      await pressNext(page); await onQuestion(page, 'What’s in the way');
-      await typeRows(page, M9.cons, 'constraint');
-      await page.locator('.ds-guide-question').click();
-      await one('cons');
+      // Stage D, Draft 11 (Tim's answer 8): what's working comes first, over M9's order.
       await pressNext(page); await onQuestion(page, 'What’s already working');
       await typeRows(page, M9.opps, 'opportunity');
       await page.locator('.ds-guide-question').click();
       await one('opps');
+      await pressNext(page); await onQuestion(page, 'What’s in the way');
+      await typeRows(page, M9.cons, 'constraint');
+      await page.locator('.ds-guide-question').click();
+      await one('cons');
       await pressNext(page); await onQuestion(page, 'What could you do');
       await typeRows(page, M9.opts, 'option');
       await page.locator('.ds-guide-question').click();
@@ -465,7 +466,7 @@ try {
       await page.locator('.ds-answer').nth(1).click();
       await page.locator('.ds-guide-question').click();
       await one('will');
-      await pressNext(page); await onQuestion(page, 'What exactly');
+      await pressNext(page); await onQuestion(page, 'What will you do, and when');
       await page.locator('.ds-nextstep .ds-text').nth(0).fill(M9.acts[0]);
       await page.locator('.ds-nextstep .ds-text').nth(1).fill(M9.acts[1]);
       // M9's first step is already in this week: add it for real (deleted at the end).

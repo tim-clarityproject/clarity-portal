@@ -25,6 +25,17 @@ import pageText from '../content/pageText';
 //
 // Tiles are in the order M3 shows. Later, most used first, from private
 // usage counts.
+//
+// Stage D, item 5 (Tim, 27 Nov): every tile's line and time are Draft 5's
+// ("Tool one-liners and times", 25 Nov), word for word, with "~5 minutes"
+// times. Two notes: the Monthly review's line keeps Hardware and Software in
+// capitals (the capitals rule of 27 Nov, item 6, is newer than the draft),
+// and Travel plan keeps its built name (M21) with Draft 5's line and time.
+// Sleep wind down isn't in Draft 5 (offered from Home in the evening); its
+// tile and line stay as M19 drew them until Tim says otherwise. The time
+// still shows on the tile and Home's card only, never on a tool's first
+// screen (CLAUDE.md rule 26a; Draft 5's question 6 isn't followed, since
+// "About 5 minutes" breaks the "~5 minutes" style of item 5).
 
 /**
  * Every tool with a tile. `routes` are the addresses that belong to it,
@@ -43,15 +54,15 @@ export const TOOLS = {
   ipp: {
     name: 'Individual Performance Plan',
     menu: 'Performance Plan',
-    line: 'Say what you’re aiming for and how you’ll get there.',
+    line: 'Align your Mission, Objectives and Strategies to speed up your growth.',
     time: 'Set up once, ~20 minutes',
     to: '/performance-plan',
     routes: ['/performance-plan', '/personal-operating-plan', '/onboarding-mission', '/mission-progress-review'],
   },
   sprint: {
     name: 'Performance Sprint',
-    line: 'Do the work, week by week.',
-    time: 'Every week',
+    line: 'Your plan in action, tracked week by week.',
+    time: '~10 minutes to start',
     to: '/performance-sprint',
     // Peak moments (M18, Phase 8b) belong with the sprint: no tile of their
     // own (M3 has none), reached from the sprint page, Start a sprint, View
@@ -60,9 +71,9 @@ export const TOOLS = {
   },
   pmd: {
     name: 'Daily plan',
-    line: 'Choose what matters most today.',
+    line: 'Identify what matters most today.',
     // One time for the tile, Home's card and the tool (Tim, 10 Nov: they never disagree).
-    time: '~4 minutes',
+    time: '~3 minutes',
     to: '/daily-plan',
     routes: ['/daily-plan', '/my-day/plan', '/plan-my-day', '/daily-plan-summary'],
   },
@@ -70,21 +81,21 @@ export const TOOLS = {
   // Personal, on the Plan hub. Its time is M21's own.
   travel: {
     name: 'Travel plan',
-    line: 'Beat jet lag, and be sharp for what matters on the trip.',
-    time: '~3 minutes',
+    line: 'Recover efficiently from long-haul travel.',
+    time: '~6 minutes',
     to: '/travel-plan',
     routes: ['/travel-plan'],
   },
   grow: {
     name: 'Get unstuck',
-    line: 'Turn a goal or a decision into next steps you’ll take.',
+    line: 'Turn a tricky situation into a wealth of options.',
     time: '~15 minutes',
     to: '/get-unstuck',
     routes: ['/get-unstuck'],
   },
   inv: {
     name: 'Pre-mortem',
-    line: 'Test a plan by imagining it went wrong.',
+    line: 'Work out what could go wrong, and avoid it.',
     time: '~10 minutes',
     to: '/pre-mortem',
     routes: ['/pre-mortem'],
@@ -124,36 +135,36 @@ export const TOOLS = {
   // its time are M3's own.
   wash: {
     name: 'Emotional wash',
-    line: 'Work through a strong emotion so it doesn’t run you.',
+    line: 'Identify emotions, the stories they’re rooted in, and how to move forward.',
     time: '~10 minutes',
     to: '/emotional-wash',
     routes: ['/emotional-wash'],
   },
   journal: {
     name: 'Journal',
-    line: 'Clear your head.',
+    line: 'Ink it, don’t think it.',
     time: 'As long as you like',
     to: '/daily-journal',
     routes: ['/daily-journal'],
   },
   rmd: {
     name: 'Daily review',
-    line: 'Learn from today so tomorrow goes better.',
-    time: '~5 minutes',
+    line: 'Capture today’s learning and plan tomorrow.',
+    time: '~3 minutes',
     to: '/daily-review',
     routes: ['/daily-review', '/my-day/review', '/review-plan', '/review-summary'],
   },
   debrief: {
     name: 'Weekly performance debrief',
     menu: 'Debrief',
-    line: 'Close the week and set up the next one.',
+    line: 'Close the week and tee up the next one.',
     time: '~5 minutes',
     to: '/performance-sprint/debrief',
     routes: ['/performance-sprint/debrief'],
   },
   aar: {
     name: 'After-action review',
-    line: 'Learn from one event while it’s fresh.',
+    line: 'Learn from a pressurised moment while it’s fresh.',
     time: '~5 minutes',
     to: '/my-journal',
     state: { reviewType: 'after-action' },
@@ -161,7 +172,7 @@ export const TOOLS = {
   },
   lbr: {
     name: 'Life balance review',
-    line: 'Check the rest of your life is backing your performance.',
+    line: 'Take stock of your various life domains.',
     time: '~6 minutes',
     to: '/life-balance-review',
     routes: ['/life-balance-review'],
@@ -169,14 +180,14 @@ export const TOOLS = {
   check: {
     name: 'Monthly Hardware and Software review',
     short: 'Monthly review',
-    line: 'Check your body and mind are backing your performance.',
-    time: '~3 minutes',
+    line: 'Check your Hardware and Software are supporting your performance.',
+    time: '~5 minutes',
     to: '/monthly-review',
     routes: ['/monthly-review', '/check-in'],
   },
   meet: {
     name: 'Meeting planner',
-    line: 'Plan a meeting so it gets the result you need.',
+    line: 'Plan a meeting for efficiency and productivity.',
     time: '~8 minutes',
     to: '/plan-meeting',
     routes: ['/plan-meeting', '/meeting-summary'],
@@ -184,7 +195,7 @@ export const TOOLS = {
   fb: {
     name: 'Give difficult feedback',
     menu: 'Difficult feedback',
-    line: 'Give hard feedback clearly and fairly.',
+    line: 'Give tough feedback honestly and fairly.',
     time: '~8 minutes',
     to: '/give-difficult-feedback',
     routes: ['/give-difficult-feedback'],
@@ -195,8 +206,8 @@ export const TOOLS = {
   team: {
     name: 'Team performance check',
     menu: 'Team check',
-    line: 'See where each of your people stands and what to ask next.',
-    time: '~5 minutes',
+    line: 'Identify how your team is performing and where to help.',
+    time: '~8 minutes',
     to: '/team-performance-check',
     routes: ['/team-performance-check'],
   },
@@ -206,7 +217,7 @@ export const TOOLS = {
   hc: {
     name: 'Strategic Alignment Health Check',
     menu: 'Health Check',
-    line: 'See whether your team’s work matches its strategy.',
+    line: 'Identify how much your team’s daily work contributes to its objective.',
     time: '~15 minutes',
     to: '/strategic-alignment',
     routes: ['/strategic-alignment'],
@@ -271,7 +282,7 @@ export const HUBS = {
     info: pageText.hubInterpersonal,
     groups: [
       { title: 'Meetings and conversations', tools: ['meet', 'fb'] },
-      { title: 'Your team', tools: ['team'] },
+      { title: 'Your people', tools: ['team'] },
     ],
     recent: { list: 'plans', area: 'interpersonal', title: 'My Plans', to: '/my-plans?area=interpersonal' },
   },
@@ -458,6 +469,8 @@ const PAGE_NAMES = [
   ['/coach/sign-in/help', 'Lost your authenticator app'],
   ['/edit-profile', 'My Account'],
   ['/about', 'About'],
+  ['/about/how-it-works', 'How it works'],
+  ['/how-it-works', 'How it works'],
   ['/my-plans', 'My Plans'],
   ['/my-reviews', 'My Reviews'],
   ['/daily-journals', 'Journal'],

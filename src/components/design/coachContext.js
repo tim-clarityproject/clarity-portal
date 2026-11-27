@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 import { plainFirstName } from '../../lib/coachName';
 
 // The client's own coach: { firstName, mobile, contactWays } (e.g. "Tim",
-// "Adie"), for the who-sees label and "Chat to [first name]". The app
+// "Rhys"), for the who-sees label and "Chat to [first name]". The app
 // provides it from the person's own coach link (my_coach, read by
 // CoachChatProvider); it is never typed into a component, and it is null
 // for someone without a coach. A plain first name is accepted too.

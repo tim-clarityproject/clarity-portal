@@ -114,6 +114,9 @@ function preloadAllPagesWhenIdle() {
 
 const Home = page(() => import('./pages/Home'));
 const About = page(() => import('./pages/About'));
+// How it works (Draft 9; Stage D item 8): public at /how-it-works, inside the portal at /about/how-it-works.
+const HowItWorksPublic = page(() => import('./pages/howItWorks/HowItWorksPages'), 'HowItWorksPublic');
+const HowItWorksInside = page(() => import('./pages/howItWorks/HowItWorksPages'), 'HowItWorksInside');
 const MyAccount = page(() => import('./pages/MyAccount'));
 const MyJournal = page(() => import('./pages/MyJournal'));
 const DailyJournal = page(() => import('./pages/DailyJournal'));
@@ -590,6 +593,7 @@ function AppContent() {
     // The floating Breathe button hides on the Breathe page and Sleep wind down, both breathing already (NEXT-BREATHE.md).
     || location.pathname.startsWith('/breathe/') || location.pathname === '/sleep-wind-down'
     || location.pathname.startsWith('/legal/')
+    || location.pathname === '/how-it-works'
     || location.pathname.startsWith('/health-check/')
     || location.pathname.startsWith('/guest/')
     || location.pathname === '/coach' || location.pathname.startsWith('/coach/')
@@ -684,6 +688,9 @@ function AppContent() {
             src/pages/legal/LegalDocumentPage.jsx. */}
         <Route path="/legal/:doc" element={<LegalDocumentPage />} />
 
+        {/* How it works (Draft 9; Stage D item 8): no account needed, the device's light or dark. */}
+        <Route path="/how-it-works" element={<HowItWorksPublic />} />
+
         {/* The outside Health Check (/health-check/<token>) is its own page, health-check.html, which Vercel serves for
             every /health-check address; the portal's own older copy was deleted on 24 Nov (Tim). */}
 
@@ -693,6 +700,7 @@ function AppContent() {
               sends anyone else to their own Home). */}
           <Route path="/coach/*" element={<CoachApp />} />
           <Route path="/about" element={<About />} />
+          <Route path="/about/how-it-works" element={<HowItWorksInside />} />
           <Route path="/welcome" element={<Home />} />
           {/* The hub pages (M3, Phase 4 step 1), and the old section pages
               moved onto them. */}

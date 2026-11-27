@@ -205,7 +205,20 @@ export const AGREEMENT_LINES = Object.freeze({
   changeClosed: 'Nothing has changed.',
   checkQuestion: 'Does this read right?',
   sessionsEmpty: 'No coaching sessions are booked yet.',
+  // Stage D item 16 (Tim, 27 Nov): the coaching sessions booked inside a pause, for the coach to move or cancel.
+  insideLabel: 'Inside the pause',
 });
+
+/** "2 coaching sessions are booked inside the pause, on Mon 8 Mar and Mon 22 Mar." Days already in words. */
+export const insideLine = (days) => (days.length === 1
+  ? `1 coaching session is booked inside the pause, on ${days[0]}.`
+  : `${days.length} coaching sessions are booked inside the pause, on ${days.slice(0, -1).join(', ')} and ${days.at(-1)}.`);
+/** The pause's check: what happens to them. */
+export const insideSay = (first) => `Nothing moves or cancels by itself, so you move or cancel each one next, and ${first || 'they'} ${first ? 'hears' : 'hear'} only about those.`;
+/** The agreement's page, over the list. */
+export const insideNote = (first) => `Move or cancel each one, and ${first || 'they'} ${first ? 'hears' : 'hear'} only about the ones you change.`;
+/** The toast once paused: how many are still inside. */
+export const insideToast = (n) => (n === 1 ? '1 coaching session is still booked inside it.' : `${n} coaching sessions are still booked inside it.`);
 
 /** An agreement's own page: where it stands, in one sentence. Days are already in words. */
 export function agreementLine({ first = '', status = '', signedOn = '', end = '', pausedTo = '', endingOn = '' } = {}) {

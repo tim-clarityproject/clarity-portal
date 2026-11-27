@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
 import { Button, Card, MoreLink, keepWords, useCoachName, PageOpening } from '../components/design';
 import { useStartChat } from '../components/coach/startChat';
@@ -10,6 +11,7 @@ import './hubs/clientPage.css';
 export default function About() {
   const coachName = useCoachName();
   const startChat = useStartChat();
+  const navigate = useNavigate();
 
   return (
     <div className="ui-root">
@@ -25,6 +27,8 @@ export default function About() {
           {/* "high-performer" and "high-performance" always with the hyphen, never broken across a line (rule 29x): keepWords. */}
           <p>{keepWords('This is the place for high-performers who want to stay fully-engaged with their own thinking and make decisions with clarity and genuine conviction.')}</p>
           <p>The tools found here are designed to scaffold your thinking, increase your daily intentionality, and drive your performance through true reflection.</p>
+          {/* How it works (Draft 9; Stage D item 8): the public page's words, inside the portal. */}
+          <MoreLink onClick={() => navigate('/about/how-it-works')}>How it works</MoreLink>
         </Card>
 
         <Card label="Created by The Clarity Project" className="about-card">

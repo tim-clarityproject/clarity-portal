@@ -1,0 +1,60 @@
+/* Draft 6's rebuilt tools (Polish 1, Stage D item 1): a box with its day and
+   time, and pairs of boxes. Tokens only (CLAUDE.md rule 2). */
+
+.ui-root .d6-when {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ui-root .d6-when-row {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ui-root .d6-when-row--two {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.ui-root .d6-pairs {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ui-root .d6-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--tap-min);
+  gap: var(--space-2);
+  align-items: end;
+}
+
+.ui-root .d6-pair-boxes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.ui-root .d6-pair-space {
+  width: var(--tap-min);
+}
+
+/* The summary's quiet links (Breathe, one tap away). */
+.ui-root .d6-sum-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 600px) {
+  .ui-root .d6-when-row--two,
+  .ui-root .d6-pair-boxes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* One pair over the next, a hairline between them. */
+  .ui-root .d6-pair {
+    align-items: start;
+    padding-bottom: var(--space-3);
+    border-bottom: var(--line-w) solid var(--line);
+  }
+}

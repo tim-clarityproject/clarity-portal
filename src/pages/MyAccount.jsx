@@ -22,8 +22,6 @@ import './performance/performance.css';
 import { DashboardCustomise } from './performance/DashboardCustomise';
 import { SLEEP_SUGGESTED_LINE, rangeWords } from '../lib/performance/sleepChart';
 import { useStartChat } from '../components/coach/startChat';
-import { useCoachRole } from '../lib/coach/role';
-import { COACH_AUTH_PATHS, COACH_AUTH_WORDS } from '../lib/signIn/coachAuth';
 
 // My Account's underlined tabs (Polish 1; example-pages-25nov.html "My Account"): one section at a
 // time, the chosen one kept in the address (?tab=), so Back from a page it opened returns to it.
@@ -31,12 +29,14 @@ export const ACCOUNT_TABS = Object.freeze([
   { key: 'profile', label: 'Profile' },
   { key: 'coaching', label: 'Coaching' },
   { key: 'mission', label: 'Mission' },
-  { key: 'look', label: 'Look' },
+  { key: 'appearance', label: 'Appearance' }, // Stage D, item 12 (was Look; ?tab=look still lands here)
   { key: 'settings', label: 'Settings' },
   { key: 'questions', label: 'Questions' },
 ]);
 // Older links into the one long page land on their tab.
 const HASH_TABS = { '#mission-section': 'mission', '#own-questions': 'questions', '#settings': 'settings' };
+// Older ?tab= values that land on their tab's new name.
+const TAB_ALIASES = { look: 'appearance' };
 
 export default function MyAccount() {
   const navigate = useNavigate();
@@ -47,8 +47,6 @@ export default function MyAccount() {
   const { mission: personalGoal, missionKnown, hasPlan, showInHeader, updateShowInHeader } = useContext(MissionContext);
   const coachName = useCoachName();
   const startChat = useStartChat();
-  // Coaches only: the authenticator and recovery codes (Phase 6a run 5).
-  const { coach: coachRow } = useCoachRole();
   const [firstName, setFirstName] = useState('');
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -76,7 +74,8 @@ export default function MyAccount() {
   // The brand-new client's two-item menu (src/lib/clientPreparing.js), when My Account is opened first.
   // A client still being prepared has no Breathe anywhere, so no "Show the Breathe button" either (the Breathe UI tester, Q1).
   const { preparing } = useClientPreparing(user?.id);
-  const asked = new URLSearchParams(location.search).get('tab');
+  const askedRaw = new URLSearchParams(location.search).get('tab');
+  const asked = TAB_ALIASES[askedRaw] || askedRaw;
   const fromLink = HASH_TABS[location.hash] || (location.state?.scrollTo === 'mission-section' ? 'mission' : null);
   const tab = ACCOUNT_TABS.some((t) => t.key === asked) ? asked : (fromLink || 'profile');
   const chooseTab = (key) => navigate({ pathname: location.pathname, search: key === 'profile' ? '' : `?tab=${key}` }, { replace: true });
@@ -159,7 +158,6 @@ export default function MyAccount() {
           throw new Error(responseData.error || 'Failed to delete account from authentication system');
         }
 
-        console.log('✓ Auth user deleted successfully');
       } catch (authError) {
         console.error('Error deleting auth user:', authError);
         setIsDeleting(false);
@@ -262,7 +260,7 @@ export default function MyAccount() {
         {signsInWithGoogle(user)
           ? <p className="acct-line">{YOU_SIGN_IN_WITH_GOOGLE}</p>
           : <div className="acct-link"><MoreLink onClick={() => navigate('/my-account/password')}>Change my password</MoreLink></div>}
-        {coachRow ? <div className="acct-link"><MoreLink onClick={() => navigate(COACH_AUTH_PATHS.security)}>{COACH_AUTH_WORDS.security.linkButton}</MoreLink></div> : null}
+        {/* A coach's Sign-in security is in the coach portal's Settings now (Stage D, item 13), so not here too. */}
         {/* Sign out, a real button sending anything waiting first (Tim, 5 Nov), then Delete my account. */}
         <div className="acct-foot">
           <Button variant="outline" onClick={signOutFlow.start} disabled={signOutFlow.busy} aria-busy={signOutFlow.busy || undefined}>Sign out</Button>
@@ -292,7 +290,7 @@ export default function MyAccount() {
         />
       </div>
     ),
-    look: (
+    appearance: (
       <div className="acct-pane acct-pane--look">
         <ColourModeChoice />
       </div>

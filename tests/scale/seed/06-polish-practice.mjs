@@ -8,6 +8,18 @@
 // out in one step. Dates are written as of BASE and moved to the day the seed runs (polish_seed.d/ts/j), so "today"
 // always has its three coaching sessions. Agreement terms and clauses come from the app's own builder
 // (src/lib/coach/agreementBuilder.js), exactly as the coach portal writes them.
+//
+// Draft 10 ("Demo data plan", Tim, 25 and 27 Nov; Stage D item 9): its names where the practice already had a
+// matching place, so suites that look people up keep working. The three organisations are Tessaline Partners (New
+// York private equity, a PO and 30-day terms), Harbour Rowing (the team programme and its sponsor) and Calder Wolfe
+// Racing (motorsport, a billing profile, no PO); Priya Shah, Ellis Grant (Tessaline, New York), Daniel Okafor, Hannah
+// Brooks (Toronto) and Rhys Evans (a block of hours, GBP 2,000 at GBP 150 an hour, 80% used) take existing clients'
+// places; Sam Carter is a portfolio manager; Jo Patel is Tessaline's sponsor. Every name was checked against the
+// real client list and public records: Martin Kemp (a public figure) became Dev Malhotra, Robin Ellery
+// (a surname a real client shares) Robin Ashcroft, and four companies that exist (or nearly) became Northvane Energy,
+// Stonemere Capital, Brisane Capital and Wexley Ashby LLP. Every
+// address ends @example.com. Alex Morgan stays the owner test coach (Draft 10's prospect of that name is Nathan Cole
+// here), and Harbour Rowing's programme has three people, not six, so the practice keeps its 28 clients.
 import { writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
@@ -43,9 +55,9 @@ const next = (k) => { counters[k] = (counters[k] || 0) + 1; return id(K[k], coun
 
 // ------------------------------------------------------------------ the practice
 const ORGS = {
-  halden: { n: 1, name: 'Halden Freight', city: 'London', sector: 'Business', legal: 'Halden Freight Ltd' },
-  bright: { n: 2, name: 'Brightwater Care Partners', city: 'Leeds', sector: 'Medicine', legal: 'Brightwater Care Partners LLP' },
-  tamsin: { n: 3, name: 'Tamsin Bay Rowing Club', city: 'Bristol', sector: 'Sport', legal: 'Tamsin Bay Rowing Club CIC' },
+  halden: { n: 1, name: 'Tessaline Partners', city: 'New York', country: 'US', sector: 'Business', legal: 'Tessaline Partners LP' },
+  bright: { n: 2, name: 'Harbour Rowing', city: 'London', sector: 'Sport', legal: 'Harbour Rowing Ltd' },
+  tamsin: { n: 3, name: 'Calder Wolfe Racing', city: 'Oxford', sector: 'Sport', legal: 'Calder Wolfe Racing Ltd' },
 };
 for (const o of Object.values(ORGS)) o.id = id(K.org, o.n);
 
@@ -66,7 +78,7 @@ const PKGS = {
     defaults: { blocks: [{ n: 20, minutes: 60 }], rhythm: 'Every 2 weeks', place: 'either', priceMode: 'total', settle: 'equal', months: 12, fullTerm: true, offerUpfront: true, noticeHours: 24, dueDays: 14, expiryDays: 30, pausing: true, level: 'Executive' } },
   hours: { n: 8, name: 'Block of hours', sector: 'Business', kind: 'hours', per: 'once', personal: 200000, org: 240000,
     defaults: { hours: { rateMinor: 15000, owner: 'client', tellAt80: true } } },
-  team: { n: 9, name: 'Team coaching programme', sector: 'Medicine', kind: 'team', per: 'once', personal: null, org: 1800000, hours: 36,
+  team: { n: 9, name: 'Team coaching programme', sector: 'Sport', kind: 'team', per: 'once', personal: null, org: 1800000, hours: 36,
     defaults: { blocks: [{ n: 12, minutes: 60 }], rhythm: 'Every 2 weeks', team: { sessions: '12 of 60 minutes each', settle: 'deposit', needsPO: false } } },
 };
 for (const p of Object.values(PKGS)) p.id = id(K.pkg, p.n);
@@ -74,26 +86,26 @@ for (const p of Object.values(PKGS)) p.id = id(K.pkg, p.n);
 // The clients. kind: what they have (sessions, retainer, hours, payg, team, none); start: first session's week; anchor:
 // a day their sessions fall on (BASE = today); slot: the time; every: weeks between sessions.
 const C = [
-  { n: 1, name: 'Sam Carter', user: SAM_USER, standing: true, status: 'active', sector: 'Business', job: 'Chief executive', city: 'London', pkg: 'partner', kind: 'sessions', start: '2026-10-19', signed: '2026-10-12', anchor: '2026-11-30', slot: '09:00', every: 2, invited: '2026-09-22' },
-  { n: 2, name: 'Jordan Lee', user: JORDAN_USER, standing: true, status: 'active', sector: 'Business', org: 'halden', job: 'Head of logistics', city: 'London', pkg: 'accel', kind: 'sessions', start: '2026-09-07', signed: '2026-08-27', anchor: '2026-11-26', slot: '11:30', every: 2, invited: '2026-08-20' },
-  { n: 3, name: 'Priya Raman', status: 'active', sector: 'Business', job: 'Chief operating officer', city: 'London', pkg: 'accel', kind: 'sessions', start: '2026-07-06', signed: '2026-06-24', anchor: BASE, slot: '08:30', every: 2 },
-  { n: 4, name: 'Tom Hadley', status: 'active', sector: 'Business', org: 'halden', job: 'Operations director', city: 'Reading', pkg: 'partner', kind: 'sessions', start: '2026-03-02', signed: '2026-02-18', anchor: '2026-11-27', slot: '10:00', every: 3 },
-  { n: 5, name: 'Grace Okafor', status: 'active', sector: 'Business', org: 'halden', job: 'Finance director', city: 'London', pkg: 'partner', kind: 'sessions', start: '2026-06-01', signed: '2026-05-20', anchor: BASE, slot: '10:00', every: 2 },
-  { n: 6, name: 'Elena Vasquez', status: 'active', sector: 'Medicine', org: 'bright', job: 'Clinical lead', city: 'Leeds', kind: 'team', start: '2026-09-16', anchor: BASE, slot: '14:30', every: 2, inPerson: true },
-  { n: 7, name: 'Marcus Bell', status: 'active', sector: 'Medicine', org: 'bright', job: 'Ward manager', city: 'Leeds', kind: 'team', start: '2026-09-17', anchor: '2026-12-03', slot: '15:30', every: 2 },
-  { n: 8, name: 'Hannah Price', status: 'active', sector: 'Medicine', org: 'bright', job: 'Head of nursing', city: 'Harrogate', kind: 'team', start: '2026-09-18', anchor: '2026-11-27', slot: '14:00', every: 2 },
-  { n: 9, name: 'Oliver Grant', status: 'active', sector: 'Sport', org: 'tamsin', job: 'Head coach', city: 'Bristol', pkg: 'fullseason', kind: 'sessions', start: '2026-04-06', signed: '2026-03-25', anchor: '2026-12-02', slot: '17:00', every: 3 },
-  { n: 10, name: 'Freya Lund', status: 'active', sector: 'Sport', org: 'tamsin', job: 'Captain, women’s eight', city: 'Bristol', pkg: 'season', kind: 'sessions', start: '2026-10-12', signed: '2026-10-01', anchor: '2026-12-07', slot: '18:00', every: 3, selfPays: true },
+  { n: 1, name: 'Sam Carter', user: SAM_USER, standing: true, status: 'active', sector: 'Business', job: 'Portfolio manager', city: 'London', pkg: 'partner', kind: 'sessions', start: '2026-10-19', signed: '2026-10-12', anchor: '2026-11-30', slot: '09:00', every: 2, invited: '2026-09-22' },
+  { n: 2, name: 'Jordan Lee', user: JORDAN_USER, standing: true, status: 'active', sector: 'Business', org: 'halden', job: 'Principal', city: 'London', pkg: 'accel', kind: 'sessions', start: '2026-09-07', signed: '2026-08-27', anchor: '2026-11-26', slot: '11:30', every: 2, invited: '2026-08-20' },
+  { n: 3, name: 'Priya Shah', status: 'active', sector: 'Business', job: 'Chief operating officer', city: 'London', pkg: 'accel', kind: 'sessions', start: '2026-07-06', signed: '2026-06-24', anchor: BASE, slot: '08:30', every: 2 },
+  { n: 4, name: 'Ellis Grant', status: 'active', sector: 'Business', org: 'halden', job: 'Partner', city: 'New York', zone: 'America/New_York', country: 'US', pkg: 'partner', kind: 'sessions', start: '2026-03-02', signed: '2026-02-18', anchor: '2026-11-27', slot: '10:00', every: 3 },
+  { n: 5, name: 'Grace Adeyemi', status: 'active', sector: 'Business', org: 'halden', job: 'Finance director', city: 'London', pkg: 'partner', kind: 'sessions', start: '2026-06-01', signed: '2026-05-20', anchor: BASE, slot: '10:00', every: 2 },
+  { n: 6, name: 'Elena Vasquez', status: 'active', sector: 'Sport', org: 'bright', job: 'Assistant coach', city: 'London', kind: 'team', start: '2026-09-16', anchor: BASE, slot: '14:30', every: 2, inPerson: true },
+  { n: 7, name: 'Marcus Bell', status: 'active', sector: 'Sport', org: 'bright', job: 'Performance analyst', city: 'London', kind: 'team', start: '2026-09-17', anchor: '2026-12-03', slot: '15:30', every: 2 },
+  { n: 8, name: 'Nina Price', status: 'active', sector: 'Sport', org: 'bright', job: 'Strength and conditioning lead', city: 'London', kind: 'team', start: '2026-09-18', anchor: '2026-11-27', slot: '14:00', every: 2 },
+  { n: 9, name: 'Oliver Hartley', status: 'active', sector: 'Sport', org: 'tamsin', job: 'Team principal', city: 'Oxford', pkg: 'fullseason', kind: 'sessions', start: '2026-04-06', signed: '2026-03-25', anchor: '2026-12-02', slot: '17:00', every: 3 },
+  { n: 10, name: 'Freya Lund', status: 'active', sector: 'Sport', org: 'tamsin', job: 'Race engineer', city: 'Oxford', pkg: 'season', kind: 'sessions', start: '2026-10-12', signed: '2026-10-01', anchor: '2026-12-07', slot: '18:00', every: 3, selfPays: true },
   { n: 11, name: 'Dana Whitfield', status: 'active', sector: 'Business', job: 'Managing partner', city: 'New York', zone: 'America/New_York', country: 'US', pkg: 'sounding', kind: 'retainer', start: '2026-02-02', signed: '2026-01-22', anchor: '2026-11-23', slot: '16:00', every: 2, usd: true },
-  { n: 12, name: 'Ben Ashby', status: 'active', stage: 'renewal_due', sector: 'Business', job: 'Founder', city: 'Bristol', pkg: 'partner', kind: 'sessions', start: '2025-12-01', signed: '2025-11-19', anchor: '2026-12-01', slot: '12:00', every: 3 },
+  { n: 12, name: 'Daniel Okafor', status: 'active', stage: 'renewal_due', sector: 'Business', job: 'Chief executive', city: 'London', pkg: 'partner', kind: 'sessions', start: '2025-12-01', signed: '2025-11-19', anchor: '2026-12-01', slot: '12:00', every: 3 },
   { n: 13, name: 'Chloe Martin', status: 'active', stage: 'closing', sector: 'Business', job: 'Head of product', city: 'Manchester', pkg: 'accel', kind: 'sessions', start: '2026-07-07', signed: '2026-06-26', anchor: '2026-11-24', slot: '13:00', every: 2, overdue: true },
   { n: 14, name: 'Rory Fitzgerald', status: 'active', sector: 'Personal', job: 'Architect', city: 'Brighton', pkg: 'sprint', kind: 'sessions', start: '2026-09-21', signed: '2026-09-10', anchor: '2026-11-23', slot: '19:00', every: 2, refund: true },
   { n: 15, name: 'Leila Haddad', status: 'active', stage: 'starting', sector: 'Business', job: 'General counsel', city: 'London', pkg: 'accel', kind: 'sent', invited: null },
   { n: 16, name: 'Nathan Cole', status: 'active', stage: 'starting', sector: 'Business', job: 'Chief technology officer', city: 'Cambridge', pkg: 'partner', kind: 'quote', invited: null },
-  { n: 17, name: 'Imogen Shaw', status: 'active', sector: 'Business', job: 'People director', city: 'Oxford', pkg: 'hours', kind: 'hours', start: '2026-10-26', signed: '2026-10-20', anchor: '2026-12-04', slot: '11:00', every: 3 },
+  { n: 17, name: 'Rhys Evans', status: 'active', sector: 'Business', job: 'Chief operating officer', city: 'London', pkg: 'hours', kind: 'hours', start: '2026-10-26', signed: '2026-10-20', anchor: '2026-12-04', slot: '11:00', every: 3 },
   { n: 18, name: 'Samir Patel', status: 'active', sector: 'Business', job: 'Sales director', city: 'Birmingham', kind: 'payg', start: '2026-01-14', anchor: '2026-12-09', slot: '08:00', every: 5 },
   { n: 19, name: 'Ruth Ellison', status: 'active', sector: 'Medicine', job: 'Consultant surgeon', city: 'Sheffield', kind: 'payg', start: '2026-05-13', anchor: '2026-11-18', slot: '07:30', every: 6 },
-  { n: 20, name: 'Felix Moreau', status: 'active', sector: 'Business', job: 'Restaurant owner', city: 'Paris', zone: 'Europe/Paris', country: 'FR', kind: 'payg', start: '2026-08-05', anchor: '2026-12-02', slot: '08:30', every: 4 },
+  { n: 20, name: 'Hannah Brooks', status: 'active', sector: 'Sport', job: 'Head coach, national rowing squad', city: 'Toronto', zone: 'America/Toronto', country: 'CA', kind: 'payg', start: '2026-08-05', anchor: '2026-12-02', slot: '08:30', every: 4 },
   { n: 21, name: 'Isla Brennan', status: 'paused', sector: 'Business', job: 'Marketing director', city: 'Edinburgh', pkg: 'partner', kind: 'sessions', start: '2026-01-05', signed: '2025-12-15', anchor: '2026-08-24', slot: '09:30', every: 3, stopped: '2026-09-01' },
   { n: 22, name: 'George Whitlock', status: 'paused', sector: 'Business', job: 'Partner', city: 'London', pkg: 'accel', kind: 'sessions', start: '2026-06-08', signed: '2026-05-27', anchor: '2026-10-12', slot: '16:30', every: 2, stopped: '2026-10-15' },
   { n: 23, name: 'Ava Lindqvist', status: 'paused', sector: 'Sport', job: 'Performance director', city: 'Nottingham', pkg: 'fullseason', kind: 'sessions', start: '2026-08-03', signed: '2026-07-22', anchor: '2026-09-14', slot: '15:00', every: 2, stopped: '2026-09-20' },
@@ -101,7 +113,7 @@ const C = [
   { n: 25, name: 'Megan Doyle', status: 'past', sector: 'Personal', job: 'Writer', city: 'Bath', pkg: 'sprint', kind: 'sessions', start: '2026-02-02', signed: '2026-01-21', anchor: '2026-04-27', slot: '18:30', every: 2, stopped: '2026-05-04' },
   { n: 26, name: 'Kieran Walsh', status: 'past', sector: 'Business', job: 'Managing director', city: 'Belfast', pkg: 'accel', kind: 'sessions', start: '2026-01-12', signed: '2025-12-30', anchor: '2026-07-06', slot: '12:30', every: 2, stopped: '2026-07-13' },
   { n: 27, name: 'Sophie Lam', status: 'past', sector: 'Sport', job: 'Head of performance', city: 'Loughborough', pkg: 'fullseason', kind: 'sessions', start: '2025-12-08', signed: '2025-11-26', anchor: '2026-08-24', slot: '14:00', every: 3, stopped: '2026-08-31' },
-  { n: 28, name: 'Robin Ellery', status: 'active', stage: 'starting', sector: 'Business', job: 'Head of strategy', city: 'Leicester', kind: 'none', brandNew: true, invited: '2026-11-23' },
+  { n: 28, name: 'Robin Ashcroft', status: 'active', stage: 'starting', sector: 'Business', job: 'Head of strategy', city: 'Leicester', kind: 'none', brandNew: true, invited: '2026-11-23' },
 ];
 for (const c of C) {
   c.pid = id(K.profile, c.n);
@@ -168,26 +180,26 @@ out.push(ins('coach_clients', ['id', 'client_id', 'coach_id', 'started_at'],
   C.filter((c) => c.user && c.user !== SAM_USER).map((c) => [q(next('cc')), q(c.user), q(ALEX), TS(c.brandNew ? '2026-11-24' : addDays(c.start, -10), '10:05')])));
 
 out.push(ins('organisations', ['id', 'name', 'currency', 'city', 'sector', 'country', 'created_by', 'created_at'],
-  Object.values(ORGS).map((o) => [q(o.id), q(o.name), q('GBP'), q(o.city), q(o.sector), q('GB'), q(ALEX_USER), TS('2026-01-10', '09:00')])));
+  Object.values(ORGS).map((o) => [q(o.id), q(o.name), q('GBP'), q(o.city), q(o.sector), q(o.country || 'GB'), q(ALEX_USER), TS('2026-01-10', '09:00')])));
 const contacts = [
-  ['halden', 'Priyanka Shah', 'Chief people officer', ['sponsor', 'buyer'], 'Signs off each cohort.'],
-  ['halden', 'Martin Kemp', 'Accounts payable', ['invoices'], 'Needs the PO number on every invoice.'],
-  ['bright', 'Margaret Hale', 'Chief nursing officer', ['sponsor'], 'Sponsor for the ward leaders programme.'],
-  ['bright', 'Owen Pryce', 'Learning and development lead', ['hr', 'buyer'], null],
-  ['tamsin', 'Gemma Rowe', 'Club secretary', ['invoices', 'sponsor'], 'Pays on the 1st of the month.'],
+  ['halden', 'Jo Patel', 'Chief people officer', ['sponsor', 'buyer'], 'Signs off each cohort.'],
+  ['halden', 'Dev Malhotra', 'Accounts payable', ['invoices'], 'Needs the PO number on every invoice.'],
+  ['bright', 'Margaret Hale', 'Performance director', ['sponsor'], 'Sponsor for the squad leadership programme.'],
+  ['bright', 'Owen Pryce', 'Programme manager', ['hr', 'buyer'], null],
+  ['tamsin', 'Gemma Rowe', 'Finance manager', ['invoices', 'sponsor'], 'Pays on the 1st of the month.'],
 ];
 out.push(ins('organisation_contacts', ['id', 'organisation_id', 'name', 'email', 'job_title', 'roles', 'note', 'last_contact_on', 'last_contact_how', 'created_by'],
   contacts.map(([o, name, job, roles, note], i) => [q(next('contact')), q(ORGS[o].id), q(name), q(`polish-contact-${i + 1}@example.com`), q(job), `array[${roles.map(q).join(', ')}]`, q(note), D(addDays(BASE, -(6 + i * 9))), q(i % 2 ? 'emailed' : 'spoke'), q(ALEX_USER)])));
-// Halden needs a purchase order on every invoice (065's billing profile).
+// Tessaline needs a purchase order on every invoice (065's billing profile).
 out.push(ins('org_billing_profiles', ['id', 'coach_id', 'organisation_id', 'legal_name', 'billing_address', 'invoices_email', 'supplier_number', 'needs_po', 'their_reference', 'hourly_rate_minor', 'terms_days', 'timesheet', 'evidence_required', 'supplier_portal', 'portal_url'], [
-  [q(next('obp')), q(ALEX), q(ORGS.halden.id), q('Halden Freight Ltd'), q('Unit 4, Riverside Park\nTilbury\nRM18 7AA'), q('invoices@halden-freight.example.com'), q('SUP-20418'), 'true', q('Leadership coaching, 2026 cohort'), '30000', '30', 'true', 'false', 'true', q('https://suppliers.halden-freight.example.com')],
-  [q(next('obp')), q(ALEX), q(ORGS.bright.id), q('Brightwater Care Partners LLP'), q('2 Wellington Place\nLeeds\nLS1 4AP'), q('finance@brightwater.example.com'), null, 'false', q('Ward leaders programme'), null, '30', 'false', 'false', 'false', null],
-  [q(next('obp')), q(ALEX), q(ORGS.tamsin.id), q('Tamsin Bay Rowing Club CIC'), q('The Boathouse, Harbourside\nBristol\nBS1 5DB'), q('treasurer@tamsinbay.example.com'), null, 'false', null, null, '14', 'false', 'false', 'false', null],
+  [q(next('obp')), q(ALEX), q(ORGS.halden.id), q('Tessaline Partners LP'), q('Floor 12, 1 Example Plaza\nNew York, NY'), q('invoices-tessaline@example.com'), q('SUP-20418'), 'true', q('Leadership coaching, 2026 cohort'), '30000', '30', 'true', 'false', 'true', q('https://suppliers.tessaline.example.com')],
+  [q(next('obp')), q(ALEX), q(ORGS.bright.id), q('Harbour Rowing Ltd'), q('The Boathouse, River Walk\nLondon'), q('finance-harbour-rowing@example.com'), null, 'false', q('Squad leadership programme'), null, '30', 'false', 'false', 'false', null],
+  [q(next('obp')), q(ALEX), q(ORGS.tamsin.id), q('Calder Wolfe Racing Ltd'), q('Unit 7, Paddock Lane\nOxford'), q('accounts-calder-wolfe@example.com'), null, 'false', null, null, '14', 'false', 'false', 'false', null],
 ]));
 const PO = next('po');
 out.push(ins('purchase_orders', ['id', 'coach_id', 'organisation_id', 'number', 'value_minor', 'currency', 'starts_on', 'ends_on', 'finance_contact', 'invoice_email', 'supplier_ref', 'status'], [
-  [q(PO), q(ALEX), q(ORGS.halden.id), q('PO-448120'), '4500000', q('GBP'), D('2026-03-01'), D('2027-02-28'), q('Martin Kemp'), q('invoices@halden-freight.example.com'), q('SUP-20418'), q('open')],
-  [q(next('po')), q(ALEX), q(ORGS.halden.id), q('PO-431977'), '900000', q('GBP'), D('2025-09-01'), D('2026-02-28'), q('Martin Kemp'), q('invoices@halden-freight.example.com'), q('SUP-20418'), q('closed')],
+  [q(PO), q(ALEX), q(ORGS.halden.id), q('PO-448120'), '4500000', q('GBP'), D('2026-03-01'), D('2027-02-28'), q('Dev Malhotra'), q('invoices-tessaline@example.com'), q('SUP-20418'), q('open')],
+  [q(next('po')), q(ALEX), q(ORGS.halden.id), q('PO-431977'), '900000', q('GBP'), D('2025-09-01'), D('2026-02-28'), q('Dev Malhotra'), q('invoices-tessaline@example.com'), q('SUP-20418'), q('closed')],
 ]));
 
 out.push('-- Clients (client_profiles, 049). Accounts are linked as the invite does (clarity.linking).');
@@ -198,7 +210,7 @@ out.push(ins('client_profiles', ['id', 'coach_id', 'user_id', 'name', 'email', '
     const gs = c.brandNew || c.kind === 'sent' || c.kind === 'quote' ? {} : { first_review: true, welcome_pack: true };
     return [q(c.pid), q(ALEX), q(c.user || null), q(c.name), q(c.email), q(c.mobile), q(c.org?.id || null), q(c.job), q(c.city), q(c.zone), q(c.country), q(c.status), q(c.stage || (c.status === 'past' ? null : c.status === 'paused' ? 'paused' : null)),
       q(c.sector), q(JSON.stringify(gs)), D(lastContact(c)), c.user || c.invited ? TS(c.invited || addDays(created, 1), '09:15') : 'null', c.status === 'past' ? D(c.stopped) : 'null',
-      q(c.n % 5 === 0 ? 'Priyanka Shah' : c.n % 7 === 0 ? 'Ben Ashby' : null), q(ALEX_USER), TS(created, '09:00')];
+      q(c.n % 5 === 0 ? 'Jo Patel' : c.n % 7 === 0 ? 'Daniel Okafor' : null), q(ALEX_USER), TS(created, '09:00')];
   })));
 out.push(ins('client_notes', ['id', 'profile_id', 'coach_id', 'body', 'noted_on', 'pinned', 'created_at'], [
   [1, 'Wants to be braver in board meetings. Prefers early calls before the school run.', -40, true], [3, 'Restructure announced in January: keep space for it.', -20, true],
@@ -231,7 +243,7 @@ for (const c of C) {
   const p = c.pkg ? PKGS[c.pkg] : null;
   const total = c.kind === 'team' ? 12 : p?.defaults.blocks ? p.defaults.blocks.reduce((s, b) => s + b.n, 0) : 0;
   const kind = c.kind === 'payg' ? 'pay_as_you_go' : c.kind === 'retainer' ? 'ongoing' : c.kind === 'hours' ? 'pay_as_you_go' : 'sessions';
-  const name = c.kind === 'team' ? 'Ward leaders programme' : c.kind === 'payg' ? 'Pay as you go' : c.kind === 'hours' ? 'Block of hours' : p.name;
+  const name = c.kind === 'team' ? 'Squad leadership programme' : c.kind === 'payg' ? 'Pay as you go' : c.kind === 'hours' ? 'Block of hours' : p.name;
   engRows.push([q(c.eid), q(ALEX), q(c.pid), q(kind), q(name), String(total), '0', String(c.kind === 'team' || p?.defaults.blocks?.[0].minutes !== 90 ? 60 : 60), String(c.every), D(c.start), D(endOf(c)),
     String(c.kind === 'hours' ? 800 : 0), q(c.funded ? c.org.name : null), q(c.status === 'past' ? 'ended' : 'active'), TS(addDays(c.start, -7), '09:00')]);
 }
@@ -270,7 +282,7 @@ for (const c of C) {
   if (c.kind === 'sent') agreementFor(c, { status: 'sent', sentOn: addDays(BASE, -3) });
   if (c.kind === 'quote') agreementFor(c, { status: 'draft', sentOn: addDays(BASE, -5) });
 }
-// The sponsor agreement: Brightwater's ward leaders programme, signed by their sponsor.
+// The sponsor agreement: Harbour Rowing's squad leadership programme, signed by their sponsor.
 {
   const ids = { agreementId: next('ag'), versionId: next('ver') };
   const p = PKGS.team;
@@ -279,7 +291,7 @@ for (const c of C) {
   const t = draft.version.terms;
   t.startsOn = '2026-09-16'; t.endsOn = '2027-03-12';
   t.team = { ...t.team, people: [6, 7, 8].map((n) => ({ name: byN[n].name, email: byN[n].email, profileId: byN[n].pid })), totalMinor: p.org, settle: 'deposit', needsPO: false,
-    invoicesEmail: 'finance@brightwater.example.com', sponsor: { name: 'Margaret Hale', role: 'Chief nursing officer', email: 'polish-contact-3@example.com' } };
+    invoicesEmail: 'finance-harbour-rowing@example.com', sponsor: { name: 'Margaret Hale', role: 'Chief nursing officer', email: 'polish-contact-3@example.com' } };
   const f = versionFields(t, {});
   ORGS.bright.agId = ids.agreementId; ORGS.bright.verId = ids.versionId; ORGS.bright.total = f.total_minor;
   agRows.push([q(ids.agreementId), q(ALEX), q('sponsor'), 'null', q(ORGS.bright.id), 'null', q('sent'), '1', q('team'), q(p.id), TS('2026-09-03', '08:00')]);
@@ -337,7 +349,7 @@ for (const c of C) {
     const calId = next('cal');
     if (day >= addDays(BASE, -120)) {
       calRows.push([q(calId), q(ALEX), q('client_call'), q('work'), q(c.name), TS(day, c.slot), TS(day, plus(c.slot, minutes)), q('Europe/London'), 'false', 'null', 'null',
-        q(inPerson ? (c.n === 6 ? 'Brightwater Care Partners, 2 Wellington Place, Leeds' : c.city) : null), q(inPerson ? 'in_person' : 'zoom'), inPerson ? 'null' : q(zoom(sid)), 'null', q(c.pid), q(sid), 'null']);
+        q(inPerson ? (c.n === 6 ? 'Harbour Rowing, the Boathouse, London' : c.city) : null), q(inPerson ? 'in_person' : 'zoom'), inPerson ? 'null' : q(zoom(sid)), 'null', q(c.pid), q(sid), 'null']);
       if (inPerson && day >= addDays(BASE, -14)) {
         calRows.push([q(next('cal')), q(ALEX), q('travel'), q('work'), q('Train to Leeds'), TS(day, plus(c.slot, -195)), TS(day, plus(c.slot, -60)), q('Europe/London'), 'false', 'null', 'null', q('London King’s Cross to Leeds'), q('in_person'), 'null', q('Coach C, seat 42. Tickets in the app.'), 'null', 'null', q(calId)]);
         calRows.push([q(next('cal')), q(ALEX), q('travel'), q('work'), q('Train home'), TS(day, plus(c.slot, 120)), TS(day, plus(c.slot, 255)), q('Europe/London'), 'false', 'null', 'null', q('Leeds to London King’s Cross'), q('in_person'), 'null', 'null', 'null', 'null', q(calId)]);
@@ -378,8 +390,8 @@ calItem('chemistry', 'Discovery call: Martha Ingram', addDays(BASE, -6), '13:30'
 calItem('connection', 'Coffee with Harriet Moss', addDays(BASE, 6), '12:00', '13:00', { place: 'in_person', location: 'The Wren café, St Paul’s' });
 calItem('connection', 'Catch-up with Owen Pryce', addDays(BASE, 8), '12:30', '13:00');
 calItem('connection', 'Call with Isaac Bramwell', addDays(BASE, -4), '17:30', '18:00', { place: 'phone' });
-calItem('hold', 'Hold: Brightwater team workshop', addDays(BASE, 13), '09:00', '12:00', { place: 'in_person', location: 'Leeds' });
-calItem('event', 'Halden quarterly review', addDays(BASE, 9), '14:00', '15:00', { place: 'in_person', location: 'Halden Freight, Tilbury' });
+calItem('hold', 'Hold: Harbour Rowing team workshop', addDays(BASE, 13), '09:00', '12:00', { place: 'in_person', location: 'London' });
+calItem('event', 'Tessaline quarterly review', addDays(BASE, 9), '14:00', '15:00', { place: 'in_person', location: 'Tessaline Partners, London office' });
 calItem('own_time', 'Dentist', addDays(BASE, 7), '08:30', '09:15', { calendar: 'personal', place: 'in_person' });
 // A two-day forum in Manchester, all day, with the train there and back.
 {
@@ -399,9 +411,9 @@ out.push(ins('coach_call_types', ['id', 'coach_id', 'key', 'name', 'description'
   [q(next('ct')), q(ALEX), q('chemistry'), q('Discovery call'), q('Thirty minutes to see whether coaching together is right for you.'), '30', '24', '4', q('zoom'), 'true', 'true', '1'],
   [q(next('ct')), q(ALEX), q('coaching'), q('Coaching session'), null, '60', '24', '6', q('zoom'), 'true', 'false', '2'],
 ]));
-// Imogen's block of hours: the time logged against it.
+// Rhys's block of hours: the time logged against it.
 out.push(ins('time_entries', ['id', 'engagement_id', 'coach_id', 'started_at', 'ended_at', 'note'],
-  [[-27, '09:00', 90, 'Restructure plan, first read'], [-20, '14:00', 120, 'Team conversations, scripts'], [-13, '10:00', 60, 'Call with Imogen'], [-6, '15:30', 150, 'Review of the new structure']]
+  [[-27, '09:00', 90, 'Restructure plan, first read'], [-20, '14:00', 120, 'Team conversations, scripts'], [-13, '10:00', 60, 'Call with Rhys'], [-6, '15:30', 150, 'Review of the new structure']]
     .map(([d, t, m, note]) => [q(next('time')), q(byN[17].eid), q(ALEX), TS(addDays(BASE, d), t), TS(addDays(BASE, d), plus(t, m)), q(note)])));
 
 // ------------------------------------------------------------------ money: a year like the Master Revenue Sheet
@@ -413,7 +425,7 @@ function invoice(c, { kind, issued, total, lines, status, paidOn, terms = 14, or
   const payer = org ? org.name : c.name;
   invRows.push([q(iid), q(ALEX), q(c?.agId || (org === ORGS.bright ? ORGS.bright.agId : null)), q(c?.pid || null), q(org?.id || c?.org?.id || null), 'public.next_invoice_number()', q(`in_polish_${stripeN}`), q(kind), q(status), q(currency),
     `${q(JSON.stringify(lines))}::jsonb`, String(total), String(status === 'paid' ? total : 0), String(terms), D(issued), D(due), q(po?.number || null), q(po ? PO : null), q(org ? 'organisation' : 'client'),
-    q(payer), q(org ? (org === ORGS.halden ? 'invoices@halden-freight.example.com' : org === ORGS.bright ? 'finance@brightwater.example.com' : 'treasurer@tamsinbay.example.com') : c.email), q(c?.zone || 'Europe/London'),
+    q(payer), q(org ? (org === ORGS.halden ? 'invoices-tessaline@example.com' : org === ORGS.bright ? 'finance-harbour-rowing@example.com' : 'accounts-calder-wolfe@example.com') : c.email), q(c?.zone || 'Europe/London'),
     q(`https://invoice.stripe.example/polish/${stripeN}`), n == null ? 'null' : String(n), status === 'draft' ? 'null' : TS(issued, '08:00'), status === 'paid' ? TS(paidOn, '10:12') : 'null', q(sector),
     q(org === ORGS.halden ? 'SUP-20418' : null), q(org === ORGS.halden ? 'Leadership coaching, 2026 cohort' : null), org === ORGS.halden ? 'true' : 'false', c?.verId ? q(c.verId) : 'null']);
   if (status === 'paid') {
@@ -462,16 +474,16 @@ for (const c of C.filter((x) => x.kind === 'payg')) {
       status: age < 10 ? 'sent' : 'paid', paidOn: addDays(issued, 4), sector: c.sector });
   });
 }
-// Organisations: Halden quarterly against its purchase order with a timesheet; Brightwater's deposit and second
+// Organisations: Tessaline quarterly against its purchase order with a timesheet; Harbour Rowing's deposit and second
 // payment; the rowing club for Oliver's season.
 const halden = { org: ORGS.halden, po: { number: 'PO-448120' } };
 [['2026-03-31', 'January to March', 690000, 'paid'], ['2026-06-30', 'April to June', 1170000, 'paid'], ['2026-09-30', 'July to September', 1530000, 'paid']].forEach(([issued, period, total, status]) => {
-  invoice(null, { kind: 'org_hours', issued, total, lines: [{ description: `Leadership coaching for Halden Freight, ${period}`, amount: total }], status, paidOn: addDays(issued, 28), terms: 30, org: ORGS.halden, po: halden.po, sector: 'Business' });
+  invoice(null, { kind: 'org_hours', issued, total, lines: [{ description: `Leadership coaching for Tessaline Partners, ${period}`, amount: total }], status, paidOn: addDays(issued, 28), terms: 30, org: ORGS.halden, po: halden.po, sector: 'Business' });
 });
-invoice(null, { kind: 'org_hours', issued: '2026-10-31', total: 1290000, lines: [{ description: 'Leadership coaching for Halden Freight, October', amount: 1290000 }], status: 'sent', terms: 30, org: ORGS.halden, po: halden.po, sector: 'Business' });
-invoice(null, { kind: 'deposit', issued: '2026-09-08', total: 900000, lines: [{ description: 'Ward leaders programme, deposit (50%)', amount: 900000 }], status: 'paid', paidOn: '2026-10-02', terms: 30, org: ORGS.bright, sector: 'Medicine' });
-invoice(null, { kind: 'one_off', issued: '2026-04-01', total: 293000, lines: [{ description: 'Full-Season Coaching for Oliver Grant, first half', amount: 293000 }], status: 'paid', paidOn: '2026-04-09', org: ORGS.tamsin, sector: 'Sport' });
-invoice(null, { kind: 'one_off', issued: '2026-10-01', total: 293000, lines: [{ description: 'Full-Season Coaching for Oliver Grant, second half', amount: 293000 }], status: 'paid', paidOn: '2026-10-06', org: ORGS.tamsin, sector: 'Sport' });
+invoice(null, { kind: 'org_hours', issued: '2026-10-31', total: 1290000, lines: [{ description: 'Leadership coaching for Tessaline Partners, October', amount: 1290000 }], status: 'sent', terms: 30, org: ORGS.halden, po: halden.po, sector: 'Business' });
+invoice(null, { kind: 'deposit', issued: '2026-09-08', total: 900000, lines: [{ description: 'Squad leadership programme, deposit (50%)', amount: 900000 }], status: 'paid', paidOn: '2026-10-02', terms: 30, org: ORGS.bright, sector: 'Medicine' });
+invoice(null, { kind: 'one_off', issued: '2026-04-01', total: 293000, lines: [{ description: 'Full-Season Coaching for Oliver Hartley, first half', amount: 293000 }], status: 'paid', paidOn: '2026-04-09', org: ORGS.tamsin, sector: 'Sport' });
+invoice(null, { kind: 'one_off', issued: '2026-10-01', total: 293000, lines: [{ description: 'Full-Season Coaching for Oliver Hartley, second half', amount: 293000 }], status: 'paid', paidOn: '2026-10-06', org: ORGS.tamsin, sector: 'Sport' });
 // Next month's drafts.
 invoice(byN[1], { kind: 'instalment', issued: '2026-12-19', total: splitEqual(byN[1].total, 12)[2], lines: lineFor('Sam Carter', 'Leadership Partnership, 12 months, payment 3 of 12', splitEqual(byN[1].total, 12)[2]), status: 'draft', sector: 'Business', n: 3 });
 const INV_COLS = ['id', 'coach_id', 'agreement_id', 'profile_id', 'organisation_id', 'number', 'stripe_invoice_id', 'kind', 'status', 'currency', 'lines', 'total_minor', 'paid_minor', 'terms_days', 'issued_on', 'due_on', 'po_number', 'purchase_order_id',
@@ -480,7 +492,7 @@ const INV_COLS = ['id', 'coach_id', 'agreement_id', 'profile_id', 'organisation_
 for (const r of invRows) if (r[8] === q('draft')) { r[14] = 'null'; r[15] = 'null'; r[22] = 'null'; }
 out.push('-- A year of money shaped like the Master Revenue Sheet: monthly coaching fees, organisation invoices, a refund, a dollar retainer, a speaking fee.');
 out.push(ins('invoices', INV_COLS, invRows));
-// Halden's invoices were emailed and, once paid, put on their supplier portal too; October's still waits for the portal.
+// Tessaline's invoices were emailed and, once paid, put on their supplier portal too; October's still waits for the portal.
 out.push(`update public.invoices set emailed_at = sent_at, portal_uploaded_at = case when status = 'paid' then sent_at + interval '1 day' end
  where id::text like '5eed0600-%' and organisation_id = '${ORGS.halden.id}' and sent_at is not null;
 update public.invoices set emailed_at = sent_at where id::text like '5eed0600-%' and emailed_at is null and sent_at is not null;
@@ -514,18 +526,18 @@ const STAGES = [['New', 10, 0], ['Call booked', 25, 1], ['Proposal sent', 50, 2]
 const stageId = {};
 out.push(ins('coach_lead_stages', ['id', 'coach_id', 'name', 'likelihood', 'position', 'is_won'], STAGES.map(([name, like, pos]) => { stageId[name] = next('stage'); return [q(stageId[name]), q(ALEX), q(name), String(like), String(pos), String(name === 'Won')]; })));
 const LEADS = [
-  ['Amelia Hart', 'New', 'referral', 'Fenwick Ashby LLP', 'Partner', 1048000, 'Reply to her email', 0, -2, 'Referred by Ben Ashby. Wants help stepping into the managing partner role.'],
-  ['Callum Reid', 'New', 'chemistry_page', 'Reid & Daughters', 'Managing director', 584000, 'Book a first call', 2, -1, null],
-  ['Zara Quinlan', 'New', 'network', 'Orchard Lane Schools', 'Executive head', 1048000, 'Send the overview', 5, -8, 'Met at the Leeds breakfast.'],
+  ['Amelia Hart', 'New', 'referral', 'Wexley Ashby LLP', 'Partner', 1048000, 'Reply to her email', 0, -2, 'Referred by Daniel Okafor. Wants help stepping into the managing partner role.'],
+  ['Callum Reid', 'New', 'chemistry_page', 'Reid Quant', 'Managing director', 584000, 'Book a first call', 2, -1, null],
+  ['Zara Quinlan', 'New', 'network', 'Orchard Lane Ventures', 'Managing partner', 1048000, 'Send the overview', 5, -8, 'Met at the Leeds breakfast.'],
   ['Joel Mensah', 'Call booked', 'booking_page', 'Kitebridge', 'Chief product officer', 1346000, 'Discovery call', 2, -4, null],
-  ['Lucy Fairbairn', 'Call booked', 'chemistry_page', 'Fairbairn Interiors', 'Founder', 584000, 'Discovery call', 1, -6, null],
-  ['Ethan Brooks', 'Proposal sent', 'referral', 'Stoneway Capital', 'Investment director', 1048000, 'Follow up on the proposal', 3, -9, 'Asked for a 6-month option.'],
+  ['Lucy Fairbairn', 'Call booked', 'chemistry_page', 'Fairbairn Bio', 'Founder', 584000, 'Discovery call', 1, -6, null],
+  ['Ethan Brooks', 'Proposal sent', 'referral', 'Stonemere Capital', 'Investment director', 1048000, 'Follow up on the proposal', 3, -9, 'Asked for a 6-month option.'],
   ['Nathan Cole', 'Proposal sent', 'network', 'Cambridge Fluidics', 'Chief technology officer', 1748000, 'Check he has read the quote', 4, -5, 'Quote sent; opened the next evening.'],
-  ['Martha Ingram', 'Deciding', 'referral', 'Northcote Energy', 'Chief people officer', 2246000, 'Call her back about the cohort', 1, -6, 'A cohort of 4 directors from April.'],
-  ['Victor Salazar', 'Deciding', 'manual', 'Salazar Foods', 'Owner', 584000, 'Send the start dates', 6, -11, null],
+  ['Martha Ingram', 'Deciding', 'referral', 'Northvane Energy', 'Chief people officer', 2246000, 'Call her back about the cohort', 1, -6, 'A cohort of 4 directors from April.'],
+  ['Victor Salazar', 'Deciding', 'manual', 'Brisane Capital', 'Founding partner', 584000, 'Send the start dates', 6, -11, null],
   ['Leila Haddad', 'Won', 'referral', 'Larch Legal', 'General counsel', 1048000, null, null, -3, 'Agreement sent.'],
-  ['Freya Lund', 'Won', 'referral', 'Tamsin Bay Rowing Club', 'Captain, women’s eight', 124000, null, null, -55, null],
-  ['Peter Langley', 'New', 'chemistry_page', 'Langley Print', 'Managing director', 584000, null, null, -40, 'Budget moved to next year.'],
+  ['Freya Lund', 'Won', 'referral', 'Calder Wolfe Racing', 'Race engineer', 124000, null, null, -55, null],
+  ['Peter Langley', 'New', 'chemistry_page', 'Langley Motorsport', 'Managing director', 584000, null, null, -40, 'Budget moved to next year.'],
 ];
 const leadRows = []; const levRows = [];
 LEADS.forEach(([name, stage, source, org, job, value, nextStep, nextIn, lastDays, notes], i) => {
@@ -537,7 +549,7 @@ LEADS.forEach(([name, stage, source, org, job, value, nextStep, nextIn, lastDays
   leadRows.push([q(lid), q(ALEX), q(name), q(`polish-lead-${String(i + 1).padStart(2, '0')}@example.com`), q(source), q('chemistry'), q('Europe/London'), q(cold ? 'cold' : won ? 'won' : 'open'), q(notes), q(stageId[stage]),
     q(org), q(job), q(`+447700900${String(300 + i).padStart(3, '0')}`), String(value / 100), q('GBP'), q(nextStep), nextIn == null ? 'null' : D(addDays(BASE, nextIn)), D(addDays(BASE, lastDays)),
     won ? TS(addDays(BASE, lastDays), '16:00') : 'null', q(wonProfile), cold ? TS(addDays(BASE, -20), '10:00') : 'null', q(cold ? 'Budget moved to next year.' : null), cold ? D(addDays(BASE, 60)) : 'null',
-    q(source === 'referral' ? (name === 'Amelia Hart' ? 'Ben Ashby' : 'Priyanka Shah') : null), TS(created, '09:00')]);
+    q(source === 'referral' ? (name === 'Amelia Hart' ? 'Daniel Okafor' : 'Jo Patel') : null), TS(created, '09:00')]);
   levRows.push([q(next('lev')), q(ALEX), q(lid), q('first_contact'), TS(created, '09:00'), D(created), q('First contact'), q(source === 'referral' ? 'Introduced by email.' : 'Came in through the website.')]);
   if (['Call booked', 'Proposal sent', 'Deciding', 'Won'].includes(stage) || cold) levRows.push([q(next('lev')), q(ALEX), q(lid), q('call'), TS(addDays(created, 5), '15:00'), D(addDays(created, 5)), q('Discovery call'), q('Good fit. Agreed to send a proposal.')]);
   if (['Proposal sent', 'Deciding', 'Won'].includes(stage)) levRows.push([q(next('lev')), q(ALEX), q(lid), q('proposal'), TS(addDays(created, 7), '10:00'), D(addDays(created, 7)), q('Proposal sent'), null]);
@@ -554,7 +566,7 @@ const FIRST = ['Harriet', 'Isaac', 'Owen', 'Maya', 'Rupert', 'Nadia', 'Felicity'
   'Niamh', 'Oscar', 'Pippa', 'Quentin', 'Rosa', 'Stefan', 'Tilly', 'Usman', 'Verity', 'Wilf', 'Xenia', 'Yusuf', 'Zoe', 'Alistair', 'Bea', 'Cormac', 'Daisy', 'Elliot', 'Flora', 'Gus'];
 const LAST = ['Moss', 'Bramwell', 'Pryce-Jones', 'Okonjo', 'Hales', 'Karim', 'Ashworth', 'Mehta', 'Rhys', 'Doherty', 'Marchand', 'Fairclough', 'Lennox', 'Price', 'Bairstow', 'Qureshi', 'Wilde', 'Asante', 'McBride', 'Strand',
   'Gallagher', 'Thornton', 'Ellwood', 'Barnaby', 'Delgado', 'Novak', 'Ferris', 'Malik', 'Hamblin', 'Turnbull', 'Petrova', 'Haddon', 'Clarke', 'Munro', 'Sorensen', 'Byrne', 'Kettering', 'Vance', 'Whitcombe', 'Lowry'];
-const NORGS = ['Fenwick Ashby LLP', 'Kitebridge', 'Northcote Energy', 'Larch Legal', 'Orchard Lane Schools', 'Stoneway Capital', 'The Leeds Breakfast Club', 'Harbourside Health', 'Copperleaf Media', 'Redwater Partners'];
+const NORGS = ['Wexley Ashby LLP', 'Kitebridge', 'Northvane Energy', 'Larch Legal', 'Orchard Lane Ventures', 'Stonemere Capital', 'The Leeds Breakfast Club', 'Harbourside Health', 'Copperleaf Media', 'Redwater Partners'];
 const NROLES = ['Chief executive', 'Investor', 'Partner', 'Head of people', 'Founder', 'Coach', 'Editor', 'Chair'];
 const netRows = []; const giveRows = [];
 for (let i = 0; i < 40; i += 1) {
@@ -564,7 +576,7 @@ for (let i = 0; i < 40; i += 1) {
     rated ? String(4 + (i * 3) % 7) : 'null', rated ? String(5 + (i * 5) % 6) : 'null', rated ? String(3 + (i * 7) % 8) : 'null', rated ? String(4 + (i * 2) % 7) : 'null',
     String([1, 2, 3, 6][i % 4]), D(addDays(BASE, -(i % 6 === 0 ? [1, 2, 3, 6][i % 4] * 30 + 4 + (i % 13) : Math.round([1, 2, 3, 6][i % 4] * 30 * (0.15 + ((i * 7) % 10) / 14))))), D(addDays(BASE, -(400 - i * 6))), String(i % 4), String(i % 3), i === 38 || i === 39 ? TS(addDays(BASE, -30), '09:00') : 'null',
     q(i % 5 === 0 ? 'Met at the Leeds breakfast. Ask about the board role.' : i % 6 === 1 ? 'Introduced Amelia Hart.' : null), TS(addDays(BASE, -(400 - i * 6)), '09:00')]);
-  if (i % 3 === 0) giveRows.push([q(next('give')), q(nid), q(ALEX), q('gave'), q(['idea', 'resource', 'introduction', 'favour'][i % 4]), q(['Sent the article on first-time chief executives.', 'Shared the Health Check.', 'Introduced them to Tom Hadley.', 'Read their draft talk.'][i % 4]), D(addDays(BASE, -((i * 13) % 150 + 2)))]);
+  if (i % 3 === 0) giveRows.push([q(next('give')), q(nid), q(ALEX), q('gave'), q(['idea', 'resource', 'introduction', 'favour'][i % 4]), q(['Sent the article on first-time chief executives.', 'Shared the Health Check.', 'Introduced them to Ellis Grant.', 'Read their draft talk.'][i % 4]), D(addDays(BASE, -((i * 13) % 150 + 2)))]);
 }
 out.push('-- Forty Network people, rated, with a few things given.');
 out.push(ins('network_people', ['id', 'coach_id', 'name', 'organisation', 'role', 'email', 'phone', 'influence', 'trust', 'value_delivery', 'what_you_get', 'rhythm_months', 'last_spoke_on', 'added_on', 'given_count', 'asked_count', 'archived_at', 'notes', 'created_at'], netRows));
@@ -572,12 +584,12 @@ out.push(ins('network_gives', ['id', 'person_id', 'coach_id', 'direction', 'kind
 
 // ------------------------------------------------------------------ to-dos: Today, Upcoming, Someday, done
 const L_ADMIN = next('list'); const L_MKT = next('list'); const L_WS = next('list');
-out.push(ins('coach_todo_lists', ['id', 'coach_id', 'name', 'organisation_id', 'position'], [[q(L_ADMIN), q(ALEX), q('Business admin'), 'null', '1'], [q(L_MKT), q(ALEX), q('Marketing'), 'null', '2'], [q(L_WS), q(ALEX), q('Brightwater workshop'), q(ORGS.bright.id), '3']]));
+out.push(ins('coach_todo_lists', ['id', 'coach_id', 'name', 'organisation_id', 'position'], [[q(L_ADMIN), q(ALEX), q('Business admin'), 'null', '1'], [q(L_MKT), q(ALEX), q('Marketing'), 'null', '2'], [q(L_WS), q(ALEX), q('Harbour Rowing workshop'), q(ORGS.bright.id), '3']]));
 const leadIdOf = (name) => leadRows.find((r) => r[2] === q(name))[0];
 // [title, planned (days from today, or 'someday', or null), due, minutes, list, client n, lead, important, done (days), notes]
 const TODOS = [
   ['Write up Priya’s session', 0, null, 15, null, 3, null, false, null, null],
-  ['Send Halden the October timesheet', 0, 2, 20, L_ADMIN, null, null, true, null, 'Martin needs it on the supplier portal with the PO number.'],
+  ['Send Tessaline the October timesheet', 0, 2, 20, L_ADMIN, null, null, true, null, 'Dev needs it on the supplier portal with the PO number.'],
   ['Reply to Amelia Hart', 0, null, 10, null, null, 'Amelia Hart', false, null, null],
   ['Print the exercises for Elena', 0, null, 10, null, 6, null, false, null, null],
   ['Book trains to Manchester', 0, 3, 10, L_ADMIN, null, null, false, null, null],
@@ -586,7 +598,7 @@ const TODOS = [
   ['Call Martha Ingram back', 1, null, 20, null, null, 'Martha Ingram', true, null, 'She wants the cohort dates first.'],
   ['Send Leila a note about her agreement', 2, null, 10, null, 15, null, false, null, null],
   ['Draft the December newsletter', 3, 8, 60, L_MKT, null, null, false, null, 'Three habits for a calmer December.'],
-  ['Order books for the Brightwater team', 5, null, 15, L_WS, null, null, false, null, null],
+  ['Order books for the Harbour Rowing team', 5, null, 15, L_WS, null, null, false, null, null],
   ['Prepare the workshop slides', 6, 13, 120, L_WS, null, null, false, null, null],
   ['Ask Oliver for a few words for the website', 7, null, 10, L_MKT, 9, null, false, null, null],
   ['Send the quarter’s receipts to the accountant', 9, 14, 30, L_ADMIN, null, null, false, null, null],
@@ -599,8 +611,8 @@ const TODOS = [
   ['Look at a second venue in Leeds', 'someday', null, null, L_WS, null, null, false, null, null],
   ['Refresh the LinkedIn profile', 'someday', null, 30, L_MKT, null, null, false, null, null],
   ['Send Grace the reading on delegation', -2, null, 5, null, 5, null, false, -2, null],
-  ['Invoice the Halden October hours', -25, null, 20, L_ADMIN, null, null, false, -25, null],
-  ['Book the room for the Brightwater workshop', -6, null, 10, L_WS, null, null, false, -5, null],
+  ['Invoice the Tessaline October hours', -25, null, 20, L_ADMIN, null, null, false, -25, null],
+  ['Book the room for the Harbour Rowing workshop', -6, null, 10, L_WS, null, null, false, -5, null],
   ['Follow up with Ethan on the proposal', -3, null, 10, null, null, 'Ethan Brooks', false, -3, null],
   ['Renew the insurance', -12, null, 30, L_ADMIN, null, null, false, -12, null],
   ['Send Rory his refund note', -13, null, 10, null, 14, null, false, -13, null],
@@ -616,13 +628,13 @@ out.push(ins('coach_todos', ['id', 'coach_id', 'title', 'notes', 'important', 'p
 // ------------------------------------------------------------------ Polish 1, Stage C: one of each agreements screen
 // So every Stage C screen can be reached from data (INTEGRATE-C step 4; removed with the rest, every id 5eed0600-):
 // an agreement inside its 14 days, a retainer's yearly price review due, a change asked for on the sent agreement,
-// Imogen's block of hours past 80% (its top-up invoice drafted), and a sponsor's signing link waiting.
+// Rhys's block of hours past 80% (its top-up invoice drafted), and a sponsor's signing link waiting.
 {
   const sent = C.find((c) => c.kind === 'sent');
   const [crId, spAg, spVer] = [next('stagec'), next('stagec'), next('stagec')];
   out.push('-- Polish 1, Stage C: one of each agreements screen (inside 14 days, a price review, a change asked for, hours past 80%, a sponsor link).');
   out.push(ins('time_entries', ['id', 'engagement_id', 'coach_id', 'started_at', 'ended_at', 'note'],
-    [[q(next('time')), q(byN[17].eid), q(ALEX), TS(addDays(BASE, -2), '10:00'), TS(addDays(BASE, -2), '14:00'), q('Workshop with the people team')]]));
+    [[q(next('time')), q(byN[17].eid), q(ALEX), TS(addDays(BASE, -2), '10:00'), TS(addDays(BASE, -2), '13:40'), q('Workshop with the people team')]]));
   out.push(`set session_replication_role = replica;
 update public.agreement_versions set client_signed_at = now() - interval '3 days', start_now = true, start_now_at = now() - interval '3 days' where agreement_id = '${byN[3].agId}' and status = 'signed';
 update public.agreement_versions set terms = terms || jsonb_build_object('priceSince', to_char((now() at time zone 'Europe/London')::date - 365 + 21, 'YYYY-MM-DD')) where id = '${byN[11].verId}';

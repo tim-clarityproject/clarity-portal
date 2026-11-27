@@ -155,11 +155,14 @@ async function run(width, mode) {
     await shot(page, `${width}-${mode}-do`);
     await next(page);
 
-    pass(`${tag}: the priority screen`, (await heading(page)) === 'Which one is your highest priority?', await heading(page));
-    const offered = (await page.getByRole('radio').allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').trim());
-    pass(`${tag}: the priority screen lists all eight`, [...TODOS, ...HABITS].every((n) => offered.some((o) => o.includes(n))) && offered.length === 8, offered.join(' | '));
-    await page.getByRole('radio', { name: TOP }).click();
-    await until(async () => (await heading(page)) !== 'Which one is your highest priority?', 4000);
+    // Stage D, Draft 11 (Tim's answer 5): no priority screen; the top is chosen on the list with Move to top.
+    pass(`${tag}: no priority screen`, (await heading(page)) === 'Which of your Strategies does today move forward?', await heading(page));
+    await page.getByRole('button', { name: 'Back', exact: true }).click().catch(() => null);
+    await until(async () => (await heading(page)) === 'What will you do today?', 4000);
+    pass(`${tag}: Move to top on all but the first of the eight`, (await page.getByRole('button', { name: /^Move “.*” to the top$/ }).count()) === 7);
+    await page.getByRole('button', { name: `Move “${TOP}” to the top` }).click();
+    await until(async () => (await page.locator('.ds-answer--pick', { hasText: TOP }).first().innerText()).includes('Most important'), 4000);
+    await next(page);
     // Strategy, then Risk.
     await page.locator('.ds-guide-body button[aria-pressed]').first().click();
     await next(page);

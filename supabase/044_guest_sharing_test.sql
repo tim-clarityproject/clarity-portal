@@ -94,7 +94,7 @@ begin
   begin
     coach := pg_temp.t44_user('coach'); coach_b := pg_temp.t44_user('coachb'); other_u := pg_temp.t44_user('other');
     if has_coaches then
-      execute 'insert into public.coaches (user_id, role, display_first_name) values ($1, ''coach'', ''Adie''), ($2, ''coach'', ''Priya'')'
+      execute 'insert into public.coaches (user_id, role, display_first_name) values ($1, ''coach'', ''Rhys''), ($2, ''coach'', ''Priya'')'
         using coach, coach_b;
     end if;
 

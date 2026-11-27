@@ -38,6 +38,12 @@ export default function ToughConversationStep2Coaching() {
   const { user } = useContext(AuthContext);
   const [decisionId, setDecisionId] = useState(location.state?.decisionId || null);
 
+  // Stage D, Draft 11: the questions (3 of 4), then "When and where will you
+  // have the conversation?" (4 of 4), the commit question: it can't be skipped.
+  const [screen, setScreen] = useState('questions');
+  const [whenWhere, setWhenWhere] = useState(location.state?.whenWhere || '');
+  const [askedWhen, setAskedWhen] = useState(false);
+  const success = location.state?.success || '';
   const [observation, setObservation] = useState(location.state?.observation || '');
   const [impact, setImpact] = useState(location.state?.impact || '');
   const [need, setNeed] = useState(location.state?.need || '');
@@ -60,9 +66,10 @@ export default function ToughConversationStep2Coaching() {
   const { clear: clearDraft } = useDraft({
     userId: user?.id,
     name: `tough-conversation-2:${location.state?.decisionId || 'new'}`,
-    value: { observation, impact, need, selectedQuestions, customQuestion, editingField, editValue },
+    value: { observation, impact, need, selectedQuestions, customQuestion, whenWhere, editingField, editValue },
     ready: true,
     onRestore: (v) => {
+      setWhenWhere(v.whenWhere || '');
       setObservation(v.observation || '');
       setImpact(v.impact || '');
       setNeed(v.need || '');
@@ -109,7 +116,7 @@ export default function ToughConversationStep2Coaching() {
 
   const persist = async (draft, name) => {
     const payload = {
-      form_data: { observation, impact, need, selectedQuestions, customQuestion },
+      form_data: { success, observation, impact, need, selectedQuestions, customQuestion, whenWhere },
       title: name,
       draft,
       status: draft ? 'draft' : 'completed',
@@ -167,7 +174,7 @@ export default function ToughConversationStep2Coaching() {
   const handleBack = () => {
     clearDraft();
     navigate('/give-difficult-feedback', {
-      state: { decisionId, observation, impact, need, selectedQuestions, customQuestion, problemTitle: currentTitle },
+      state: { decisionId, success, observation, impact, need, selectedQuestions, customQuestion, whenWhere, problemTitle: currentTitle, screen: 'script' },
     });
   };
 
@@ -189,16 +196,62 @@ export default function ToughConversationStep2Coaching() {
     navigate('/my-plans', { state: { toast: 'Discarded.' } });
   };
 
+  const whenMissing = !whenWhere.trim();
+  const dialogs = (
+    <>
+      <NameDialog
+        open={nameDialog !== null}
+        title={nameDialog === 'draft' ? 'Name this draft' : 'Name this decision'}
+        message="Give it a name so you can find it in My decisions."
+        suggestedName={suggestedName}
+        onConfirm={handleNameConfirm}
+        onCancel={() => setNameDialog(null)}
+      />
+      <DiscardDialog
+        isOpen={discardOpen}
+        title="Discard this entry?"
+        message="Anything you have not saved will be lost."
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={handleDiscard}
+      />
+    </>
+  );
+
+  if (screen === 'when') {
+    return (
+      <div className="ui-root">
+        <FormTool
+          name="Give difficult feedback"
+          step={4}
+          steps={4}
+          question="When and where will you have the conversation?"
+          onNext={() => {
+            if (whenMissing) { setAskedWhen(true); return; }
+            if (!isSaving) setNameDialog('finish');
+          }}
+          nextLabel="Finish"
+          need={askedWhen && whenMissing ? 'Type when and where to carry on.' : null}
+          onBack={() => setScreen('questions')}
+          saveError={saveError}
+          onSaveDraft={() => { if (!isSaving) setNameDialog('draft'); }}
+          onDiscard={() => setDiscardOpen(true)}
+          closeTo="/interpersonal"
+        >
+          <TextBox id="tc-when" lines="many" focusMode ariaLabel="When and where will you have the conversation?" value={whenWhere} onChange={setWhenWhere} />
+        </FormTool>
+        {dialogs}
+      </div>
+    );
+  }
+
   return (
     <div className="ui-root">
       <FormTool
         name="Give difficult feedback"
-        step={2}
-        steps={2}
+        step={3}
+        steps={4}
         question="Which questions will you ask?"
-        hint="Now you’ve given your feedback, coach them to find their own solutions."
-        onNext={() => { if (!isSaving) setNameDialog('finish'); }}
-        nextLabel="Finish"
+        onNext={() => setScreen('when')}
         onBack={handleBack}
         saveError={saveError}
         onSaveDraft={() => { if (!isSaving) setNameDialog('draft'); }}
@@ -270,7 +323,6 @@ export default function ToughConversationStep2Coaching() {
           <span className="ds-label">Coaching questions</span>
           <span className="tc-ck-count">{selectedQuestions.length} chosen</span>
         </div>
-        <p className="tc-ck-help">Asking questions is an art. Select a few from below that might work for you, or type your own below.</p>
 
         <div className="tc-ck-list" role="group" aria-label="Coaching questions">
           {COACHING_QUESTIONS.map((question, index) => {
@@ -294,23 +346,7 @@ export default function ToughConversationStep2Coaching() {
           />
         </div>
       </FormTool>
-
-      <NameDialog
-        open={nameDialog !== null}
-        title={nameDialog === 'draft' ? 'Name this draft' : 'Name this decision'}
-        message="Give it a name so you can find it in My decisions."
-        suggestedName={suggestedName}
-        onConfirm={handleNameConfirm}
-        onCancel={() => setNameDialog(null)}
-      />
-
-      <DiscardDialog
-        isOpen={discardOpen}
-        title="Discard this entry?"
-        message="Anything you have not saved will be lost."
-        onKeep={() => setDiscardOpen(false)}
-        onDiscard={handleDiscard}
-      />
+      {dialogs}
     </div>
   );
 }

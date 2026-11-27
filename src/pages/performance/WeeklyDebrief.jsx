@@ -78,6 +78,8 @@ import { useOwnToolSteps } from '../../components/ownQuestions/ownSteps';
 import { B2_LINES } from '../../content/pageLines/client';
 import './performance.css';
 import { TOOL_CLOSED } from '../../content/pageLines/client';
+import { COMMIT_NEEDED, MONDAY_QUESTION, commitTodo } from '../../lib/performance/commitQuestions';
+import CommitTodo from './CommitTodo';
 
 // The Weekly performance debrief (mock-up M1, R.debrief, read in full with
 // its notes; decisions "Weekly performance debrief"). One guided tool,
@@ -92,9 +94,11 @@ import { TOOL_CLOSED } from '../../content/pageLines/client';
 //               number or rating (M9, objective_figures), Mark as done for
 //               a milestone
 //   Went well   with "Your days" (the week's Daily review entries) folded
-//   In the way, Adjust
+//   In the way, "What will you change next week?" (Stage D, Draft 11; saved as adjust)
 //   Next week   the open to-dos that roll over and next week's, Add to-do
 //               (into the sprint, next week chosen)
+//   Monday      "What will you do first on Monday?" (Stage D, Draft 11), the
+//               commit question: a to-do in next week, or the Backlog
 //   Summary     the week's score (mint and a glow at or above the
 //               standard), the usual range, the debrief streak (M11), and
 //               Share with [coach] when there is a coach; Finish my debrief
@@ -555,6 +559,29 @@ function DebriefFlow({ userId, today, loaded, view }) {
     });
   };
 
+  // The Monday commit (Draft 11) as one to-do: made once, then its words and Strategy follow an edit.
+  const committingMonday = useRef(false);
+  const commitMonday = async () => {
+    const t = commitTodo(answersRef.current.monday, answersRef.current.mondayStrategy, view.strategies);
+    if (!t || committingMonday.current) return;
+    const had = answersRef.current.mondayTodo;
+    if (had && had.text === t.text && had.strategyId === t.strategyId) return;
+    committingMonday.current = true;
+    try {
+      const id = had?.id || newId();
+      const week = view.nextWeek?.number ?? null;
+      const row = { id, strategy_id: t.strategyId, text: t.text, impact: 2, sprint_id: week == null ? null : sprintId, planned_week: week, created_on: today, done_on: null, source: 'debrief', move_on: null, deleted_at: null };
+      setData((d) => ({ ...d, todos: [...(d.todos || []).filter((x) => x.id !== id), row] }));
+      change({ mondayTodo: { id, text: t.text, strategyId: t.strategyId } });
+      await sent(async () => {
+        const source = await ensureDebrief();
+        return saveTodo(userId, { id, strategyId: t.strategyId, text: t.text, impact: 2, sprintId, week, createdOn: today, source: 'debrief', sourceId: source });
+      });
+    } finally {
+      committingMonday.current = false;
+    }
+  };
+
   // ------------------------------------------------------------ objectives
 
   const typeFigure = (o, text) => {
@@ -664,8 +691,6 @@ function DebriefFlow({ userId, today, loaded, view }) {
       key: 'numbers',
       name: 'Numbers',
       question: `How did week ${week} go?`,
-      // Writing rule 5 over M1's "Fill in any day you missed".
-      nudges: ['Let’s start with your numbers.', 'Fill in any day you didn’t log, or leave it empty.'],
       // The eye beside the question, never on its own row (rule 29d, Tim, 5 Nov).
       eye: eye(),
       render: () => (
@@ -699,7 +724,6 @@ function DebriefFlow({ userId, today, loaded, view }) {
       key: 'stress',
       name: 'Stress',
       question: STRESS_QUESTION,
-      nudges: ['Choose the answer closest to your week.'],
       oneTap: true,
       eye: eye('me'),
       render: (tool) => (
@@ -712,7 +736,6 @@ function DebriefFlow({ userId, today, loaded, view }) {
       key: 'objectives',
       name: 'Objectives',
       question: 'Where are your Outcome Objectives now?',
-      nudges: ['Update any that have moved since last week.'],
       eye: eye(),
       render: () => (
         <div className="day-narrow deb-objectives">
@@ -748,7 +771,6 @@ function DebriefFlow({ userId, today, loaded, view }) {
       key: 'well',
       name: 'Went well',
       question: 'What went well this week?',
-      nudges: ['Start with what worked, however small.'],
       eye: eye(),
       render: () => (
         <div>
@@ -787,23 +809,23 @@ function DebriefFlow({ userId, today, loaded, view }) {
       key: 'inTheWay',
       name: 'In the way',
       question: 'What got in the way?',
-      nudges: ['Name one or two things.'],
       eye: eye(),
       render: () => box('inTheWay', 'What got in the way?'),
     },
     {
       key: 'adjust',
       name: 'Adjust',
-      question: 'What will you adjust next week?',
-      nudges: ['Pick one change you can make.'],
+      // Stage D, Draft 11: one question where "differently" and "adjust" were two; saved as adjust, as before.
+      question: 'What will you change next week?',
       eye: eye(),
-      render: () => box('adjust', 'What will you adjust next week?'),
+      render: () => box('adjust', 'What will you change next week?'),
     },
-    {
+    // The sprint's last week has no next week: "What comes next?" gives way to
+    // the Monday question (Draft 11), whose to-do goes to the Backlog.
+    ...(!view.nextWeek && view.strategies.length ? [] : [{
       key: 'next',
       name: 'Next week',
       question: view.nextWeek ? 'What’s planned for next week?' : 'What comes next?',
-      nudges: view.nextWeek ? ['Open to-dos roll over.', 'Add anything new.'] : [],
       eye: view.nextWeek ? eye('me') : null,
       render: () => (!view.nextWeek ? (
         // UNDEFINED (audit D7): the sprint's last week has no next week.
@@ -832,7 +854,30 @@ function DebriefFlow({ userId, today, loaded, view }) {
           </div>
         </div>
       )),
-    },
+    }]),
+    // The commit question (Stage D, Draft 11): "What will you do first on
+    // Monday?", never skipped while the debrief is open; the answer is a
+    // to-do in next week (the Backlog after the sprint's last week), made
+    // when Next is pressed and edited in place after (one to-do, its id kept).
+    ...(view.strategies.length ? [{
+      key: 'monday',
+      name: 'Monday',
+      question: MONDAY_QUESTION,
+      required: !view.finished,
+      eye: eye('me'),
+      check: () => (view.finished || (answers.monday || '').trim() ? null : COMMIT_NEEDED),
+      onNext: () => { commitMonday(); },
+      render: () => (
+        <CommitTodo
+          question={MONDAY_QUESTION}
+          text={answers.monday || ''}
+          onText={(monday) => change({ monday })}
+          strategies={view.strategies}
+          strategyId={answers.mondayStrategy || view.strategies[0]?.value}
+          onStrategy={(mondayStrategy) => change({ mondayStrategy })}
+        />
+      ),
+    }] : []),
     ...own.steps,
     {
       key: 'summary',

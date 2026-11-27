@@ -1,5 +1,5 @@
 import { dayKeyWords } from '../time/index.js';
-import { andList, hoursWords, lowerFirst, moneyText, rateText } from './currency.js';
+import { andList, hoursWords, lowerFirst, moneyText, rateText, upperFirst } from './currency.js';
 import { blocksText } from './pricing.js';
 import { firstPayment, hasRest, investmentWords } from './settling.js';
 import { kindOf, PLACES, selfFunded } from './terms.js';
@@ -22,6 +22,8 @@ const cur = (t) => t?.currency || 'GBP';
 const notice = (t) => Number(t?.noticeHours) || 24;
 const due = (t) => Number(t?.dueDays) || 14;
 const where = (t) => PLACES[t?.place] || PLACES.zoom;
+/** The organisation a team programme's sponsor signs for (team-agreement-clauses.md's [Organisation]). */
+const org = (t) => t?.orgName || t?.fundedBy || 'your organisation';
 /** The term in months (M28 version 6: 3, 6 or 12; a package priced as a total keeps its own months too), else 6. */
 export const termMonths = (t) => (Number(t?.months) > 0 ? Number(t.months) : 6);
 const MONTH_WORDS = { 3: 'three', 6: 'six', 12: 'twelve' };
@@ -120,7 +122,22 @@ export const STANDARD = {
     };
   },
 
-  rearranging: (t) => ({
+  // A team programme's sponsor signs for the organisation, so "you" is the sponsor and the people coached are "each
+  // person" (Tim, 27 Nov 2026, 13:31: team-agreement-clauses.md, word for word, the reasons reworded the same way).
+  rearranging: (t) => (kindOf(t) === 'team' ? {
+    title: 'Rearranging and cancelling',
+    paragraphs: [
+      P(`Each person can rearrange or cancel a coaching session at no charge up to ${notice(t)} hours before it starts, from the portal or by letting their coach know.`,
+        `Each coaching session is time held only for that person, and ${notice(t)} hours lets the coach offer it to someone else.`),
+      P(`A coaching session cancelled with less than ${notice(t)} hours’ notice, or missed without notice, counts as used.`,
+        'The time can rarely be filled at short notice, so it’s treated the same as a coaching session that happened.'),
+      P('If someone is late, the coaching session still ends at its usual time. If the coach is late, they get the full time.',
+        'It keeps the next person’s time safe, and the coach holds themselves to the same standard.'),
+      P('The coach can waive any of this when something serious happens, such as illness or a family emergency.',
+        'Life happens. The rule is for planning, not for hard moments.'),
+      P('If the coach needs to move a coaching session, they offer a new time, and it’s never counted as used.'),
+    ],
+  } : {
     title: 'Rearranging and cancelling',
     paragraphs: [
       P(`You can rearrange or cancel a coaching session at no charge up to ${notice(t)} hours before it starts, from the portal or by letting your coach know.`,
@@ -135,19 +152,35 @@ export const STANDARD = {
     ],
   }),
 
-  confidentiality: (t) => ({
+  confidentiality: (t) => (kindOf(t) === 'team' ? {
+    title: 'Confidentiality and records',
+    paragraphs: [
+      P('What each person shares in coaching stays between them and their coach.'),
+      P(`It isn’t shared with anyone else, including ${org(t)}, without that person’s agreement.`),
+      P('You hear when coaching starts and ends, and how many coaching sessions are used, never what is said.'),
+      P('The only exceptions are where there’s a serious risk of harm to the person or someone else, or where the law requires it. The coach would talk to the person first wherever they can.'),
+      P('The coach keeps private notes and session summaries for this coaching. Recordings are kept until this agreement ends, then deleted.'),
+      P('The coach may discuss their practice in professional supervision, without naming anyone.'),
+    ],
+  } : {
     title: 'Confidentiality and records',
     paragraphs: [
       P('What you share in coaching stays between you and your coach.'),
       P('It is not shared with anyone else, including an organisation that funds your coaching, without your agreement.'),
-      ...(kindOf(t) === 'team' ? [P('You hear when coaching starts and ends, and how many coaching sessions are used, never what is said.')] : []), // CLAUDE (M28's "What you'll hear")
       P('The only exceptions are where there is a serious risk of harm to you or someone else, or where the law requires it. Your coach would talk to you first wherever they can.'),
       P('Your coach keeps private notes and session summaries for this coaching. Recordings are kept until this agreement ends, then deleted.'),
       P('Your coach may discuss their practice in professional supervision, without naming you.'),
     ],
   }),
 
-  data: () => ({
+  data: (t) => (kindOf(t) === 'team' ? {
+    title: 'Their data',
+    paragraphs: [
+      P('The Clarity Portal keeps each person’s data securely, as the privacy notice explains.'),
+      P(`Each person chooses what their coach sees in the portal. Nothing in it is shared with ${org(t)}.`),
+      P('Each person can download or delete their data at any time. Coaching records such as this agreement and invoices are kept for 6 years after it ends, because UK law requires it.'),
+    ],
+  } : {
     title: 'Your data',
     paragraphs: [
       P('The Clarity Portal keeps your data securely, as the privacy notice explains.'),
@@ -156,7 +189,15 @@ export const STANDARD = {
     ],
   }),
 
-  responsibilities: () => ({
+  responsibilities: (t) => (kindOf(t) === 'team' ? {
+    title: 'Responsibilities',
+    paragraphs: [
+      P('The coach turns up prepared, keeps to this agreement, and is honest with each person, including when coaching isn’t the right support for something.'),
+      P('Each person owns their decisions and the actions they take between coaching sessions.'),
+      P(`${upperFirst(org(t))} gives each person the time for their coaching sessions, and tells the coach early if something changes, such as someone leaving the programme.`),
+      P('Coaching isn’t therapy, counselling or medical advice. If something would be better helped by another professional, the coach will say so and can suggest someone.'),
+    ],
+  } : {
     title: 'Responsibilities',
     paragraphs: [
       P('Your coach turns up prepared, keeps to this agreement, and is honest with you, including when coaching isn’t the right support for something.'),
@@ -183,7 +224,8 @@ export const STANDARD = {
         ...(k === 'sessions' ? [P('Coaching sessions not used by the end date expire, unless you agree an extension with your coach.',
           'It keeps momentum: coaching works best at a steady rhythm. Ask early and an extension is usually easy.')] : []),
         P('Any change to this agreement is made as a new version that you both sign. Every version is kept.'),
-        P('Your portal account stays open after the agreement ends, so your plans and records stay yours.'),
+        P(k === 'team' ? 'Each person’s portal account stays open after the agreement ends, so their plans and records stay theirs.'
+          : 'Your portal account stays open after the agreement ends, so your plans and records stay yours.'),
       ],
     };
   },

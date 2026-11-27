@@ -65,7 +65,7 @@ import '../../pages/hubs/clientPage.css';
 //                        coach), Start my recovery.
 //   /recovery/today      The recovery day (M15 "Home in recovery", here
 //                        until Home is rebuilt in Phase 4): the banner,
-//                        "What would help you recharge today?", Sleep and
+//                        "What will help you recharge today?", Sleep and
 //                        Breathe, Add a few more days, Ready to go again.
 //   /recovery/check-in   The end check-in, "How are you feeling?", which
 //                        shows once the chosen end has come; with ?add=1,
@@ -145,9 +145,7 @@ export default function RecoveryStart() {
   return (
     <Shell back={back}>
       <p className="rec-label">Recovery</p>
-      <h1 className="ds-question rec-question">How long would you like to recover for?</h1>
-      <p className="rec-nudge">Pick what feels right.</p>
-      <p className="rec-nudge">You can end it early or add a few days.</p>
+      <h1 className="ds-question rec-question">How long do you want to recover for?</h1>
       <div className="rec-counter">
         <DayCounter
           value={days}
@@ -220,7 +218,7 @@ export function RecoveryToday() {
 
 /**
  * The recovery day's basics (M15 "Home in recovery"): the banner, "What
- * would help you recharge today?", Sleep and Breathe, Add a few more days
+ * will help you recharge today?", Sleep and Breathe, Add a few more days
  * and Ready to go again. All optional. On /recovery/today and on
  * Home while a Recovery is open (Phase 4 step 2). `recovery` is
  * { view: recoveryView(), setData, today, userId } from useRecoveryPage,
@@ -323,10 +321,10 @@ export function RecoveryDay({ recovery }) {
       <RecoveryBanner className="rec-banner" until={`You’re in recovery until ${view.untilText}.`} left={daysLeftWords(view.daysLeft)} />
 
       <section className="rec-q" aria-labelledby="rec-q">
-        <h2 id="rec-q" className="rec-qh">What would help you recharge today?</h2>
+        <h2 id="rec-q" className="rec-qh">What will help you recharge today?</h2>
         <TextBox
           className="rec-text"
-          ariaLabel="What would help you recharge today?"
+          ariaLabel="What will help you recharge today?"
           placeholder="e.g. An evening with no screens"
           maxLength={RECHARGE_MAX}
           value={shownText}

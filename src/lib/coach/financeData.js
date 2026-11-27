@@ -1,4 +1,4 @@
-import { moneyWords, rateWords, invoiceNumber, REMINDER_DAYS } from '../billing/money.js';
+import { moneyWords, rateWords, invoiceNumber, REMINDER_DAYS, stageOwed } from '../billing/money.js';
 import { associateMonth, minutesFromFunction, payReminderDue } from '../finance/associates.js';
 import { monthName } from '../finance/year.js';
 import { addDays, daysBetween, dayKeyWords } from '../time/index.js';
@@ -230,7 +230,11 @@ export function reminderLines({ invoice, reminders = [], today }) {
   const gone = sent.length + unsure.length;
   const last = invoice.due_on ? addDays(invoice.due_on, REMINDER_DAYS.at(-1)) : null;
   if (last && gone < REMINDER_DAYS.length) lines.push(`${last >= today ? 'The last one goes on' : 'The last one was due on'} ${dayWordsFrom(last, today)}`);
-  return { lines, count: `${sent.length} of ${REMINDER_DAYS.length}`, waiting, unsure: unsure[0] || null };
+  // Owed and not drafted yet (the nightly round drafts once a night): Send a reminder now drafts it and sends it, so
+  // this panel, Needs you and Finances' own list agree (Stage D, item 15).
+  const owed = waiting || unsure.length || !invoice.due_on || !today ? null : stageOwed(Math.max(0, daysBetween(invoice.due_on, today)), mine.map((r) => r.stage));
+  if (owed) lines.push(`The ${owed}-day reminder is ready to send`);
+  return { lines, count: `${sent.length} of ${REMINDER_DAYS.length}`, waiting, unsure: unsure[0] || null, owed };
 }
 
 // ---------------------------------------------------------------- Needs you and Today's line

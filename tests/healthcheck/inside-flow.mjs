@@ -381,7 +381,7 @@ part('newversion', async ({ browser, w, mode, tag }) => {
   await checkScreen(b, `${tag}, New version`, { layer: '.ds-guide', back: GUIDE_BACK });
   await page.screenshot({ path: join(out, `newv-${w}-${mode}.png`) });
   await pressNext(page);
-  pass(`${tag}: then the objective, copied in`, await onQuestion(page, 'What is your team trying to achieve?') && (await page.locator('.ds-guide-body textarea').inputValue()).startsWith('Double recurring revenue'));
+  pass(`${tag}: then the objective, copied in`, await onQuestion(page, 'What’s your team trying to achieve?') && (await page.locator('.ds-guide-body textarea').inputValue()).startsWith('Double recurring revenue'));
   await checkScreen(b, `${tag}, objective`, { layer: '.ds-guide', back: GUIDE_BACK });
   await pressNext(page); await pressNext(page); await pressNext(page); await pressNext(page);
   pass(`${tag}: every rating starts blank`, await onQuestion(page, 'contribute to') && await page.locator('.ds-guide [role=radio][aria-checked=true]').count() === 0);
@@ -404,12 +404,12 @@ part('draft', async ({ browser, w, mode, tag }) => {
   await open(page, `${BASE}/new?team=7a000000-0000-4000-8000-00000000a002`);
   await onQuestion(page, 'Let’s start from your last answers.');
   await pressNext(page);
-  await onQuestion(page, 'What is your team trying to achieve?');
+  await onQuestion(page, 'What’s your team trying to achieve?');
   await page.locator('.ds-guide-body textarea').fill('Make Kestrel the product customers recommend first, and keep it so');
   await sleep(1200);
   // A refresh: the typing comes back ("Draft restored").
   await page.reload();
-  await onQuestion(page, 'What is your team trying to achieve?', 15000);
+  await onQuestion(page, 'What’s your team trying to achieve?', 15000);
   pass(`${tag}: after a refresh the typing is back`, await until(async () => (await page.locator('.ds-guide-body textarea').inputValue()).endsWith('and keep it so'), 8000));
   pass(`${tag}: … with "Draft restored"`, await hasToast(page, 'Draft restored'));
   // Close: kept as a draft, "Saved", and the team list offers to carry on.
@@ -424,7 +424,7 @@ part('draft', async ({ browser, w, mode, tag }) => {
   pass(`${tag}: Home offers to carry it on`, await until(async () => (await page.locator('body').innerText()).includes('Strategic Alignment Health Check'), 15000));
   await open(page);
   await page.getByRole('button', { name: 'Carry on with my new version' }).click();
-  pass(`${tag}: it carries on where it was left`, await onQuestion(page, 'What is your team trying to achieve?') && (await page.locator('.ds-guide-body textarea').inputValue()).endsWith('and keep it so'));
+  pass(`${tag}: it carries on where it was left`, await onQuestion(page, 'What’s your team trying to achieve?') && (await page.locator('.ds-guide-body textarea').inputValue()).endsWith('and keep it so'));
   noProblems(b, `${tag}, draft`);
   await b.ctx.close();
 });
@@ -445,7 +445,7 @@ part('newteam', async ({ browser, w, mode, tag }) => {
   pass(`${tag}: a name already used says so`, (await text(page, '.ds-guide-problem')).includes('You already have a team with that name.'));
   await page.getByLabel('Team').fill('Sales team');
   await pressNext(page);
-  await onQuestion(page, 'What is your team trying to achieve?');
+  await onQuestion(page, 'What’s your team trying to achieve?');
   await page.locator('.ds-guide-body textarea').fill('Win the north of England by 2028');
   await pressNext(page);
   await typeRows(page, ['Trusted by regional buyers', 'A team that sells value']);
@@ -511,7 +511,7 @@ part('edit', async ({ browser, w, mode, tag }) => {
   await open(page, `${BASE}/version/${IDS.pt1}`);
   await resultsShown(page);
   await page.getByRole('button', { name: 'Edit the objective' }).click();
-  pass(`${tag}: Edit opens the objective`, await onQuestion(page, 'What is your team trying to achieve?'));
+  pass(`${tag}: Edit opens the objective`, await onQuestion(page, 'What’s your team trying to achieve?'));
   pass(`${tag}: … with Save my edit`, (await text(page, '.ds-guide-next')).toUpperCase() === 'SAVE MY EDIT');
   await page.locator('.ds-guide-body textarea').fill('Make Kestrel the product customers recommend first in Europe.');
   await pressNext(page);

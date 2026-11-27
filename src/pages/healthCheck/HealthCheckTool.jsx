@@ -399,7 +399,7 @@ export default function HealthCheckTool({
     {
       key: 'objective',
       name: 'Objective',
-      question: 'What is your team trying to achieve?',
+      question: 'What’s your team trying to achieve?',
       nudges: ['Write it in one sentence.'],
       eye: icons,
       required: true,
@@ -409,7 +409,7 @@ export default function HealthCheckTool({
         <>
           {mark(at('objective'))}
           <TextBox
-            ariaLabel="What is your team trying to achieve?"
+            ariaLabel="What’s your team trying to achieve?"
             placeholder="e.g. Double recurring revenue by 2028"
             value={draft.objective}
             maxLength={MAX_OBJECTIVE}
@@ -480,7 +480,7 @@ export default function HealthCheckTool({
     {
       key: 'projects',
       name: 'Projects',
-      question: 'What is your team working on?',
+      question: 'What’s your team working on?',
       nudges: ['List every project or piece of work, now or planned.'],
       nudgeInfo: { label: 'What counts as a project', text: PROJECTS_SHORT },
       required: true,

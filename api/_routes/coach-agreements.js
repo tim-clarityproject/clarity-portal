@@ -24,7 +24,7 @@ import { addDays, dayIn, dayKeyWords, isZone } from '../../src/lib/time/index.js
 import { applies as coolingApplies, futureSessionRows, inWindow, ownSessions, refund14, sessionRanges } from '../../src/lib/agreements/coolingOff.js';
 import { forStorage } from '../../src/lib/agreements/clauses.js';
 import { moneyText } from '../../src/lib/agreements/currency.js';
-import { endEarlyProblem, pauseMove, pauseProblem } from '../../src/lib/agreements/endDate.js';
+import { endEarlyProblem, pauseMove, pauseProblem, sessionsInPause } from '../../src/lib/agreements/endDate.js';
 import { quoteNumber, validUntil, VALID_DAYS } from '../../src/lib/agreements/quote.js';
 import { counts, isOver } from '../../src/lib/agreements/sessionOutcome.js';
 import { firstPayment, firstSigning } from '../../src/lib/agreements/settling.js';
@@ -575,7 +575,13 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
       const outcome = profile?.email ? await mail(profile.email, pausedEmail({ firstName: firstName(profile.name), coachFirst: c.display_first_name,
         fromWords: dayKeyWords(asked.from, { year: true }), toWords: dayKeyWords(asked.to, { year: true }), endWords: dayKeyWords(moved.end, { year: true }) }),
       { who: { ...c, full_name: coachName(c, v.terms) } }) : 'refused';
-      return { endsOn: moved.end, emailed: outcome === 'sent' };
+      // Stage D item 16 (Tim, 27 Nov): the coaching sessions already booked inside the pause are listed for the coach
+      // to move or cancel one by one with the calendar's own Move and Delete. Nothing here moves or cancels any of them,
+      // and the email above says nothing about them: the client hears only about those the coach changes.
+      const zone = isZone(profile?.time_zone) ? profile.time_zone : LONDON;
+      const { data: sess } = a.profile_id ? await db.from('coach_sessions').select('*').eq('profile_id', a.profile_id) : { data: [] };
+      const inside = sessionsInPause(sess || [], { from: asked.from, to: asked.to, profileId: a.profile_id, zone, now: now().getTime() });
+      return { endsOn: moved.end, emailed: outcome === 'sent', inside: inside.map((x) => x.id) };
     },
 
     /** End early: the day and who asked for it. */

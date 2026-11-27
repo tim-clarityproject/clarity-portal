@@ -257,11 +257,9 @@ async function planMyDay(page) {
     } else if (h === 'What will you do today?') {
       await page.locator('.ds-answer--pick').first().click();
       await until(async () => (await page.locator('.ds-answer--pick[aria-pressed="true"]').count()) >= 1, 5000);
-    } else if (h === 'Which one is your highest priority?') {
-      await body.getByRole('radio').first().click();
-    } else if (h === 'Which Strategies does today serve most?') {
+    } else if (h === 'Which of your Strategies does today move forward?') { // Stage D, Draft 11
       await page.getByRole('button', { name: 'Grow through referrals' }).click();
-    } else if (h === 'What’s the biggest risk to today?') {
+    } else if (h === 'What’s most likely to knock today off course?') {
       await body.locator('textarea').nth(0).fill('The connection drops before landing.');
       await body.locator('textarea').nth(1).fill('Keep working on the device.');
     }
@@ -287,9 +285,9 @@ async function reviewMyDay(page) {
       await page.getByRole('radio', { name: 'Very good', exact: true }).click();
     } else if (h === 'What went well today?') {
       await body.locator('textarea').first().fill('Wrote the plan on the flight.');
-    } else if (h === 'What would you do differently next time?') {
+    } else if (h === 'What will you do differently tomorrow?') {
       await body.locator('textarea').first().fill('Download the papers before boarding.');
-    } else if (h === 'What are the most important things to do tomorrow?') {
+    } else if (h === 'What will you do first tomorrow?') {
       await page.getByRole('textbox', { name: 'Priority 1 for tomorrow' }).fill('Send the board pack');
     }
     await next(page);

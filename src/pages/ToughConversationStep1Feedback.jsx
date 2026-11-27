@@ -37,6 +37,12 @@ export default function ToughConversationStep1Feedback() {
   const { user } = useContext(AuthContext);
   const [decisionId, setDecisionId] = useState(location.state?.decisionId || null);
 
+  // Stage D, Draft 11: "What would success look like for you?" comes first,
+  // on its own screen (1 of 4), then the script (2 of 4); "When and where
+  // will you have the conversation?" ends the tool on step 2's page.
+  const [screen, setScreen] = useState(location.state?.screen === 'script' ? 'script' : 'success');
+  const [success, setSuccess] = useState(location.state?.success || '');
+  const whenWhere = location.state?.whenWhere || '';
   const [observation, setObservation] = useState(location.state?.observation || '');
   const [impact, setImpact] = useState(location.state?.impact || '');
   const [need, setNeed] = useState(location.state?.need || '');
@@ -58,9 +64,10 @@ export default function ToughConversationStep1Feedback() {
   const { clear: clearDraft } = useDraft({
     userId: user?.id,
     name: `tough-conversation-1:${location.state?.decisionId || 'new'}`,
-    value: { observation, impact, need },
+    value: { success, observation, impact, need },
     ready: true,
     onRestore: (v) => {
+      setSuccess(v.success || '');
       setObservation(v.observation || '');
       setImpact(v.impact || '');
       setNeed(v.need || '');
@@ -75,7 +82,7 @@ export default function ToughConversationStep1Feedback() {
 
   const persistDraft = async (name) => {
     const payload = {
-      form_data: { observation, impact, need, selectedQuestions, customQuestion },
+      form_data: { success, observation, impact, need, selectedQuestions, customQuestion, whenWhere },
       title: name,
       draft: true,
       status: 'draft',
@@ -144,31 +151,66 @@ export default function ToughConversationStep1Feedback() {
   const goContinue = () => {
     clearDraft();
     navigate('/give-difficult-feedback/questions', {
-      state: { decisionId, observation, impact, need, selectedQuestions, customQuestion, problemTitle: currentTitle },
+      state: { decisionId, success, observation, impact, need, selectedQuestions, customQuestion, whenWhere, problemTitle: currentTitle },
     });
   };
+
+  if (screen === 'success') {
+    return (
+      <div className="ui-root">
+        <FormTool
+          name="Give difficult feedback"
+          step={1}
+          steps={4}
+          question="What would success look like for you?"
+          onNext={() => setScreen('script')}
+          saveError={saveError}
+          onSaveDraft={() => { if (!isSaving) setNameDialog('draft'); }}
+          onDiscard={() => setDiscardOpen(true)}
+          closeTo="/interpersonal"
+        >
+          <TextBox id="tc-success" lines="many" focusMode ariaLabel="What would success look like for you?" value={success} onChange={setSuccess} />
+        </FormTool>
+        <NameDialog
+          open={nameDialog === 'draft'}
+          title="Name this draft"
+          message="Give it a name so you can find it in My decisions."
+          suggestedName={suggestedName}
+          onConfirm={handleSaveDraftConfirm}
+          onCancel={() => setNameDialog(null)}
+        />
+        <DiscardDialog
+          isOpen={discardOpen}
+          title="Discard this entry?"
+          message="Anything you have not saved will be lost."
+          onKeep={() => setDiscardOpen(false)}
+          onDiscard={handleDiscard}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="ui-root">
       <FormTool
         name="Give difficult feedback"
-        step={1}
-        steps={2}
+        step={2}
+        steps={4}
         question="What do you need to say?"
-        hint="Three short parts make your script."
         onNext={() => { if (!isSaving) goContinue(); }}
+        onBack={() => setScreen('success')}
         saveError={saveError}
         onSaveDraft={() => { if (!isSaving) setNameDialog('draft'); }}
         onDiscard={() => setDiscardOpen(true)}
         closeTo="/interpersonal"
       >
-        <FormField label="What have you noticed?" htmlFor="tc-observation" help="Name the thing you’ve observed. This can either be one big thing, or a pattern of 3+ smaller things.">
+        <FormField label="What have you noticed?" htmlFor="tc-observation">
           <TextBox id="tc-observation" lines="many" focusMode ariaLabel="What have you noticed?" placeholder="I’ve noticed…" value={observation} onChange={setObservation} />
         </FormField>
-        <FormField label="What is the impact of that?" htmlFor="tc-impact" help="Describe in a non-emotional manner the tangible impact of their actions.">
-          <TextBox id="tc-impact" lines="many" focusMode ariaLabel="What is the impact of that?" placeholder="The impact of that is…" value={impact} onChange={setImpact} />
+        <FormField label="What’s the impact of that?" htmlFor="tc-impact">
+          <TextBox id="tc-impact" lines="many" focusMode ariaLabel="What’s the impact of that?" placeholder="The impact of that is…" value={impact} onChange={setImpact} />
         </FormField>
-        <FormField label="What do you need from them?" htmlFor="tc-need" help="Name the change or outcome that is required.">
+        <FormField label="What do you need from them?" htmlFor="tc-need">
           <TextBox id="tc-need" lines="many" focusMode ariaLabel="What do you need from them?" placeholder="So, what I need from you is…" value={need} onChange={setNeed} />
         </FormField>
         <div className="tc-script">

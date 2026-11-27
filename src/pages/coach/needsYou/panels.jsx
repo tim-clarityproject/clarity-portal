@@ -15,7 +15,7 @@ import { mainPoints, resolveChoice } from '../../../lib/agreements/clauses';
 import AgreementView from '../../../components/agreements/AgreementView';
 import { calendarLink } from '../../../components/agreements/SessionCheckRow';
 import {
-  dayOfStamp, hoursState, perSessionMinor, priceFromOptions, versionInForce, waitingReminder,
+  dayOfStamp, hoursState, perSessionMinor, priceFromOptions, versionInForce, reminderToOffer,
 } from '../../../lib/agreements/duringAgreement';
 import { firstPaymentReminderEmail, signReminderEmail } from '../../../lib/email/agreementEmails';
 import { invoiceReminderEmail } from '../../../lib/email/billingEmails';
@@ -240,7 +240,8 @@ function OverdueBody({ item, close }) {
   const p = useCoachPortal();
   const toast = useToast();
   const inv = (p.invoices || []).find((i) => i.id === item.data.invoiceId);
-  const r = inv ? waitingReminder(inv, p.invoiceReminders) : null;
+  // The reminder drafted and waiting, or the one owed and not drafted yet (Stage D, item 15: Send drafts it then sends).
+  const r = inv ? reminderToOffer(inv, p.invoiceReminders, p.todayKey) : null;
   const org = inv?.settles_to === 'organisation' ? p.organisations.find((o) => o.id === inv.organisation_id) : null;
   const client = p.clients.find((c) => c.id === inv?.profile_id);
   const first = firstOf(org ? (inv?.payer_name || org.name) : client?.name || inv?.payer_name);
@@ -266,7 +267,7 @@ function OverdueBody({ item, close }) {
     } catch { toast.error('That didn’t save. Check your connection and try again.'); }
   };
   const made = MailBody({ item, close, doc, title: `Reminder for ${first}`, sentWords: `Reminder sent to ${first}`,
-    sendAsk: { route: 'billing', kind: 'send_reminder', body: { reminderId: r?.id } },
+    sendAsk: { route: 'billing', kind: 'send_reminder', body: r?.id ? { reminderId: r.id } : { invoiceId: inv?.id } },
     extra: <div className="cc-acts"><TextLink onClick={togglePause}>{pause ? 'Start reminders again' : `Pause reminders for ${first}`}</TextLink></div> });
   if (!inv || !r || !doc) return { title: 'Reminder', body: <p className="cc-quiet">This reminder has gone or isn’t needed any more.</p> };
   return made;

@@ -1,5 +1,6 @@
 import { DEVICE_PREFIXES } from './deviceStore';
 import { clearDeviceCopies } from './coach/deviceCopy';
+import { forgetAuthCopy } from './authStorage';
 
 // Removes everything this app itself keeps in the browser for a
 // signed-in person: legacy tool autosaves and saved progress, cached
@@ -81,6 +82,8 @@ function clearFrom(storage) {
     const key = storage.key(i);
     if (key && isAppOwnedKey(key)) storage.removeItem(key);
   }
+  // The sign-in's in-memory copy (authStorage.js) follows what was removed round it.
+  forgetAuthCopy();
 }
 
 // The Team performance check and the Emotional wash (toolAnswers.js) keep

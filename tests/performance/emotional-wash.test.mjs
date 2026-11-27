@@ -1,14 +1,14 @@
-// Emotional wash (M10, version 5.6): the tool's rules, with no screen.
+// Emotional wash (Polish 1, Stage D, 27 Nov: Draft 6's screens with Draft 7's word list): the tool's rules, with no screen.
 //   node --import ./tests/scores/register.mjs --test tests/performance/emotional-wash.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CHECKS, CHECK_ANSWERS, FOLLOW, KINDS, RELATED, REQUIRED, SKIPPED, STARTERS, STORY_EXAMPLE, TOOL, TOOL_NAME, TOOL_PATH, WASHES, WHERE, WORDS,
-  countLine, emptyWash, firstUnanswered, hasAnswers, isComplete, isWashed, nudge, percentAt, question, quote, quoteWords,
-  requiredMessage, resumeStep, sameTodo, savedAnswers, setCheck, setThought, setWash, storyThoughts, strayTodos, summaryRows,
-  typedThoughts, wantedTodo, washContent, washFrom, washSteps, washTitle, whereLine, withStoryRows, withTodo,
+  CHOICES, FAMILIES, OLD_WORDS, REQUIRED, SKIPPED, STORY_ID, STRENGTHS, THOUGHT_EXAMPLES, TOOL, TOOL_NAME, TOOL_PATH, WHERE, WORDS,
+  countLine, emptyWash, firstUncommitted, hasAnswers, isCommitted, isComplete, namedWords, otherThoughts, question, quote,
+  requiredMessage, resumeStep, sameTodo, savedAnswers, setChoice, setThought, storyOf, strayTodos, strengthLine, summaryRows,
+  talkLine, thoughtSteps, tidyWash, typedThoughts, wantedTodo, washContent, washFrom, washTitle, whenWords, whereLine, withFamily,
+  withOtherRows, withStory, withTodo, wordsOf,
 } from '../../src/lib/emotionalWash/model.js';
-import { tidyWash } from '../../src/lib/emotionalWash/model.js';
 import { HUBS, PIN_GROUPS, TOOLS, areaOf as menuAreaOf } from '../../src/lib/navigation.js';
 import { planRows, recentRows } from '../../src/lib/savedItems.js';
 import { carryOnItems } from '../../src/lib/carryOn.js';
@@ -17,333 +17,302 @@ import { repeatsItsAnswer } from './second-lines.test.mjs';
 
 let n = 0;
 const id = () => `id-${(n += 1)}`;
-const th = (text, more = {}) => ({ id: id(), text, t: null, l: null, h: null, wash: null, step: '', question: '', where: null, strategyId: null, ...more });
-// M10's own invented wash.
-const m10 = () => ({
+const TODAY = new Date(2026, 10, 27);
+const th = (tid, text, more = {}) => ({ id: tid, text, choice: null, step: '', when: null, where: null, strategyId: null, ...more });
+// An invented wash, as the tool keeps it.
+const sample = () => ({
   what: 'The chair backed the board member who undermined my plan in front of everyone.',
-  kind: 'pa',
-  words: ['Disappointment', 'Anger', 'Contempt'],
-  rel: ['Respect', 'Loyalty'],
+  family: 'angry',
+  words: ['Resentful', 'Betrayed'],
+  own: '',
+  strength: 4,
   thoughts: [
-    { ...th('The chair has never rated me.'), id: 'a', t: 'no', l: 'unsure', h: 'no', wash: 'park', question: 'What would show me where I stand with the chair?' },
-    { ...th('If I push back, I’ll look weak.'), id: 'b', t: 'unsure', l: 'no', h: 'no', wash: 'trash' },
-    { ...th('I need to win the board back before the next meeting.'), id: 'c', t: 'yes', l: 'yes', h: 'yes', wash: 'act', step: 'Ask the chair for 20 minutes before the next board meeting.', where: 'week', strategyId: 's1' },
+    th(STORY_ID, 'The chair has never rated me.', { choice: 'park' }),
+    th('b', 'If I push back, I’ll look weak.', { choice: 'go' }),
+    th('c', 'I need to win the board back before the next meeting.', { choice: 'act', step: 'Ask the chair for 20 minutes before the next board meeting.', when: '2026-12-03', where: 'week', strategyId: 's1' }),
   ],
   todos: { c: { id: 'todo-1', text: 'Ask the chair for 20 minutes before the next board meeting.', where: 'week', strategyId: 's1' } },
+  legacy: null,
 });
 
-test('the ten Geneva Emotion Wheel words, exactly as M10 has them', () => {
-  assert.deepEqual(WORDS, ['Anger', 'Contempt', 'Disappointment', 'Disgust', 'Fear', 'Guilt', 'Hate', 'Regret', 'Sadness', 'Shame']);
-});
+// ------------------------------------------------------------ Draft 7's word list
 
-test('the kinds of feeling, what it could be related to, and the three ways to wash', () => {
-  assert.deepEqual(KINDS.map((k) => [k.label, k.hint]), [
-    ['Future concern', 'It’s fear, anxiety or worry about what might happen.'],
-    ['Present angst', 'It’s anger, disgust or shock about what’s happening now.'],
-    ['Past regret', 'It’s sadness, shame or guilt about what happened.'],
+test('Draft 7: eight families of difficult feelings, 56 words, each with its meaning, word for word', () => {
+  assert.deepEqual(FAMILIES.map((f) => f.label), ['Angry', 'Overloaded', 'Afraid', 'Uncertain', 'Sad', 'Ashamed', 'Disconnected', 'On guard']);
+  assert.equal(WORDS.length, 56);
+  for (const f of FAMILIES) assert.equal(f.words.length, 7, f.label);
+  assert.deepEqual(wordsOf('angry').map((w) => [w.label, w.hint]), [
+    ['Irritated', 'Small things are getting to you.'],
+    ['Frustrated', 'Something is blocking what you want.'],
+    ['Indignant', 'You’ve been treated unfairly.'],
+    ['Resentful', 'Still hurt by something unfair.'],
+    ['Betrayed', 'Someone broke your trust.'],
+    ['Bitter', 'Hurt that has hardened over time.'],
+    ['Furious', 'Anger at full strength.'],
   ]);
-  assert.deepEqual(RELATED, ['Trust', 'Respect', 'Fairness', 'Loyalty', 'Recognition', 'Status', 'Control', 'Belonging', 'Security', 'Identity', 'Competence']);
-  assert.deepEqual(WASHES.map((w) => [w.value, w.label, w.hint]), [
-    ['act', 'Accept and act', 'Simplify it and move to action.'],
-    ['park', 'Park and reflect', 'Turn it into a question to come back to.'],
-    ['trash', 'Trash', 'It’s an unhelpful story, so let it go.'],
-  ]);
-  assert.deepEqual(CHECK_ANSWERS.map((a) => a.label), ['Yes', 'Not sure', 'No']);
+  assert.deepEqual(wordsOf('guard').map((w) => w.label), ['Guarded', 'Defensive', 'Suspicious', 'Competitive', 'Envious', 'Jealous', 'Cornered']);
+  assert.deepEqual(wordsOf('ashamed').map((w) => w.label)[2], 'Like an imposter');
+  assert.equal(wordsOf('ashamed')[1].hint, 'Others saw what you’d rather they hadn’t.');
+  assert.equal(new Set(WORDS).size, 56, 'every word once');
+  // Every meaning is under 10 words, ends with a full stop and never tells the person what to do.
+  for (const f of FAMILIES) for (const w of f.words) {
+    assert.ok(w.hint.split(/\s+/).length < 10, w.hint);
+    assert.match(w.hint, /\.$/);
+    assert.equal(repeatsItsAnswer(w.label, w.hint), false, `${w.label} / ${w.hint}`);
+  }
+  // No clinical words.
+  assert.doesNotMatch(WORDS.join(' '), /depressed|traumatised|traumatized/i);
 });
 
-test('no answer has a second line that only repeats it (rule 29ap)', () => {
-  for (const o of [...KINDS, ...WASHES]) assert.equal(repeatsItsAnswer(o.label, o.hint), false, `${o.label} / ${o.hint}`);
+test('How strong is it right now? Slight, Mild, Moderate, Strong, Intense, with the chosen word in the line under it', () => {
+  assert.deepEqual(STRENGTHS.map((s) => [s.value, s.label]), [[1, 'Slight'], [2, 'Mild'], [3, 'Moderate'], [4, 'Strong'], [5, 'Intense']]);
+  assert.equal(strengthLine(sample()), 'Resentful and betrayed');
+  assert.equal(strengthLine({ ...sample(), words: ['Resentful'] }), 'Resentful');
+  assert.equal(strengthLine({ ...sample(), words: [], own: '  Gutted ' }), 'Gutted');
+  assert.equal(strengthLine({ ...sample(), words: [] }), null);
 });
 
-test('Park and reflect asks its question, with three starters; Accept and act asks for one small step', () => {
-  assert.equal(FOLLOW.park.label, 'What’s the question that will be helpful to reflect on?');
-  assert.equal(FOLLOW.park.hint, 'Keep it open, starting with “What” or “How”. Tap one to start, then make it yours.');
-  assert.deepEqual(STARTERS, ['What do I know for certain here?', 'What would I say to a friend in my place?', 'What matters most to me in this?']);
-  assert.equal(FOLLOW.act.label, 'What’s one small step you’ll take?');
-  assert.equal(FOLLOW.act.hint, 'Keep it small and clear.');
-  assert.equal(STORY_EXAMPLE, 'The chair has never rated me.');
+test('choosing a family keeps only its own words; their own word stays', () => {
+  const w = { ...sample(), own: 'Gutted' };
+  const sad = withFamily(w, 'sad');
+  assert.equal(sad.family, 'sad');
+  assert.deepEqual(sad.words, []);
+  assert.equal(sad.own, 'Gutted');
+  assert.deepEqual(namedWords(sad), ['Gutted']);
+  assert.deepEqual(withFamily(w, 'angry').words, ['Resentful', 'Betrayed']);
+  assert.equal(withFamily(w, 'nope'), w);
+  assert.deepEqual(wordsOf(null), []);
 });
 
-test('each screen’s question and the line under it, word for word', () => {
+// ------------------------------------------------------------ Draft 6's questions
+
+test('each screen’s question, word for word (Draft 6)', () => {
+  const t = sample().thoughts[0];
   assert.equal(question('what'), 'What happened?');
-  assert.equal(nudge('what'), 'Write it as it happened, in a sentence or two.');
-  assert.equal(question('kind'), 'What kind of feeling are you left with?');
-  assert.equal(nudge('kind'), 'Choose the one that fits best.');
-  assert.equal(question('words'), 'Which words fit the feeling?');
-  assert.equal(nudge('words'), 'Choose as many as fit.');
-  assert.equal(question('rel'), 'What could the feeling be related to?');
-  assert.equal(nudge('rel'), 'Choose what feels threatened.');
-  assert.equal(question('story'), 'What story are you telling yourself about what’s happened?');
-  assert.equal(nudge('story'), 'Type one thought in each box.');
-  const first = m10().thoughts[0];
-  assert.equal(question('t', first), 'Is “The chair has never rated me” true?');
-  assert.equal(question('l', first), 'Is “The chair has never rated me” logical?');
-  assert.equal(question('h', first), 'Is “The chair has never rated me” helpful?');
-  assert.equal(nudge('t'), 'Think about what you know for certain.');
-  assert.equal(nudge('l'), 'Ask whether it follows from what happened, or jumps to a conclusion.');
-  assert.equal(nudge('h'), 'Ask whether thinking it helps you act well.');
-  assert.deepEqual(Object.keys(CHECKS), ['t', 'l', 'h']);
-  assert.equal(question('w', first), 'How will you wash “The chair has never rated me”?');
-  assert.equal(nudge('w'), 'Choose one.');
-  assert.equal(question('w', first, { gone: true }), 'That thought has gone.');
-  assert.equal(nudge('w', { gone: true }), 'It won’t appear in your summary.');
+  assert.equal(question('family'), 'Which of these is it closest to?');
+  assert.equal(question('words'), 'Which word fits best?');
+  assert.equal(question('strength'), 'How strong is it right now?');
+  assert.equal(question('story'), 'What are you telling yourself about it?');
+  assert.equal(question('others'), 'What other thoughts come with it?');
+  assert.equal(question('d', t), 'For “The chair has never rated me”, what will you do with it?');
+  assert.equal(question('c', t), 'What will you do about “The chair has never rated me”, and when?');
+  assert.deepEqual(CHOICES.map((c) => [c.value, c.label]), [['act', 'I’ll act on it.'], ['park', 'I’ll park it for now.'], ['go', 'I’ll let it go.']]);
   assert.equal(countLine(1, 3), 'Thought 1 of 3');
+  assert.equal(countLine(1, 1), null, 'one thought needs no count');
+});
+
+test('every question follows Tim’s rules: short, What or How, no banned words', () => {
+  const t = { text: 'They don’t rate me.' };
+  const all = ['what', 'family', 'words', 'strength', 'story', 'others', 'd', 'c'].map((k) => question(k, t));
+  for (const q of all) {
+    assert.match(q, /^(What|Which|How|For )/, q);
+    assert.doesNotMatch(q, /^Why\b|\b(reflect|journey|unpack|lean into|mindset|leverage|synergy|bandwidth|just|maybe|perhaps|kind of|should|failed|wrong|weak|could)\b/i, q);
+  }
+  for (const q of ['what', 'family', 'words', 'strength', 'story', 'others'].map((k) => question(k))) assert.ok(q.split(/\s+/).length <= 12, q);
+});
+
+test('"See an example" on the other thoughts shows three different examples, not one that assumes who they are', () => {
+  assert.equal(THOUGHT_EXAMPLES.length, 3);
+  assert.equal(new Set(THOUGHT_EXAMPLES).size, 3);
 });
 
 test('a thought is quoted without its last full stop, question mark or exclamation mark', () => {
   assert.equal(quote({ text: '  They never   listen! ' }), '“They never listen”');
   assert.equal(quote({ text: 'Why me?' }), '“Why me”');
-  assert.equal(quoteWords({ text: 'It’s over.' }), 'It’s over');
 });
 
-test('nothing in the tool rates how strong the feeling is', () => {
-  const all = JSON.stringify([KINDS, WORDS, RELATED, WASHES, CHECK_ANSWERS, CHECKS, FOLLOW, REQUIRED, summaryRows(m10()), savedAnswers(m10())]);
-  assert.doesNotMatch(all, /how strong|strength|intens|\/10|out of 10|\b1 to (5|10)\b/i);
-});
-
-test('true, logical and helpful are three screens for each typed thought, then how to wash it', () => {
-  const w = m10();
-  const steps = washSteps(w);
-  assert.deepEqual(steps.map((s) => s.key), ['t:a', 'l:a', 'h:a', 'w:a', 't:b', 'l:b', 'h:b', 'w:b', 't:c', 'l:c', 'h:c', 'w:c']);
-  assert.deepEqual(steps.map((s) => [s.n, s.of]).at(-1), [3, 3]);
-  // An empty box has no screens.
-  const withEmpty = { ...w, thoughts: [...w.thoughts, th('   ')] };
-  assert.equal(washSteps(withEmpty).length, 12);
-  assert.equal(typedThoughts(withEmpty).length, 3);
-});
-
-test('the % bar: M10’s 0, 9, 18, 27, 36 for the first five screens, then only ever forward', () => {
-  assert.deepEqual([0, 1, 2, 3, 4].map((at) => percentAt(at, 3)), [0, 9, 18, 27, 36]);
-  for (const count of [0, 1, 3, 10]) {
-    let last = 36;
-    for (let at = 5; at < 5 + 4 * Math.max(1, count); at += 1) {
-      const p = percentAt(at, count);
-      assert.ok(p > last && p < 100, `${count} thoughts, screen ${at}: ${p} after ${last}`);
-      last = p;
-    }
-  }
-  // Typing more thoughts on the story screen never moves the bar back from where it stands.
-  assert.equal(percentAt(4, 1), percentAt(4, 9));
-});
-
-test('answers: a check takes yes, unsure or no; a wash takes act, park or trash; anything else is ignored', () => {
+test('the story is the first thought; the others are boxes of their own', () => {
   let w = emptyWash(id);
-  const first = w.thoughts[0].id;
-  w = setThought(w, first, { text: 'They don’t rate me.' });
-  assert.equal(setCheck(w, first, 't', 'maybe'), w);
-  assert.equal(setCheck(w, first, 'x', 'yes'), w);
-  w = setCheck(setCheck(setCheck(w, first, 't', 'no'), first, 'l', 'unsure'), first, 'h', 'yes');
-  assert.deepEqual([w.thoughts[0].t, w.thoughts[0].l, w.thoughts[0].h], ['no', 'unsure', 'yes']);
-  assert.equal(setWash(w, first, 'bin'), w);
-  assert.equal(setWash(w, first, 'park').thoughts[0].wash, 'park');
+  assert.equal(storyOf(w).id, STORY_ID);
+  assert.equal(otherThoughts(w).length, 1);
+  w = withStory(w, 'They don’t rate me.');
+  w = withOtherRows(w, ['I’ll look weak.', ''], null, id);
+  w = withOtherRows(w, ['I’ll look weak.', '', 'Nobody tells me anything.'], null, id);
+  assert.deepEqual(typedThoughts(w).map((t) => t.text), ['They don’t rate me.', 'I’ll look weak.', 'Nobody tells me anything.']);
+  const gone = otherThoughts(w)[0];
+  w = withOtherRows(w, ['', 'Nobody tells me anything.'], { removed: 0 }, id);
+  assert.deepEqual(otherThoughts(w).map((t) => t.text), ['', 'Nobody tells me anything.']);
+  w = withOtherRows(w, ['I’ll look weak.', '', 'Nobody tells me anything.'], { restored: 0 }, id, gone);
+  assert.equal(otherThoughts(w)[0].id, gone.id, 'Undo puts the same thought back');
+  // Taking out every box leaves one empty box; the story stays.
+  w = withOtherRows(w, [], { removed: 0 }, id);
+  w = withOtherRows({ ...w, thoughts: [storyOf(w)] }, [], { removed: 0 }, id);
+  assert.equal(otherThoughts(w).length, 1);
+  assert.equal(storyOf(w).text, 'They don’t rate me.');
 });
 
-test('a washing screen is answered once its follow-up is: a step to act on, a question to reflect on, nothing for Trash', () => {
-  assert.equal(isWashed({ wash: null }), false);
-  assert.equal(isWashed({ wash: 'act', step: '  ' }), false);
-  assert.equal(isWashed({ wash: 'act', step: 'Call Jo' }), true);
-  assert.equal(isWashed({ wash: 'park', question: '' }), false);
-  assert.equal(isWashed({ wash: 'park', question: 'What now?' }), true);
-  assert.equal(isWashed({ wash: 'trash' }), true);
+test('one choice for each typed thought, then the commit screen for each thought to act on', () => {
+  const w = sample();
+  assert.deepEqual(thoughtSteps(w).map((s) => s.key), [`d:${STORY_ID}`, 'd:b', 'd:c', 'c:c']);
+  const two = setChoice(w, 'b', 'act');
+  assert.deepEqual(thoughtSteps(two).map((s) => s.key), [`d:${STORY_ID}`, 'd:b', 'd:c', 'c:b', 'c:c']);
+  assert.deepEqual(thoughtSteps(two).filter((s) => s.kind === 'c').map((s) => [s.n, s.of]), [[1, 2], [2, 2]]);
+  // An empty box is never asked about.
+  assert.equal(thoughtSteps({ ...w, thoughts: [...w.thoughts, th('e', '   ')] }).length, 4);
+  assert.equal(setChoice(w, 'b', 'burn'), w);
 });
 
-test('the first screen still to answer, and where an unfinished wash carries on', () => {
-  const w = m10();
-  assert.equal(firstUnanswered(w), null);
+test('only the commit question can’t be skipped: it needs what and when; nothing else has a check', () => {
+  for (const key of ['what', 'family', 'words', 'strength', 'story', 'others', 'd']) assert.equal(requiredMessage(key, {}), null, key);
+  assert.equal(requiredMessage('c', { step: '' }), REQUIRED.step);
+  assert.equal(REQUIRED.step, 'Type what you’ll do to carry on.');
+  assert.equal(requiredMessage('c', { step: 'Ask the chair' }), REQUIRED.when);
+  assert.equal(requiredMessage('c', { step: 'Ask the chair', when: '2026-12-03' }), null);
+  assert.equal(requiredMessage('c', { step: 'Ask the chair', when: '2026-12-03' }, { needsStrategy: true }), REQUIRED.strategy);
+  assert.equal(isCommitted({ step: 'x', when: '2026-12-03' }), true);
+  assert.equal(isCommitted({ step: 'x', when: null }), false);
+  assert.equal(firstUncommitted(sample()), null);
+  assert.equal(firstUncommitted(setThought(sample(), 'c', { when: null })), 'c:c');
+});
+
+test('where an unfinished wash carries on: the first screen with nothing in it yet', () => {
+  let w = emptyWash(id);
+  assert.equal(resumeStep(w), 'what');
+  w = { ...w, what: 'It happened.' };
+  assert.equal(resumeStep(w), 'family');
+  w = withFamily(w, 'sad');
+  assert.equal(resumeStep(w), 'words');
+  w = { ...w, words: ['Flat'] };
+  assert.equal(resumeStep(w), 'strength');
+  w = { ...w, strength: 2 };
+  assert.equal(resumeStep(w), 'story');
+  w = withStory(w, 'I always do this.');
+  assert.equal(resumeStep(w), `d:${STORY_ID}`);
+  w = setChoice(w, STORY_ID, 'act');
+  assert.equal(resumeStep(w), `c:${STORY_ID}`);
+  w = setThought(w, STORY_ID, { step: 'Ask Priya', when: '2026-12-01' });
   assert.equal(resumeStep(w), 'sum');
-  assert.equal(firstUnanswered(setThought(w, 'b', { l: null })), 'l:b');
-  assert.equal(firstUnanswered(setThought(w, 'c', { step: '' })), 'w:c');
-  assert.equal(resumeStep({ ...w, what: ' ' }), 'what');
-  assert.equal(resumeStep({ ...w, kind: null }), 'kind');
-  assert.equal(resumeStep({ ...w, words: [] }), 'words');
-  assert.equal(resumeStep({ ...w, thoughts: [th('')] }), 'story');
-  assert.equal(resumeStep(setThought(w, 'a', { wash: null })), 'w:a');
-  // "Related to" is optional: none chosen holds nothing up.
-  assert.equal(resumeStep({ ...w, rel: [] }), 'sum');
 });
 
-test('a button is never greyed out: each screen says calmly what it needs', () => {
-  const empty = emptyWash(id);
-  assert.equal(requiredMessage('what', empty), 'Type what happened to carry on.');
-  assert.equal(requiredMessage('words', empty), 'Choose at least one word to carry on.');
-  assert.equal(requiredMessage('rel', empty), null);
-  assert.equal(requiredMessage('story', empty), 'Type at least one thought to carry on.');
-  const w = m10();
-  assert.equal(requiredMessage('what', w), null);
-  assert.equal(requiredMessage('words', w), null);
-  assert.equal(requiredMessage('story', w), null);
-  assert.equal(requiredMessage('w', w, { wash: null }), 'Choose one to carry on.');
-  assert.equal(requiredMessage('w', w, { wash: 'act', step: ' ' }), 'Type one small step to carry on.');
-  assert.equal(requiredMessage('w', w, { wash: 'act', step: 'Call Jo' }, { needsStrategy: true }), 'Choose a Strategy to carry on.');
-  assert.equal(requiredMessage('w', w, { wash: 'act', step: 'Call Jo' }), null);
-  assert.equal(requiredMessage('w', w, { wash: 'park', question: '' }), 'Type your question to carry on.');
-  assert.equal(requiredMessage('w', w, { wash: 'park', question: 'What now?' }), null);
-  assert.equal(requiredMessage('w', w, { wash: 'trash' }), null);
-  for (const line of Object.values(REQUIRED)) assert.doesNotMatch(line, /fail/i);
+// ------------------------------------------------------------ to-dos
+
+test('the to-do for a step: wanted only for a thought to act on that goes to this week or the backlog', () => {
+  const t = sample().thoughts[2];
+  assert.deepEqual(wantedTodo(t), { text: t.step, where: 'week', strategyId: 's1' });
+  assert.equal(wantedTodo({ ...t, where: WHERE.none }), null);
+  assert.equal(wantedTodo({ ...t, choice: 'park' }), null);
+  assert.equal(wantedTodo({ ...t, step: '  ' }), null);
+  assert.equal(sameTodo(sample().todos.c, wantedTodo(t)), true);
+  assert.equal(sameTodo(sample().todos.c, { ...wantedTodo(t), where: 'backlog' }), false);
 });
 
-test('the story’s boxes: typing, a new box, a box taken out and put back; a trashed thought has no box', () => {
-  let w = emptyWash(id);
-  w = withStoryRows(w, ['First'], null, id);
-  w = withStoryRows(w, ['First', ''], null, id);
-  w = withStoryRows(w, ['First', 'Second'], null, id);
-  w = withStoryRows(w, ['First', 'Second', 'Third'], null, id);
-  assert.deepEqual(w.thoughts.map((t) => t.text), ['First', 'Second', 'Third']);
-  const [one, two, three] = w.thoughts.map((t) => t.id);
-  assert.equal(new Set([one, two, three]).size, 3);
-  // Typing keeps each thought's own answers.
-  w = setCheck(w, two, 't', 'no');
-  w = withStoryRows(w, ['First', 'Second, reworded', 'Third'], null, id);
-  assert.equal(w.thoughts[1].id, two);
-  assert.equal(w.thoughts[1].t, 'no');
-  // Taken out, then Undo: the same thought, in the same place, with its answers.
-  const gone = w.thoughts[1];
-  w = withStoryRows(w, ['First', 'Third'], { removed: 1 }, id);
-  assert.deepEqual(w.thoughts.map((t) => t.id), [one, three]);
-  w = withStoryRows(w, ['First', 'Second, reworded', 'Third'], { restored: 1 }, id, gone);
-  assert.deepEqual(w.thoughts.map((t) => [t.id, t.t]), [[one, null], [two, 'no'], [three, null]]);
-  // Trashed: it has no box, and typing in the others never loses it.
-  w = setWash(w, two, 'trash');
-  assert.deepEqual(storyThoughts(w).map((t) => t.id), [one, three]);
-  w = withStoryRows(w, ['First', 'Third, reworded'], null, id);
-  assert.deepEqual(w.thoughts.map((t) => t.id).sort(), [one, two, three].sort());
-  assert.equal(w.thoughts.find((t) => t.id === three).text, 'Third, reworded');
-  // The only box taken out leaves one empty box.
-  let solo = withStoryRows(emptyWash(id), ['Only'], null, id);
-  solo = withStoryRows(solo, [''], { removed: 0 }, id);
-  assert.deepEqual(solo.thoughts.map((t) => t.text), ['']);
+test('a to-do whose thought no longer wants one is a stray: parked, let go, taken out or "Don’t add it"', () => {
+  assert.deepEqual(strayTodos(sample()), []);
+  assert.deepEqual(strayTodos(setChoice(sample(), 'c', 'go')), [{ thoughtId: 'c', id: 'todo-1' }]);
+  assert.deepEqual(strayTodos({ ...sample(), thoughts: sample().thoughts.slice(0, 2) }), [{ thoughtId: 'c', id: 'todo-1' }]);
+  assert.deepEqual(withTodo(sample(), 'c', null).todos, {});
+  assert.equal(whereLine(sample(), { id: 'c' }), 'It’s in this week’s to-dos.');
+  assert.equal(whereLine(withTodo(sample(), 'c', { id: 'x', where: 'backlog' }), { id: 'c' }), 'It’s in your backlog.');
+  assert.equal(whereLine(sample(), { id: 'b' }), null);
 });
 
-test('the to-do for a step: wanted only for a step to act on that goes to this week or the backlog', () => {
-  assert.equal(wantedTodo({ wash: 'park', step: 'x', where: 'week' }), null);
-  assert.equal(wantedTodo({ wash: 'act', step: ' ', where: 'week' }), null);
-  assert.equal(wantedTodo({ wash: 'act', step: 'Call Jo', where: 'none' }), null);
-  assert.equal(wantedTodo({ wash: 'act', step: 'Call Jo', where: null }), null);
-  assert.deepEqual(wantedTodo({ wash: 'act', step: ' Call  Jo ', where: 'backlog', strategyId: 's2' }), { text: 'Call Jo', where: 'backlog', strategyId: 's2' });
-  const made = { id: 't1', text: 'Call Jo', where: 'backlog', strategyId: 's2' };
-  assert.equal(sameTodo(made, { text: 'Call Jo', where: 'backlog', strategyId: 's2' }), true);
-  assert.equal(sameTodo(made, { text: 'Call Jo today', where: 'backlog', strategyId: 's2' }), false);
-  assert.equal(sameTodo(made, { text: 'Call Jo', where: 'week', strategyId: 's2' }), false);
-  assert.equal(sameTodo(made, { text: 'Call Jo', where: 'backlog', strategyId: 's3' }), false);
-  assert.equal(sameTodo(null, null), false);
-  assert.deepEqual(Object.values(WHERE), ['week', 'backlog', 'none']);
-});
+// ------------------------------------------------------------ the summary
 
-test('a to-do whose thought no longer wants one is a stray: parked, trashed, taken out or "Don’t add it"', () => {
-  const w = m10();
-  assert.deepEqual(strayTodos(w), []);
-  assert.deepEqual(strayTodos(setWash(w, 'c', 'park')), [{ thoughtId: 'c', id: 'todo-1' }]);
-  assert.deepEqual(strayTodos(setWash(w, 'c', 'trash')), [{ thoughtId: 'c', id: 'todo-1' }]);
-  assert.deepEqual(strayTodos(setThought(w, 'c', { where: 'none' })), [{ thoughtId: 'c', id: 'todo-1' }]);
-  assert.deepEqual(strayTodos({ ...w, thoughts: w.thoughts.slice(0, 2) }), [{ thoughtId: 'c', id: 'todo-1' }]);
-  assert.deepEqual(withTodo(w, 'c', null).todos, {});
-  assert.equal(withTodo(w, 'a', { id: 'x' }).todos.a.id, 'x');
-});
-
-test('the summary only says where a step is when its to-do is really there', () => {
-  const w = m10();
-  assert.equal(whereLine(w, w.thoughts[2]), 'It’s in this week’s to-dos.');
-  assert.equal(whereLine({ ...w, todos: { c: { ...w.todos.c, where: 'backlog' } } }, w.thoughts[2]), 'It’s in your backlog.');
-  assert.equal(whereLine({ ...w, todos: {} }, w.thoughts[2]), null);
-  assert.equal(whereLine(w, w.thoughts[0]), null);
-});
-
-test('Your wash: a mirror of what was named and chosen, in M10’s order; a trashed thought never appears', () => {
-  const rows = summaryRows(m10());
-  assert.deepEqual(rows.map((r) => [r.label, r.step, r.editName]), [
-    ['What happened', 'what', 'what happened'],
-    ['The feeling', 'kind', 'the feeling'],
-    ['Related to', 'rel', 'what it’s related to'],
-    ['To act on', 'w:c', 'what to act on'],
-    ['To reflect on', 'w:a', 'what to reflect on'],
+test('Your wash: what happened, the word, what you’re telling yourself, and what you’ll act on, park or let go', () => {
+  const rows = summaryRows(sample(), TODAY);
+  assert.deepEqual(rows.map((r) => [r.label, r.step, r.lines[0].text, r.lines[0].sub ?? null]), [
+    ['What happened', 'what', 'The chair backed the board member who undermined my plan in front of everyone.', null],
+    ['The feeling', 'family', 'Resentful and betrayed', 'Angry'],
+    ['How strong it is', 'strength', 'Strong', null],
+    ['What you’re telling yourself', 'story', 'The chair has never rated me.', null],
+    ['To act on', 'c:c', 'Ask the chair for 20 minutes before the next board meeting.', 'By Thu 3 Dec. It’s in this week’s to-dos.'],
+    ['Parked for now', `d:${STORY_ID}`, 'The chair has never rated me.', null],
+    ['Letting go', 'd:b', 'If I push back, I’ll look weak.', null],
   ]);
-  assert.deepEqual(rows[0].lines, [{ text: 'The chair backed the board member who undermined my plan in front of everyone.' }]);
-  assert.deepEqual(rows[1].lines, [{ text: 'Present angst', sub: 'Disappointment, anger and contempt.' }]);
-  assert.deepEqual(rows[2].lines, [{ text: 'Respect and loyalty' }]);
-  assert.deepEqual(rows[3].lines, [{ text: 'Ask the chair for 20 minutes before the next board meeting.', sub: 'It’s in this week’s to-dos.', good: true }]);
-  assert.deepEqual(rows[4].lines, [{ text: 'What would show me where I stand with the chair?' }]);
-  assert.doesNotMatch(JSON.stringify(rows), /look weak/);
+  const empty = summaryRows(emptyWash(id), TODAY);
+  assert.deepEqual(empty.map((r) => r.lines[0].text), [SKIPPED, SKIPPED, SKIPPED, SKIPPED]);
+  assert.equal(whenWords('2027-01-04', TODAY), 'Mon 4 Jan 2027', 'a day outside this year keeps its year');
 });
 
-test('Your wash: words in the order they were chosen, several steps a row each, and nothing chosen says so', () => {
-  const w = m10();
-  assert.equal(summaryRows({ ...w, words: ['Shame', 'Anger'] })[1].lines[0].sub, 'Shame and anger.');
-  assert.equal(summaryRows({ ...w, words: ['Fear'] })[1].lines[0].sub, 'Fear.');
-  assert.equal(summaryRows({ ...w, rel: [] })[2].lines[0].text, SKIPPED);
-  const two = { ...w, thoughts: [...w.thoughts, { ...th('Nobody backs me.'), id: 'd', wash: 'act', step: 'Ask Priya what she saw.', where: 'none' }] };
-  const act = summaryRows(two).filter((r) => r.label === 'To act on');
-  assert.deepEqual(act.map((r) => [r.step, r.editName, r.lines[0].sub]), [['w:c', 'what to act on, 1 of 2', 'It’s in this week’s to-dos.'], ['w:d', 'what to act on, 2 of 2', undefined]]);
-  assert.equal(new Set(summaryRows(two).map((r) => r.key)).size, summaryRows(two).length);
-  // Everything trashed: no rows to act on or reflect on.
-  const none = { ...w, thoughts: w.thoughts.map((t) => ({ ...t, wash: 'trash' })) };
-  assert.deepEqual(summaryRows(none).map((r) => r.label), ['What happened', 'The feeling', 'Related to']);
+test('the offer to talk it through names the person’s own coach, and nothing without one', () => {
+  assert.equal(talkLine('Maya'), 'Want to talk this through with Maya?');
+  assert.equal(talkLine(''), null);
+  assert.equal(talkLine(null), null);
 });
 
-test('saving: a draft keeps everything; a finished wash lets its trashed thoughts and empty boxes go for good', () => {
-  const w = { ...m10(), thoughts: [...m10().thoughts, th('')] };
-  const draft = savedAnswers(w);
-  assert.equal(draft.version, 1);
-  assert.equal(draft.thoughts.length, 4);
-  const done = savedAnswers(w, { finished: true });
-  assert.deepEqual(done.thoughts.map((t) => t.id), ['a', 'c']);
-  assert.doesNotMatch(JSON.stringify(done), /look weak/);
-  assert.deepEqual(done.thoughts[0], { id: 'a', text: 'The chair has never rated me.', true: 'no', logical: 'unsure', helpful: 'no', wash: 'park', step: '', question: 'What would show me where I stand with the chair?', where: null, strategy_id: null });
-  assert.deepEqual(done.todos, { c: { id: 'todo-1', text: 'Ask the chair for 20 minutes before the next board meeting.', where: 'week', strategy_id: 's1' } });
-  assert.deepEqual([done.kind, done.words, done.related], ['pa', ['Disappointment', 'Anger', 'Contempt'], ['Respect', 'Loyalty']]);
-  // Nothing in what is saved says who can see it: a wash is never shared.
-  assert.equal('shared' in done || 'shared_with_coach' in done, false);
-});
+// ------------------------------------------------------------ saving
 
-test('a saved wash opens as it was; anything damaged reads as not answered', () => {
-  const back = washFrom(savedAnswers(m10(), { finished: true }), id);
-  assert.deepEqual(summaryRows(back).map((r) => r.lines[0].text), summaryRows(m10()).map((r) => r.lines[0].text));
+test('saving: version 2 keeps every answer; a finished wash lets its empty boxes go', () => {
+  const s = savedAnswers({ ...sample(), thoughts: [...sample().thoughts, th('e', '')] });
+  assert.equal(s.version, 2);
+  assert.deepEqual([s.family, s.words, s.strength, s.own], ['angry', ['Resentful', 'Betrayed'], 4, '']);
+  assert.equal(s.thoughts.length, 4);
+  const done = savedAnswers({ ...sample(), thoughts: [...sample().thoughts, th('e', '')] }, { finished: true });
+  assert.equal(done.thoughts.length, 3);
+  assert.deepEqual(done.thoughts[2], { id: 'c', text: sample().thoughts[2].text, choice: 'act', step: sample().thoughts[2].step, when: '2026-12-03', where: 'week', strategy_id: 's1' });
+  assert.deepEqual(done.todos, { c: { id: 'todo-1', text: sample().todos.c.text, where: 'week', strategy_id: 's1' } });
+  // It opens as it was.
+  const back = washFrom(done, id);
+  assert.deepEqual(summaryRows(back, TODAY), summaryRows(sample(), TODAY));
   assert.equal(isComplete(back), true);
-  const bad = washFrom({ what: 7, kind: 'zz', words: ['Anger', 'Joy', 3], related: 'Trust', thoughts: [null, 'x', { text: 'Kept', true: 'perhaps', wash: 'burn', where: 'moon' }], todos: { nobody: { id: 't9' } } }, id);
-  assert.equal(bad.what, '7');
-  assert.equal(bad.kind, null);
-  assert.deepEqual(bad.words, ['Anger']);
-  assert.deepEqual(bad.rel, []);
-  assert.equal(bad.thoughts.length, 1);
-  assert.deepEqual([bad.thoughts[0].text, bad.thoughts[0].t, bad.thoughts[0].wash, bad.thoughts[0].where], ['Kept', null, null, null]);
-  assert.deepEqual(bad.todos, {});
-  assert.equal(washFrom(null, id).thoughts.length, 1);
-  assert.equal(washFrom(undefined, id).what, '');
 });
 
-test('an untouched tool saves nothing; a wash is whole once every screen is answered', () => {
+test('a wash saved before 27 Nov still opens and reads as it was', () => {
+  const v1 = {
+    version: 1,
+    what: 'The chair backed the other plan.',
+    kind: 'pa',
+    words: ['Disappointment', 'Anger'],
+    related: ['Respect'],
+    thoughts: [
+      { id: 'a', text: 'The chair has never rated me.', true: 'no', logical: 'unsure', helpful: 'no', wash: 'park', step: '', question: 'What would show me where I stand?', where: null, strategy_id: null },
+      { id: 'c', text: 'I need to win the board back.', true: 'yes', logical: 'yes', helpful: 'yes', wash: 'act', step: 'Ask the chair for 20 minutes.', question: '', where: 'week', strategy_id: 's1' },
+      { id: 'd', text: 'It’s hopeless.', wash: 'trash' },
+    ],
+    todos: { c: { id: 'todo-9', text: 'Ask the chair for 20 minutes.', where: 'week', strategy_id: 's1' } },
+  };
+  const w = washFrom(v1, id);
+  assert.deepEqual(namedWords(w), ['Disappointment', 'Anger']);
+  assert.deepEqual(OLD_WORDS.includes('Anger'), true);
+  const rows = summaryRows(w, TODAY);
+  assert.deepEqual(rows.map((r) => [r.label, r.lines[0].text, r.lines[0].sub ?? null]), [
+    ['What happened', 'The chair backed the other plan.', null],
+    ['The feeling', 'Disappointment and anger', null],
+    ['How strong it is', SKIPPED, null],
+    ['Related to', 'Respect', null],
+    ['What you’re telling yourself', 'The chair has never rated me.', null],
+    ['To act on', 'Ask the chair for 20 minutes.', 'It’s in this week’s to-dos.'],
+    ['Parked for now', 'The chair has never rated me.', 'What would show me where I stand?'],
+    ['Letting go', 'It’s hopeless.', null],
+  ]);
+  assert.equal(isComplete(w), true, 'a finished wash from before stays finished');
+  assert.equal(resumeStep(w), 'strength', 'opened as a draft, it starts at the first screen with nothing in it');
+  // Saved again, it keeps what only the old version had.
+  const again = washFrom(savedAnswers(w), id);
+  assert.deepEqual(summaryRows(again, TODAY), rows);
+  // A draft kept on a device by the old version reads the same way.
+  const draft = tidyWash({ what: 'x', kind: 'pr', words: ['Regret'], rel: ['Trust'], thoughts: [{ id: 't1', text: 'I always do this.', t: 'no', wash: 'act', step: 'Ask why', where: 'backlog', strategyId: 's1' }], todos: { t1: { id: 'todo2', text: 'Ask why', where: 'backlog', strategyId: 's1' } } }, id);
+  assert.deepEqual([draft.words, storyOf(draft).text, storyOf(draft).choice, draft.legacy.related, draft.todos[STORY_ID].id], [['Regret'], 'I always do this.', 'act', ['Trust'], 'todo2']);
+});
+
+test('an untouched tool saves nothing; a wash is whole once every thought to act on has its step and day', () => {
   assert.equal(hasAnswers(emptyWash(id)), false);
-  assert.equal(hasAnswers({ ...emptyWash(id), kind: 'fc' }), true);
-  assert.equal(hasAnswers({ ...emptyWash(id), thoughts: [th('x')] }), true);
-  assert.equal(isComplete(m10()), true);
-  assert.equal(isComplete({ ...m10(), words: [] }), false);
-  assert.equal(isComplete(setThought(m10(), 'a', { h: null })), false);
-  assert.equal(isComplete({ ...m10(), thoughts: [th('')] }), false);
+  assert.equal(hasAnswers({ ...emptyWash(id), strength: 2 }), true);
+  assert.equal(isComplete(emptyWash(id)), false);
+  assert.equal(isComplete(sample()), true);
+  assert.equal(isComplete(setThought(sample(), 'c', { when: null })), false);
+  // Every other screen can be skipped: what happened alone is whole.
+  assert.equal(isComplete({ ...emptyWash(id), what: 'It happened.' }), true);
 });
 
-test('what the PDF and the summary read: blanks left out', () => {
-  const c = washContent({ ...m10(), rel: [], thoughts: [...m10().thoughts, { ...th('Unfinished'), wash: 'act', step: ' ' }, { ...th('Unasked'), wash: 'park', question: '' }] });
-  assert.deepEqual(c.related, []);
-  assert.deepEqual(c.act.map((a) => a.step), ['Ask the chair for 20 minutes before the next board meeting.']);
-  assert.deepEqual(c.reflect.map((r) => r.question), ['What would show me where I stand with the chair?']);
-});
-
-test('the PDF mirrors the summary, leaves blanks and trashed thoughts out, and is confidential', () => {
-  const doc = emotionalWashPdf({ wash: m10(), person: 'Sam Carter', createdAt: '2026-11-14T09:30:00' });
-  assert.equal(doc.title, 'Emotional wash');
+test('the PDF mirrors the summary, leaves blanks out, and is confidential', () => {
+  const doc = emotionalWashPdf({ wash: sample(), person: 'Sam Carter', createdAt: '2026-11-27T09:00:00' });
   assert.equal(doc.confidential, true);
-  assert.deepEqual(doc.sections.filter((s) => s.blocks.length).map((s) => s.title), ['What happened', 'The feeling', 'Related to', 'To act on', 'To reflect on']);
-  assert.ok(doc.glance.length >= 2 && doc.glance.length <= 4);
-  assert.doesNotMatch(JSON.stringify(doc), /look weak/);
-  const bare = emotionalWashPdf({ wash: { ...emptyWash(id), what: 'It went badly.' }, createdAt: '2026-11-14T09:30:00' });
-  assert.deepEqual(bare.sections.filter((s) => s.blocks.length).map((s) => s.title), ['What happened']);
-  assert.ok(bare.glance.length >= 2 && bare.glance.every((g) => String(g.value).trim()));
+  assert.deepEqual(doc.sections.filter((s) => s.blocks.length).map((s) => s.title), ['What happened', 'The feeling', 'How strong it is', 'What you’re telling yourself', 'To act on', 'Parked for now', 'Letting go']);
+  assert.deepEqual(doc.glance.map((g) => [g.label, g.value]), [['The feeling', 'Resentful and betrayed'], ['How strong', 'Strong'], ['To act on', '1 step']]);
+  const blank = emotionalWashPdf({ wash: emptyWash(id) });
+  assert.equal(blank.sections.filter((s) => s.blocks.length).length, 0);
+  assert.ok(blank.glance.length >= 2);
+  assert.equal(washContent(sample(), TODAY).act[0].when, 'Thu 3 Dec');
 });
 
-test('the tool has its tile in Reset, where M3 has it, with M3’s line and one time', () => {
+// ------------------------------------------------------------ where it lives
+
+test('the tool has its tile in Reset, with its one time', () => {
   assert.equal(TOOL, 'emotional_wash');
   assert.equal(TOOLS.wash.name, TOOL_NAME);
   assert.equal(TOOLS.wash.to, TOOL_PATH);
-  assert.equal(TOOLS.wash.line, 'Work through a strong emotion so it doesn’t run you.');
+  assert.equal(TOOLS.wash.line, 'Identify emotions, the stories they’re rooted in, and how to move forward.'); // Draft 5 (Stage D item 5)
   assert.equal(TOOLS.wash.time, '~10 minutes');
   assert.deepEqual(HUBS.reset.groups[0].tools, ['breathe', 'wind', 'pp', 'wash', 'journal']);
   assert.equal(menuAreaOf(TOOL_PATH), 'personal');
@@ -382,27 +351,24 @@ test('Home’s "Carry on where you left off" offers an unfinished wash by the to
 test('a wash out of whatever a device kept: always the right shape', () => {
   let k = 0;
   const nid = () => `n${(k += 1)}`;
-  const good = {
-    what: 'The chair backed the other plan.', kind: KINDS[0].value, words: [WORDS[0]], rel: [],
-    thoughts: [{ id: 't1', text: 'The chair has never rated me.', t: CHECK_ANSWERS[0].value, l: null, h: null, wash: 'act', step: 'Ask for 20 minutes', question: '', where: 'week', strategyId: 's1' }],
-    todos: { t1: { id: 'todo1', text: 'Ask for 20 minutes', where: 'week', strategyId: 's1' } },
-  };
+  const good = sample();
   assert.deepEqual(tidyWash(good, nid), good, 'a good wash is left as it is');
   for (const bad of [null, undefined, 5, 'x', [], [good]]) {
     const w = tidyWash(bad, nid);
-    assert.deepEqual([w.what, w.kind, w.words, w.rel, w.thoughts.length, w.todos], ['', null, [], [], 1, {}]);
+    assert.deepEqual([w.what, w.family, w.words, w.own, w.strength, w.thoughts.length, storyOf(w).id, w.todos], ['', null, [], '', null, 2, STORY_ID, {}]);
   }
   const t = tidyWash({
-    what: 5, kind: 'nope', words: 'x', rel: [null, 5],
-    thoughts: [null, 5, 'x', { id: 1, text: 5 }, { text: 'No id', t: 'x', wash: 'burn' }, { id: 't', text: 'T', wash: 'act', step: {}, where: 'mars', strategyId: 9 }, { id: 't', text: 'Same id' }],
+    what: 5, family: 'nope', words: 'x', own: 7, strength: 9,
+    thoughts: [null, 5, 'x', { id: 1, text: 5 }, { text: 'No id', choice: 'burn' }, { id: 't', text: 'T', choice: 'act', step: {}, when: 'soon', where: 'mars', strategyId: 9 }, { id: 't', text: 'Same id' }],
     todos: { t: 'x', zz: { id: 'gone' }, [undefined]: null },
   }, nid);
-  assert.deepEqual([t.what, t.kind, t.words, t.rel], ['', null, [], []]);
-  assert.equal(t.thoughts.length, 4);
-  assert.equal(new Set(t.thoughts.map((th) => th.id)).size, 4, 'every thought has its own id');
-  assert.deepEqual(t.thoughts.map((th) => [th.text, th.t, th.wash, th.step, th.where, th.strategyId]), [['', null, null, '', null, null], ['No id', null, null, '', null, null], ['T', null, 'act', '', null, null], ['Same id', null, null, '', null, null]]);
+  assert.deepEqual([t.what, t.family, t.words, t.own, t.strength], ['', null, [], '', null]);
+  assert.equal(storyOf(t).text, '');
+  assert.equal(otherThoughts(t).length, 4);
+  assert.equal(new Set(t.thoughts.map((x) => x.id)).size, 5, 'every thought has its own id');
+  assert.deepEqual(otherThoughts(t).map((x) => [x.text, x.choice, x.step, x.when, x.where, x.strategyId]), [['', null, '', null, null, null], ['No id', null, '', null, null, null], ['T', 'act', '', null, null, null], ['Same id', null, '', null, null, null]]);
   assert.deepEqual(t.todos, {});
   for (const w of [t, tidyWash({ thoughts: 'x', todos: 'x' }, nid)]) {
-    assert.doesNotThrow(() => { savedAnswers(w); summaryRows(w); washContent(w); hasAnswers(w); isComplete(w); });
+    assert.doesNotThrow(() => { savedAnswers(w); summaryRows(w); washContent(w); hasAnswers(w); isComplete(w); resumeStep(w); thoughtSteps(w); });
   }
 });

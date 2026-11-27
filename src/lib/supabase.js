@@ -1,12 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { setProbeUrl } from './connection';
 import { noRetryOnConnectionLoss } from './noRetry';
+import { authStorage } from './authStorage';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-console.log('Supabase URL:', supabaseUrl);
-console.log('Supabase Key loaded:', !!supabaseAnonKey);
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase credentials in .env.local');
@@ -14,40 +12,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Key exists:', !!supabaseAnonKey);
 }
 
-// Custom storage adapter for Supabase sessions with better error handling
-const customStorage = {
-  getItem: (key) => {
-    try {
-      if (typeof window === 'undefined' || typeof localStorage === 'undefined') return null;
-      const value = localStorage.getItem(key);
-      if (value) {
-        console.log(`Retrieved ${key} from storage`);
-      }
-      return value;
-    } catch (e) {
-      console.error(`Error retrieving ${key}:`, e);
-      return null;
-    }
-  },
-  setItem: (key, value) => {
-    try {
-      if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
-      localStorage.setItem(key, value);
-      console.log(`Stored ${key} in localStorage`);
-    } catch (e) {
-      console.error(`Error storing ${key}:`, e);
-    }
-  },
-  removeItem: (key) => {
-    try {
-      if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
-      localStorage.removeItem(key);
-      console.log(`Removed ${key} from localStorage`);
-    } catch (e) {
-      console.error(`Error removing ${key}:`, e);
-    }
-  },
-};
+// The sign-in's storage: an in-memory copy kept in step with every write, other tabs and Sign out, so the many
+// reads supabase-js makes (one before every request) don't each go to the device, and nothing is logged
+// (src/lib/authStorage.js; Polish 1, Stage D, item 17).
+const customStorage = authStorage;
 
 // Configure Supabase with persistent session storage and long token lifetime
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

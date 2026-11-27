@@ -100,7 +100,7 @@ async function run(browser, width) {
   const tile = page.getByRole('link', { name: /Team performance check/ }).or(page.getByRole('button', { name: /Team performance check/ })).first();
   await tile.waitFor({ timeout: 20000 });
   const tileWords = (await tile.innerText()).replace(/\s+/g, ' ');
-  pass(`${tag}: the hub has the tool’s tile, with its line and its one time`, /Team performance check/.test(tileWords) && /~5 minutes/.test(tileWords) && /See where each of your people stands and what to ask next\./.test(tileWords), tileWords);
+  pass(`${tag}: the hub has the tool’s tile, with its line and its one time`, /Team performance check/.test(tileWords) && /~8 minutes/.test(tileWords) && /Identify how your team is performing and where to help\./.test(tileWords), tileWords);
   await tile.click();
   await onQuestion(page, 'Who reports to you?');
   pass(`${tag}: the tool opens at its own address`, new URL(page.url()).pathname === TEAM_PATH, page.url());
@@ -110,15 +110,17 @@ async function run(browser, width) {
     await document.fonts.ready;
     return {
       dm: document.fonts.check('16px "DM Sans"'), nekst: document.fonts.check('16px Nekst'),
-      body: getComputedStyle(document.querySelector('.ds-guide-nudge')).fontFamily.split(',')[0],
+      body: getComputedStyle(document.querySelector('.ds-guide-question')).fontFamily.split(',')[0],
       loaded: [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/["']/g, '')),
       from: performance.getEntriesByType('resource').filter((r) => /dm-sans/i.test(r.name)).map((r) => new URL(r.name).host),
     };
   });
   pass(`${tag}: DM Sans and Nekst are really loaded, from the page’s own files`, fonts.dm && fonts.nekst && /DM Sans/.test(fonts.body) && fonts.loaded.includes('DM Sans') && fonts.loaded.includes('Nekst') && fonts.from.length > 0 && fonts.from.every((h) => /^localhost/.test(h)), JSON.stringify(fonts));
-  pass(`${tag}: the line under the question`, (await page.locator('.ds-guide-nudge').innerText()).trim() === 'Add each person you lead directly.');
+  // Stage D (question rule 9): nothing sits under a question.
+  pass(`${tag}: nothing under the question`, (await page.locator('.ds-guide-nudge').count()) === 0);
   pass(`${tag}: the eye is on the first screen`, (await page.locator('.ds-guide-question .ds-who').count()) === 1);
-  pass(`${tag}: the % bar starts at 0`, (await page.locator('.ds-guide-pct').getAttribute('aria-valuenow')) === '0');
+  // Polish 1, Stage C (UI tester P15): step 1 already shows at least 8% filled.
+  pass(`${tag}: the % bar starts at 8 or more`, Number(await page.locator('.ds-guide-pct').getAttribute('aria-valuenow')) >= 8);
   pass(`${tag}: Finish later is a quiet link at the left`, (await page.locator('.ds-guide-foot .ds-guide-skip').innerText()).trim() === 'Finish later');
   await checkScreen(page, `${tag}, who reports to you (empty)`, { heading: '.ds-guide-question' });
 
@@ -179,7 +181,8 @@ async function run(browser, width) {
   await pressNext(page);
   await onQuestion(page, 'How much does “Priya Shah” trust you as their leader?');
   pass(`${tag}: “Person 1 of 5” above the question`, (await page.locator('.ds-guide-label').textContent()).trim() === 'Person 1 of 5');
-  pass(`${tag}: the % bar reads 7`, (await page.locator('.ds-guide-pct').getAttribute('aria-valuenow')) === '7');
+  // Stage D, Draft 11: four screens a person and the commit (1 of 21 is 5%), shown at the 8% floor.
+  pass(`${tag}: the % bar reads 8`, (await page.locator('.ds-guide-pct').getAttribute('aria-valuenow')) === '8');
   pass(`${tag}: trust is five levels, lowest first, each with its line`, JSON.stringify((await page.locator('.ds-guide-body .ds-answer').allInnerTexts()).map((t) => t.split('\n')[0].trim())) === JSON.stringify(['Silent resistance', 'Open resistance', 'Uncommitted', 'Token cheerleader', 'Committed']) && (await page.locator('.ds-answer-hint').count()) === 5);
   pass(`${tag}: a one-answer question has no Next and no eye (focus mode: Back and Finish later in the foot)`, (await page.locator('.ds-guide-next').count()) === 0 && (await page.locator('.ds-guide-question .ds-who').count()) === 0);
   await checkScreen(page, `${tag}, trust`, { coral: 0 });
@@ -206,6 +209,10 @@ async function run(browser, width) {
   await shot('autonomy');
   await sleep(450);
   await page.locator('.ds-guide-body .ds-answer').nth(3).click();
+  // Stage D, Draft 11: what's working, after the three ratings; it can be skipped.
+  pass(`${tag}: then what’s working well with them`, await onQuestion(page, 'What’s working well with “Priya Shah” right now?', 5000) && (await page.locator('.ds-guide-foot .ds-guide-skip').count()) === 1);
+  await page.locator('.ds-guide-body textarea').first().fill('She runs the Monday numbers without being asked.');
+  await pressNext(page);
   pass(`${tag}: then the next person`, await onQuestion(page, 'How much does “Tom Ellis” trust', 5000) && (await page.locator('.ds-guide-label').textContent()).trim() === 'Person 2 of 5');
 
   // A refresh part-way: the same question, with the answers so far ("Draft restored").
@@ -306,10 +313,15 @@ async function run(browser, width) {
     const at = (sel) => { const el = b.querySelector(sel); return el ? el.getBoundingClientRect().top : null; };
     return { headline: at('.ds-headline'), chart: at('.tpc-chart'), table: at('.ds-ctable'), trust: at('.ds-steprows'), questions: at('.ds-startqs'), heads: [...b.querySelectorAll('.ds-results-head')].map((h) => h.textContent.trim()) };
   });
-  pass(`${tag}: the page opens with the headline, then the chart, the table and trust, and the questions come last`, order.headline < order.chart && order.chart < order.table && order.table < order.trust && order.trust < order.questions && JSON.stringify(order.heads) === JSON.stringify(['Alignment and autonomy', 'Trust', 'Questions to start with:']), JSON.stringify(order));
+  pass(`${tag}: the page opens with the headline, then the chart, the table and trust, and the questions come last`, order.headline < order.chart && order.chart < order.table && order.table < order.trust && order.trust < order.questions && JSON.stringify(order.heads) === JSON.stringify(['Alignment and autonomy', 'Trust', 'Questions to start with:', 'Decide who decides']), JSON.stringify(order)); // Stage D, item 4: the colours follow the question they explain
   const qs = (await page.locator('.ds-startq').allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').trim());
-  pass(`${tag}: a first check asks about Chaotic first, then autonomy (nobody’s trust has fallen)`, JSON.stringify(qs) === JSON.stringify(['What would help “Daniel Reyes” explain the organisation’s intent in their own words?', 'Which decisions could “Tom Ellis” own, within clear boundaries, to ease your load?']), JSON.stringify(qs));
+  pass(`${tag}: a first check asks about Chaotic first, then autonomy (nobody’s trust has fallen)`, JSON.stringify(qs) === JSON.stringify(['What would help “Daniel Reyes” explain the organisation’s intent in their own words?', 'Which decisions can “Tom Ellis” own, and at which colour?']), JSON.stringify(qs));
   pass(`${tag}: each question is 15 words or fewer`, qs.every((q) => q.split(/\s+/).length <= 15));
+  // Stage D, item 4: the autonomy question's colours, word for word, after the questions.
+  const decide = (await page.locator('.tpc-decide').innerText().catch(() => '')).replace(/\s+/g, ' ');
+  pass(`${tag}: Decide who decides: Green, Amber and Red, word for word`, decide.includes('Green They decide, act and report back.') && decide.includes('Amber They decide, and I confirm before they act.') && decide.includes('Red I decide.'), decide);
+  const lights = await page.locator('.tpc-light-dot').evaluateAll((els) => els.map((el) => `${getComputedStyle(el).backgroundColor}|${getComputedStyle(el).borderTopColor}`.replace(/\s+/g, '')));
+  pass(`${tag}: the traffic lights are never coral`, lights.length === 9 && lights.every((c) => !/255,111,92|194,65,46/.test(c)), lights.join(' '));
   await link.click();
   await sleep(400);
 
@@ -459,7 +471,7 @@ async function run(browser, width) {
   pass(`${tag}: the questions are Chaotic first, then trust, then autonomy`, JSON.stringify(qs2) === JSON.stringify([
     'What would help “Daniel Reyes” explain the organisation’s intent in their own words?',
     'What has changed for “Tom Ellis”, and what would rebuild their trust?',
-    'Which decisions could “Grace Okafor” own, within clear boundaries, to ease your load?',
+    'Which decisions can “Grace Okafor” own, and at which colour?',
   ]), JSON.stringify(qs2));
   pass(`${tag}: nothing on the results says “this month”`, !/this month|last month/i.test(await page.locator('.ds-guide').innerText()));
   await scroller.evaluate((el) => el.scrollTo(0, 0));

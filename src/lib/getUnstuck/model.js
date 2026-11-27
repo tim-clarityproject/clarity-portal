@@ -4,11 +4,14 @@
 //
 // The screens, in order (one question each):
 //   goal   Goal     "What do you want to achieve?"            required
-//   cons   Reality  "What’s in the way of “goal”?"            rows
 //   opps   Reality  "What’s already working for you on “goal”?" rows
+//   cons   Reality  "What’s in the way of “goal”?"            rows
 //   opts   Options  "What could you do to reach “goal”?"      the timer, rows
 //   will   Will     "Which options will you act on?"          at least one
-//   steps  Will     "What exactly will you do?"               one box each
+//   steps  Will     "What will you do, and when?"             one box each;
+//                   the commit question, never skipped
+// (Stage D, Draft 11, Tim's answer 8: what's working comes first; nothing
+// sits under a question, so `nudge` is kept only for older callers.)
 //   sum             "Here’s your plan, Sam."                  every answer
 //
 // A plan while it is being worked on:
@@ -31,12 +34,17 @@ export const GOAL_MAX = 300;
 export const ROW_MAX = 300;
 export const WHERE = { week: 'week', backlog: 'backlog', none: 'none' };
 
-export const STEP_KEYS = ['goal', 'cons', 'opps', 'opts', 'will', 'steps', 'sum'];
+export const STEP_KEYS = ['goal', 'opps', 'cons', 'opts', 'will', 'steps', 'sum'];
 
 /** The small grey stage name above each question (the GROW model, without an explaining line). */
 export const STAGE = { goal: 'Goal', cons: 'Reality', opps: 'Reality', opts: 'Options', will: 'Will', steps: 'Will', sum: '' };
 
-export const GOAL_EXAMPLE = 'Win the Northfield contract renewal by the end of January.';
+// "See an example": two or three different ones, never one that assumes who they are (Stage D, question rule 10).
+export const GOAL_EXAMPLE = [
+  'Win the Northfield contract renewal by the end of January.',
+  'Get our under-18s into the league final by May.',
+  'Run a half marathon in under two hours this spring.',
+];
 export const PLACEHOLDER = {
   goal: 'e.g. Cut our time to hire to 30 days by March',
   cons: 'e.g. Hiring managers take a week to give feedback',
@@ -47,6 +55,7 @@ export const NOUN = { cons: 'constraint', opps: 'opportunity', opts: 'option' };
 export const REQUIRED = {
   goal: 'Type your goal to carry on.',
   will: 'Choose at least one option to carry on.',
+  steps: 'Type what you’ll do to carry on.',
 };
 
 const text = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
@@ -67,7 +76,7 @@ export function question(key, plan, { name = '', guest = false } = {}) {
     case 'opps': return `What’s already working for you on ${goalQuote(plan)}?`;
     case 'opts': return `What could you do to reach ${goalQuote(plan)}?`;
     case 'will': return 'Which options will you act on?';
-    case 'steps': return 'What exactly will you do?';
+    case 'steps': return 'What will you do, and when?';
     case 'sum': return !guest && clean(name) ? `Here’s your plan, ${clean(name)}.` : 'Here’s your plan.';
     default: return '';
   }
@@ -130,6 +139,8 @@ export function tidyPlan(value, newId = () => `step-${Math.random().toString(36)
 export function requiredMessage(key, plan) {
   if (key === 'goal' && !clean(plan?.goal)) return REQUIRED.goal;
   if (key === 'will' && !(plan?.acts || []).length) return REQUIRED.will;
+  // The commit question (Draft 11): every chosen option's next step has its words.
+  if (key === 'steps' && (!(plan?.acts || []).length || (plan.acts || []).some((a) => !clean(a?.text)))) return REQUIRED.steps;
   return null;
 }
 
@@ -225,8 +236,8 @@ export function summaryRows(plan, { guest = false } = {}) {
   });
   return [
     { key: 'goal', step: 'goal', label: 'Your goal', editName: 'your goal', lines: [{ text: clean(plan?.goal) }] },
-    { key: 'cons', step: 'cons', label: 'What’s in the way', editName: 'what’s in the way', lines: lines(plan?.cons) },
     { key: 'opps', step: 'opps', label: 'What’s already working', editName: 'what’s already working', lines: lines(plan?.opps) },
+    { key: 'cons', step: 'cons', label: 'What’s in the way', editName: 'what’s in the way', lines: lines(plan?.cons) },
     { key: 'opts', step: 'opts', label: 'Your options', editName: 'your options', lines: lines(plan?.opts) },
     { key: 'steps', step: 'steps', label: 'Your next steps', editName: 'your next steps', lines: steps.length ? steps : [{ text: 'You skipped this.' }] },
   ];

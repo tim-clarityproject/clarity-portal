@@ -440,6 +440,8 @@
   --mission-panel-w: 560px;  /* the My Mission panel on desktop */
   --system-popup-w: 620px;   /* The Individual Performance System pop-up */
   --system-num: 24px;        /* the numbered circles in its chain */
+  --hiw-node-w: min(calc(5.5 * var(--fs-body)), 28%); /* How it works: each step of the cycle (Stage D item 8), growing with the text, never more than 28% of the row */
+  --hiw-gap: var(--space-5); /* How it works: between its sections */
   --plan-tile-min: 280px;    /* two Strategy tiles or objective cards side by side */
   --sprint-dial: 220px;      /* the set-up sprint dial (M6 dial) */
   --sprint-dial-phone: 190px;

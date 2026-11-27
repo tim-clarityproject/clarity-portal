@@ -314,27 +314,34 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await panel.getByRole('button', { name: 'Add to-do' }).click();
   const toast = await until(async () => (await page.getByText('Added to today and this week’s sprint.').count()) > 0, 10000);
   pass(`${tag}: a to-do added with three chosen joins today as well`, Boolean(toast) && (await page.locator('.ds-answer--pick[aria-pressed="true"]').count()) === 4);
+  // Stage D, Draft 11 (Tim's answer 5): no priority screen. The first chosen is the most
+  // important, with a small grey "Most important"; "Move to top" on the others; no stars.
+  const mostOn = async (name) => (await page.locator('.ds-pick-wrap, .ds-answer--pick', { hasText: name }).first().innerText()).includes('Most important');
+  pass(`${tag}: the first chosen says Most important`, await mostOn(NIGHT) && (await page.getByText('Most important', { exact: true }).count()) === 1);
+  pass(`${tag}: Move to top on each of the others`, (await page.getByRole('button', { name: /^Move “.*” to the top$/ }).count()) === 3);
+  await page.getByRole('button', { name: 'Move “Draft the Harbour case study” to the top' }).click();
+  pass(`${tag}: Move to top makes it the most important, numbered 1`, Boolean(await until(async () => mostOn('Draft the Harbour case study'), 4000))
+    && ((await page.locator('.ds-answer--pick', { hasText: 'Draft the Harbour case study' }).first().locator('.ds-pick-mark').innerText()).trim() === '1'));
+  await checkScreen(page, `${tag} do, most important`);
   await next(page);
 
-  // 5. Priority
-  pass(`${tag}: Priority on its own screen`, (await heading(page)) === 'Which one is your highest priority?');
-  await checkScreen(page, `${tag} priority`, { oneTap: true });
-  // One tap moves on after about 300ms (Tim, 5 Nov): no Next here.
-  await page.getByRole('radio', { name: 'Draft the Harbour case study' }).click();
-  await until(async () => (await heading(page)) !== 'Which one is your highest priority?', 4000);
-
-  // 6. Strategy
-  pass(`${tag}: Strategy`, (await heading(page)) === 'Which Strategies does today serve most?');
+  // 5. Strategy (Stage D, Draft 11: their plan named)
+  pass(`${tag}: Strategy`, (await heading(page)) === 'Which of your Strategies does today move forward?', await heading(page));
   await page.getByRole('button', { name: 'Grow through referrals' }).click();
   await page.getByRole('button', { name: 'Deepen my coaching craft' }).click();
   pass(`${tag}: two Strategies at most`, await page.getByRole('button', { name: 'Build The Clarity Portal' }).isDisabled());
   await checkScreen(page, `${tag} strategy`);
   await next(page);
 
-  // 7. Risk
-  pass(`${tag}: Risk`, (await heading(page)) === 'What’s the biggest risk to today?');
+  // 6. Risk, with the commit question under it (Stage D, Draft 11): it can't be skipped.
+  pass(`${tag}: Risk`, (await heading(page)) === 'What’s most likely to knock today off course?', await heading(page));
+  pass(`${tag}: the commit can't be skipped`, (await page.getByRole('button', { name: /^Skip/ }).count()) === 0);
   await checkScreen(page, `${tag} risk`);
   await body(page).locator('textarea').nth(0).fill('Back-to-back calls run over and the proposal slips.');
+  pass(`${tag}: the commit quotes their answer`, (await page.getByText('If “Back-to-back calls run over and the proposal slips” happens, what will you do?', { exact: true }).count()) === 1);
+  await page.locator('.ds-tool-foot .ds-btn--primary').click();
+  pass(`${tag}: Next with no commit says what's missing and stays`, Boolean(await until(async () => (await page.getByText('Type what you’ll do to carry on.').count()) === 1, 4000))
+    && (await heading(page)) === 'What’s most likely to knock today off course?');
   await body(page).locator('textarea').nth(1).fill('Block 11:00 to 12:00 and move the 11:30 call.');
   await next(page);
 

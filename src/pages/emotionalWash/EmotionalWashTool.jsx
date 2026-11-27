@@ -1,70 +1,64 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
-  Chip,
-  ChipRow,
   Choice,
-  Dissolve,
-  FollowChoice,
-  FollowQuestion,
+  DatePicker,
   GuidedSummary,
   GuidedTool,
   MultiChoice,
   RowList,
   TextBox,
   TodoWhere,
-  WhoSees,
+  todayKey,
+  useCoach,
   useToast,
   useToolTodo,
 } from '../../components/design';
+import { useStartChat } from '../../components/coach/startChat';
 import { newId } from '../../lib/syncQueue';
 import { needsConnection } from '../../lib/friendlyError';
 import {
-  CHECK_ANSWERS,
-  CHECK_KINDS,
-  FOLLOW,
-  KINDS,
-  PLACEHOLDER,
-  QUESTION_MAX,
-  RELATED,
-  REQUIRED,
-  STARTERS,
+  CHOICES,
+  FAMILIES,
+  OWN_LABEL,
+  OWN_MAX,
   STEP_MAX,
-  STORY_EXAMPLE,
+  STRENGTHS,
+  THOUGHT_EXAMPLES,
   THOUGHT_MAX,
   TODO_SOURCE,
   TOOL_NAME,
-  WASHES,
   WHAT_MAX,
   WHERE,
-  WORDS,
   countLine,
-  firstUnanswered,
-  nudge,
-  percentAt,
+  firstUncommitted,
+  otherThoughts,
   question,
-  quoteWords,
   requiredMessage,
-  resumeStep,
   sameTodo,
-  setCheck,
+  setChoice,
   setThought,
-  setWash,
-  storyThoughts,
+  storyOf,
   strayTodos,
+  strengthLine,
   summaryRows,
+  talkLine,
+  thoughtSteps,
   wantedTodo,
-  washSteps,
-  withStoryRows,
+  withFamily,
+  withOtherRows,
+  withStory,
   withTodo,
+  wordsOf,
 } from '../../lib/emotionalWash/model';
 import './emotionalWash.css';
 
-// Emotional wash (mock-up M10, version 5.6; read in full with its notes):
-// one guided tool in the calm stepped frame. What happened, the kind of
-// feeling, its words, what it could be related to, the story (one thought
-// a box), then for each thought three one-tap checks (true, logical,
-// helpful) and how it will be washed: Accept and act, Park and reflect or
-// Trash, the follow-up opening inside the chosen card. Then "Your wash".
+// Emotional wash (Polish 1, Stage D, 27 Nov: Draft 6's screens with Draft
+// 7's word list; docs/rules/emotional-wash.md): one guided tool in focus
+// mode. What happened, the family of the feeling (one tap), the word that
+// fits best (with its meaning; Something else), how strong it is (one tap),
+// what you're telling yourself, the other thoughts, then for each thought
+// what you'll do with it (one tap), and for each one to act on what you'll
+// do and when (the one screen that can't be skipped). Then "Your wash".
 // The page around it owns the wash and saves it; this owns the screens.
 //
 //   wash, onWash(fn)   the wash (src/lib/emotionalWash/model.js) and its setter
@@ -72,42 +66,22 @@ import './emotionalWash.css';
 //   onTodoGone(id)     a to-do replaced by an edit, or no longer wanted: the page deletes it
 //   pdf                the "Download my PDF" link in the summary's bottom bar
 //   onEdited           “Save my edit” went back to the summary: the page saves
-//                      the wash as it stands and says so (“Saved”)
 //   actions            “Delete”, for a wash opened from My Plans: under the
 //                      summary, and under the first question while it is
 //                      still a draft (`actionsFirst`)
 //   draftKey, initialStep, onClose, onFinish   as GuidedTool's
 //
-// The eye shows on the first step and on the summary only (Tim, 13 Nov,
-// 09:32), and has no choice: a wash is private, like the Journal. There is
-// no strength rating anywhere. One-answer questions move straight on (rule
-// 21), so they have no bottom bar; every typing step has Finish later at
-// the left.
+// Private: no eye anywhere (Draft 6), and never shared. Nothing sits under a
+// question but "See an example" on the other thoughts, and the chosen word
+// under "How strong is it right now?" (Draft 7).
 
-const WHO_NOTE = ['Only you can see this.', 'Your Emotional wash can’t be shared, like your Journal.'];
 const NO_STRATEGY = ['Every to-do serves one of your Strategies.', 'Your plan has no Strategies yet, so there’s nothing to add this to.'];
-const KIND_STEPS = 5; // what, kind, words, rel, story
 
-// Runs `run` when the screen it is on goes.
-function OnLeave({ run }) {
-  const fn = useRef(run);
-  fn.current = run;
-  useEffect(() => () => fn.current?.(), []);
-  return null;
-}
-
-// The summary with a question still open (a wash carried on from another
-// device, or a thought added since): that question shows instead.
-// So does one with an earlier screen not answered (the place kept on the
-// device said "the summary" for a wash with nothing in it; the break-it
-// tester, 14 Nov): an empty wash is never finished.
-const stillToAnswer = (wash) => {
-  const at = resumeStep(wash);
-  return at === 'sum' ? null : at;
-};
-
+// The summary with the one screen that can't be skipped still open (a wash
+// carried on from another device, or a thought to act on added since): that
+// screen shows instead.
 function Summary({ wash, tool }) {
-  const missing = stillToAnswer(wash);
+  const missing = firstUncommitted(wash);
   useEffect(() => {
     if (!missing) return;
     const at = tool.steps.findIndex((s) => s.key === missing);
@@ -119,9 +93,62 @@ function Summary({ wash, tool }) {
   return (
     <GuidedSummary
       stacked
-      rows={summaryRows(wash).map((r) => ({ ...r, step: tool.steps.findIndex((s) => s.key === r.step) }))}
-      onChange={tool.go}
+      rows={summaryRows(wash).map((r) => ({ ...r, step: r.step ? tool.steps.findIndex((s) => s.key === r.step) : null }))}
+      onChange={(to, opts) => { if (to != null && to >= 0) tool.go(to, opts); }}
     />
+  );
+}
+
+// "Want to talk this through with Maya?" under Your wash (Draft 6; question
+// rule 36): only where the person has a coach the portal can open a chat with.
+function TalkThrough() {
+  const coach = useCoach();
+  const startChat = useStartChat();
+  const line = talkLine(coach?.firstName);
+  if (!line || !startChat) return null;
+  return (
+    <p className="ew-talk">
+      <button type="button" className="ds-more ds-more--bare ew-talk-link" onClick={startChat}>{line}</button>
+    </p>
+  );
+}
+
+// The words of the chosen family, pick any, each with its meaning, then a
+// quiet "Something else" opening a box for their own word (Draft 7).
+function WordStep({ wash, onWash }) {
+  const [ownOpen, setOwnOpen] = useState(() => Boolean(wash.own));
+  const ownId = useId();
+  return (
+    <>
+      <MultiChoice
+        ariaLabel={question('words')}
+        options={wordsOf(wash.family)}
+        values={wash.words}
+        onChange={(words) => onWash((w) => ({ ...w, words }))}
+      />
+      <div className="ew-own">
+        <button
+          type="button"
+          className="ds-more ds-more--bare ew-own-link"
+          aria-expanded={ownOpen}
+          aria-controls={ownId}
+          onClick={() => setOwnOpen((v) => !v)}
+        >
+          {OWN_LABEL}
+        </button>
+        <div id={ownId} hidden={!ownOpen}>
+          {ownOpen && (
+            <TextBox
+              lines="one"
+              ariaLabel="Your own word"
+              maxLength={OWN_MAX}
+              value={wash.own}
+              onChange={(own) => onWash((w) => ({ ...w, own }))}
+            />
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -141,8 +168,6 @@ export default function EmotionalWashTool({
 }) {
   const toast = useToast();
   const todo = useToolTodo();
-  // The thought whose words are lifting away right now.
-  const [lifting, setLifting] = useState(null);
   // The thought a box held when it was taken out, for its Undo.
   const removed = useRef(null);
   const committing = useRef(new Set()); // one to-do per press
@@ -152,9 +177,7 @@ export default function EmotionalWashTool({
 
   // Where each step's to-do is now (the sprint page's own answer): the
   // summary never goes on saying "It’s in this week’s to-dos." once the
-  // to-do has been deleted, moved, or left behind in an earlier week. One
-  // that has gone is forgotten, as its Undo would (the step stays, with
-  // nowhere to go), so it is never made a second time or taken away again.
+  // to-do has been deleted, moved, or left behind in an earlier week.
   const { placeOf: todoPlace } = todo;
   const placesKey = JSON.stringify(Object.entries(wash.todos || {})
     .map(([thoughtId, made]) => [thoughtId, made?.id, made?.id ? todoPlace(made.id) : null, made?.where ?? null])
@@ -167,12 +190,9 @@ export default function EmotionalWashTool({
       if (!made || made.id !== id) return now;
       if (place === 'gone') return withTodo(setThought(now, thoughtId, { where: WHERE.none }), thoughtId, null);
       if (place === WHERE.week || place === WHERE.backlog) return withTodo(setThought(now, thoughtId, { where: place }), thoughtId, { ...made, where: place });
-      // A later week: it is neither in this week nor in the Backlog.
       return made.where == null ? now : withTodo(now, thoughtId, { ...made, where: null });
     }, w), { quiet: true });
   }, [placesKey, onWash]);
-
-  const eye = <WhoSees audience="me" note={WHO_NOTE} />;
 
   // Where a step's to-do goes and which Strategy it serves, as the screen
   // shows them: what was chosen, else the usual start (this week while a
@@ -183,7 +203,7 @@ export default function EmotionalWashTool({
     const strategyId = todo.strategies.some((s) => s.value === th.strategyId) ? th.strategyId : (todo.strategies.length === 1 ? todo.strategies[0].value : null);
     return { where, strategyId };
   };
-  const adds = (th) => th.wash === 'act' && placeOf(th).where !== WHERE.none;
+  const adds = (th) => th.choice === 'act' && placeOf(th).where !== WHERE.none;
 
   const dropStrays = (now) => {
     for (const { thoughtId, id } of strayTodos(now)) {
@@ -192,17 +212,14 @@ export default function EmotionalWashTool({
     }
   };
 
-  // Next on a washing screen: the step's to-do is made, replaced or taken
+  // Next on a commit screen: the step's to-do is made, replaced or taken
   // away, so the summary only says where it is when it is there.
   const commit = async (th) => {
     if (committing.current.has(th.id)) return;
-    // The person's Strategies aren't here yet (a first open on this device,
-    // pressed before they loaded): nothing is decided for them. The step
-    // keeps where it was to go, and its to-do is made when it is next saved.
-    if (th.wash === 'act' && !todo.ready) return;
+    if (!todo.ready) return;
     const { where, strategyId } = placeOf(th);
-    const now = th.wash === 'act' ? { ...th, where, strategyId } : th;
-    if (th.wash === 'act') onWash((w) => setThought(w, th.id, { where, strategyId }));
+    const now = { ...th, where, strategyId };
+    onWash((w) => setThought(w, th.id, { where, strategyId }));
     const wanted = wantedTodo(now);
     const made = wash.todos?.[th.id] || null;
     if (sameTodo(made, wanted)) return;
@@ -229,168 +246,91 @@ export default function EmotionalWashTool({
     }
   };
 
-  const choose = (th, value) => {
-    onWash((w) => setWash(w, th.id, value));
-    setLifting(value === 'trash' && th.wash !== 'trash' ? th.id : null);
-  };
-  const lifted = (th) => {
-    setLifting(null);
-    toast.saved({
-      message: 'Deleted',
-      onUndo: () => {
-        onWash((w) => setThought(w, th.id, { wash: null }));
-        toast.show('The thought is back');
-      },
-    });
-  };
-
-  const follow = (th) => (value) => {
-    if (value === 'act') {
-      const { where, strategyId } = placeOf(th);
-      return (
-        <>
-          <FollowQuestion label={FOLLOW.act.label} hint={FOLLOW.act.hint}>
-            {({ labelId, hintId }) => (
-              <TextBox
-                lines="one"
-                aria-labelledby={labelId}
-                aria-describedby={hintId}
-                maxLength={STEP_MAX}
-                placeholder={PLACEHOLDER.step}
-                value={th.step}
-                onChange={(step) => onWash((w) => setThought(w, th.id, { step }))}
-              />
-            )}
-          </FollowQuestion>
-          {todo.canAdd ? (
-            <>
-              <TodoWhere options={todo.whereOptions} value={where} onChange={(to) => onWash((w) => setThought(w, th.id, { where: to }))} />
-              {/* A to-do serves a Strategy: asked only when there is more than one to choose from. */}
-              {where !== WHERE.none && todo.strategies.length > 1 && (
-                <div className="ds-follow-also">
-                  <Choice
-                    label="Which Strategy does it serve?"
-                    options={todo.strategies}
-                    value={strategyId}
-                    onChange={(id) => onWash((w) => setThought(w, th.id, { strategyId: id }))}
-                    form="dropdown"
-                  />
-                </div>
-              )}
-            </>
-          ) : (
-            !todo.loading && (todo.ready ? NO_STRATEGY : [needsConnection('Adding a to-do')]).map((line) => <p key={line} className="ds-follow-note">{line}</p>)
-          )}
-        </>
-      );
-    }
-    if (value === 'park') {
-      return (
-        <FollowQuestion label={FOLLOW.park.label} hint={FOLLOW.park.hint}>
-          {({ labelId, hintId }) => (
-            <StarterBox labelId={labelId} hintId={hintId} value={th.question} onChange={(q) => onWash((w) => setThought(w, th.id, { question: q }))} />
-          )}
-        </FollowQuestion>
-      );
-    }
-    return null;
-  };
-
-  const thoughtSteps = washSteps(wash);
-  const count = thoughtSteps.length / 4;
-  const shownThoughts = storyThoughts(wash);
+  const steps4 = thoughtSteps(wash);
+  const others = otherThoughts(wash);
+  const story = storyOf(wash);
+  const hasFamily = wordsOf(wash.family).length > 0;
+  const line = strengthLine(wash);
 
   const steps = [
     {
       key: 'what',
       name: 'What happened',
       question: question('what'),
-      nudges: [nudge('what')],
-      eye,
-      percent: percentAt(0, count),
-      check: () => requiredMessage('what', wash),
       render: () => (
         <>
-          <TextBox
-            ariaLabel={question('what')}
-            maxLength={WHAT_MAX}
-            value={wash.what}
-            onChange={(what) => onWash((w) => ({ ...w, what }))}
-          />
+          <TextBox ariaLabel={question('what')} maxLength={WHAT_MAX} value={wash.what} onChange={(what) => onWash((w) => ({ ...w, what }))} />
           {actionsFirst && actions}
         </>
       ),
     },
     {
-      key: 'kind',
-      name: 'Kind of feeling',
-      question: question('kind'),
-      nudges: [nudge('kind')],
-      percent: percentAt(1, count),
-      // One answer moves straight on (rule 21): no Next, and nothing to skip.
+      key: 'family',
+      name: 'The feeling',
+      question: question('family'),
       oneTap: true,
-      required: true,
-      // "The feeling" on the summary is the kind, then its words.
+      // "The feeling" on the summary is the family, then its words.
       thenEdit: 'words',
       render: (tool) => (
         <Choice
           form="rows"
           tick
-          ariaLabel={question('kind')}
-          options={KINDS}
-          value={wash.kind}
-          onChange={(kind) => onWash((w) => ({ ...w, kind }))}
+          ariaLabel={question('family')}
+          options={FAMILIES.map((f) => ({ value: f.value, label: f.label }))}
+          value={wash.family}
+          onChange={(family) => onWash((w) => withFamily(w, family))}
+          onChoose={() => tool.next()}
+        />
+      ),
+    },
+    // The family's words show once a family is chosen.
+    ...(hasFamily ? [{
+      key: 'words',
+      name: 'The word',
+      question: question('words'),
+      render: () => <WordStep wash={wash} onWash={onWash} />,
+    }] : []),
+    {
+      key: 'strength',
+      name: 'How strong',
+      question: question('strength'),
+      // The chosen word in the line under it (Draft 7).
+      nudges: line ? [line] : undefined,
+      oneTap: true,
+      render: (tool) => (
+        <Choice
+          form="rows"
+          tick
+          ariaLabel={question('strength')}
+          options={STRENGTHS}
+          value={wash.strength}
+          onChange={(strength) => onWash((w) => ({ ...w, strength }))}
           onChoose={() => tool.next()}
         />
       ),
     },
     {
-      key: 'words',
-      name: 'Words',
-      question: question('words'),
-      nudges: [nudge('words')],
-      percent: percentAt(2, count),
-      check: () => requiredMessage('words', wash),
-      render: () => (
-        <MultiChoice
-          columns
-          ariaLabel={question('words')}
-          options={WORDS.map((w) => ({ value: w, label: w }))}
-          values={wash.words}
-          onChange={(words) => onWash((w) => ({ ...w, words }))}
-        />
-      ),
-    },
-    {
-      key: 'rel',
-      name: 'Related to',
-      question: question('rel'),
-      nudges: [nudge('rel')],
-      percent: percentAt(3, count),
-      render: () => (
-        <MultiChoice
-          columns
-          ariaLabel={question('rel')}
-          options={RELATED.map((w) => ({ value: w, label: w }))}
-          values={wash.rel}
-          onChange={(rel) => onWash((w) => ({ ...w, rel }))}
-        />
-      ),
-    },
-    {
       key: 'story',
-      name: 'The story',
+      name: 'What you’re telling yourself',
       question: question('story'),
-      nudges: [nudge('story')],
-      example: STORY_EXAMPLE,
-      percent: percentAt(4, count),
-      check: () => requiredMessage('story', wash),
+      render: () => (
+        <TextBox ariaLabel={question('story')} maxLength={THOUGHT_MAX} value={story.text} onChange={(words) => onWash((w) => withStory(w, words))} />
+      ),
+    },
+    {
+      key: 'others',
+      name: 'Other thoughts',
+      question: question('others'),
+      example: THOUGHT_EXAMPLES,
       onNext: () => dropStrays(wash),
-      // A thought added later is washed before the summary shows again.
-      onward: () => firstUnanswered(wash) || 'sum',
+      // A thought added later is asked about before the summary shows again.
+      onward: () => {
+        const next = thoughtSteps(wash).find((s) => (s.kind === 'd' ? !s.thought.choice : false));
+        return next ? next.key : null;
+      },
       render: () => (
         <RowList
-          rows={shownThoughts.map((th) => th.text)}
+          rows={others.map((th) => th.text)}
           max={Infinity}
           maxLength={THOUGHT_MAX}
           removeAlways
@@ -398,57 +338,77 @@ export default function EmotionalWashTool({
           itemLabel={(n) => `Thought ${n}`}
           addLabel="Add another thought"
           onChange={(rows, change) => {
-            if (change?.removed != null) removed.current = shownThoughts[change.removed] || null;
+            if (change?.removed != null) removed.current = others[change.removed] || null;
             const back = change?.restored != null ? removed.current : null;
-            onWash((w) => withStoryRows(w, rows, change, newId, back));
+            onWash((w) => withOtherRows(w, rows, change, newId, back));
           }}
         />
       ),
     },
-    ...thoughtSteps.map((s, j) => {
+    ...steps4.map((s) => {
       const th = s.thought;
-      const common = { key: s.key, name: `Thought ${s.n}`, label: countLine(s.n, s.of), percent: percentAt(KIND_STEPS + j, count) };
-      if (CHECK_KINDS.includes(s.kind)) {
+      if (s.kind === 'd') {
         return {
-          ...common,
-          question: question(s.kind, th),
-          nudges: [nudge(s.kind)],
+          key: s.key,
+          name: `Thought ${s.n}`,
+          label: countLine(s.n, s.of) || undefined,
+          question: question('d', th),
           oneTap: true,
-          required: true,
           render: (tool) => (
             <Choice
               form="rows"
               tick
-              ariaLabel={question(s.kind, th)}
-              options={CHECK_ANSWERS}
-              value={th[s.kind]}
-              onChange={(value) => onWash((w) => setCheck(w, th.id, s.kind, value))}
+              ariaLabel={question('d', th)}
+              options={CHOICES}
+              value={th.choice}
+              onChange={(value) => onWash((w) => setChoice(w, th.id, value))}
               onChoose={() => tool.next()}
             />
           ),
         };
       }
-      const going = lifting === th.id && th.wash === 'trash';
-      const gone = th.wash === 'trash' && !going;
+      const { where, strategyId } = placeOf(th);
       return {
-        ...common,
-        question: going
-          ? <>How will you wash “<Dissolve text={quoteWords(th)} onDone={() => lifted(th)} />”?</>
-          : question('w', th, { gone }),
-        nudges: [nudge('w', { gone })],
-        check: () => requiredMessage('w', wash, th, { needsStrategy: adds(th) && !placeOf(th).strategyId }),
+        key: s.key,
+        name: `Your step ${s.n}`,
+        label: countLine(s.n, s.of) || undefined,
+        question: question('c', th),
+        // The commit question: the one screen that can't be skipped (question rule 34).
+        required: true,
+        check: () => requiredMessage('c', th, { needsStrategy: adds(th) && !strategyId }),
         onNext: () => { commit(th); },
         render: () => (
-          <>
-            <OnLeave run={() => setLifting(null)} />
-            <FollowChoice
-              ariaLabel={question('w', th)}
-              options={WASHES}
-              value={th.wash}
-              onChange={(value) => choose(th, value)}
-              follow={follow(th)}
+          <div className="ew-commit">
+            <TextBox
+              lines="one"
+              ariaLabel={question('c', th)}
+              maxLength={STEP_MAX}
+              value={th.step}
+              onChange={(step) => onWash((w) => setThought(w, th.id, { step }))}
             />
-          </>
+            <DatePicker
+              label="When"
+              value={th.when}
+              min={todayKey()}
+              onChange={(when) => onWash((w) => setThought(w, th.id, { when }))}
+            />
+            {todo.canAdd ? (
+              <>
+                <TodoWhere options={todo.whereOptions} value={where} onChange={(to) => onWash((w) => setThought(w, th.id, { where: to }))} />
+                {where !== WHERE.none && todo.strategies.length > 1 && (
+                  <Choice
+                    label="Which Strategy does it serve?"
+                    options={todo.strategies}
+                    value={strategyId}
+                    onChange={(id) => onWash((w) => setThought(w, th.id, { strategyId: id }))}
+                    form="dropdown"
+                  />
+                )}
+              </>
+            ) : (
+              !todo.loading && (todo.ready ? NO_STRATEGY : [needsConnection('Adding a to-do')]).map((words) => <p key={words} className="ds-follow-note">{words}</p>)
+            )}
+          </div>
         ),
       };
     }),
@@ -456,12 +416,17 @@ export default function EmotionalWashTool({
       key: 'sum',
       name: 'Your wash',
       title: 'Your wash',
-      eye,
       noProgress: true,
       className: 'ew-summary',
       footAside: pdf,
-      check: () => (stillToAnswer(wash) ? REQUIRED.what : null),
-      render: (tool) => <><Summary wash={wash} tool={tool} />{!stillToAnswer(wash) && actions}</>,
+      check: () => (firstUncommitted(wash) ? requiredMessage('c', {}) : null),
+      render: (tool) => (
+        <>
+          <Summary wash={wash} tool={tool} />
+          {!firstUncommitted(wash) && <TalkThrough />}
+          {!firstUncommitted(wash) && actions}
+        </>
+      ),
     },
   ];
 
@@ -470,50 +435,12 @@ export default function EmotionalWashTool({
       calm
       name={TOOL_NAME}
       steps={steps}
-      progress="percent"
       finishLabel="Finish my wash"
-      skipLabel="Finish later"
-      skipMoves={false}
-      onSkip={onClose}
       draftKey={draftKey}
       initialStep={initialStep}
       onClose={onClose}
       onFinish={onFinish}
       onEdited={onEdited || (() => toast.show('Saved'))}
     />
-  );
-}
-
-// Park and reflect's box, with its three starters: tapping one fills the
-// box, ready to be made the person's own (M10; Tim, 13 Nov, 10:41).
-function StarterBox({ labelId, hintId, value, onChange }) {
-  const box = useRef(null);
-  const start = (words) => {
-    onChange(words);
-    requestAnimationFrame(() => {
-      const el = box.current;
-      if (!el) return;
-      el.focus({ preventScroll: true });
-      el.setSelectionRange(el.value.length, el.value.length);
-    });
-  };
-  return (
-    <>
-      <ChipRow label="Questions to start from">
-        {STARTERS.map((words) => (
-          <Chip key={words} pressed={value === words} onClick={() => start(words)}>{words}</Chip>
-        ))}
-      </ChipRow>
-      <TextBox
-        ref={box}
-        lines="one"
-        aria-labelledby={labelId}
-        aria-describedby={hintId}
-        maxLength={QUESTION_MAX}
-        placeholder={PLACEHOLDER.question}
-        value={value}
-        onChange={onChange}
-      />
-    </>
   );
 }

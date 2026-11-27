@@ -196,6 +196,9 @@ function lowText(root) {
   return low;
 }
 
+// Stage D, item 13 (Tim, 27 Nov): Sign-in security is in the coach portal's Settings; M26's Back ("My Account") and its
+// title are drawn by the Settings frame there (its section list and heading), not inside the form.
+const STAGE_D_FRAME_WORDS = ['My Account', 'Sign-in security'];
 const SCREENS = [
   { key: 'coach-code', name: 'Enter your code', world: { factor: 'verified', aal: 'aal1' }, go: '/coach/sign-in/code', wait: '.si-code-sq' },
   { key: 'auth-setup', name: 'Set up your authenticator', world: { factor: 'none', aal: 'aal1', codesMade: false, codesSaved: false }, go: '/coach/sign-in/set-up', wait: '.si-qr svg' },
@@ -215,14 +218,14 @@ const SCREENS = [
     },
     expect: [usedCodeLine(9), COACH_AUTH_WORDS.in.othersEnded],
   },
-  { key: 'acct-security', name: 'My Account, sign-in security', acct: true, world: { factor: 'verified', aal: 'aal2', codesLeft: 9 }, go: '/my-account/sign-in-security', wait: '.si-srow' },
+  { key: 'acct-security', name: 'My Account, sign-in security', acct: true, world: { factor: 'verified', aal: 'aal2', codesLeft: 9 }, go: '/coach/settings/sign-in-security', wait: '.si-srow' },
   {
     key: 'acct-security',
     name: 'My Account, sign-in security, a current code first (not drawn in M26)',
     shot: 'acct-security-code',
     acct: true,
     world: { factor: 'verified', aal: 'aal2', codesLeft: 9 },
-    go: '/my-account/sign-in-security',
+    go: '/coach/settings/sign-in-security',
     wait: '.si-srow',
     then: async (page) => { await page.getByRole('button', { name: 'Make new codes' }).click(); await page.getByRole('textbox', { name: 'Code', exact: true }).waitFor(); },
   },
@@ -289,7 +292,7 @@ const SCREENS = [
       await page.waitForURL(/\/coach\/sign-in\/code$/, { timeout: 15000 });
       await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode); /* goes in by itself on the sixth digit (polish 1, rule 23) */
       await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
-      await page.getByText('Make new codes in My Account').waitFor({ timeout: 10000 });
+      await page.getByText('Make new codes in Settings').waitFor({ timeout: 10000 });
     },
     expect: [lowCodesLine(n)],
   })),
@@ -301,7 +304,7 @@ const SCREENS = [
     noMock: true,
     acct: true,
     world: { factor: 'verified', aal: 'aal2', codesLeft: 9 },
-    go: '/my-account/sign-in-security',
+    go: '/coach/settings/sign-in-security',
     wait: '.si-srow',
     then: async (page) => { await page.getByRole('button', { name: 'Set up on a new phone' }).click(); await page.getByRole('textbox', { name: 'Code', exact: true }).waitFor(); },
   },
@@ -350,6 +353,8 @@ if (PARTS.includes('screens')) {
           let at = 0;
           const missing = [];
           for (const line of mock[s.key]) {
+            // Stage D, item 13: in the coach portal's Settings, M26's Back ("My Account") and title are the frame's.
+            if (s.acct && STAGE_D_FRAME_WORDS.some((m) => squash(m) === squash(line))) continue;
             const want = squash(line.replace(/‑/g, '-'));
             const found = built.indexOf(want, at);
             if (found < 0) missing.push(want); else at = found + want.length;
@@ -566,10 +571,14 @@ if (PARTS.includes('flows')) {
     await ctx.close();
   }
 
-  // My Account: Make new codes, then Set up on a new phone, each after a current code.
+  // Settings, Sign-in security (My Account's until Stage D, item 13): Make new codes, then Set up on a new phone, each after a current code.
   {
     const { ctx, page, world } = await open({ factor: 'verified', aal: 'aal2', codesLeft: 9 });
+    // Stage D, item 13: the old My Account address forwards a coach to Settings, Sign-in security, in the coach frame.
     await page.goto(`${APP}/my-account/sign-in-security`);
+    await page.waitForURL(/\/coach\/settings\/sign-in-security$/, { timeout: 20000 }).catch(() => null);
+    await page.waitForSelector('.si-srow', { timeout: 20000 }).catch(() => null);
+    pass('The old My Account address forwards to Settings, Sign-in security, in the coach frame', path(page) === '/coach/settings/sign-in-security' && (await page.locator('.cc-app .si-srow').count()) === 2, path(page));
     await page.waitForSelector('.si-srow', { timeout: 20000 });
     await page.getByRole('button', { name: 'Make new codes' }).click();
     await page.getByRole('textbox', { name: 'Code', exact: true }).fill('999999'); /* goes in by itself on the sixth digit (polish 1, rule 23) */
@@ -581,7 +590,7 @@ if (PARTS.includes('flows')) {
     pass('Make new codes: a new set, shown once', world.madeSets === 1 && (await page.locator('.si-rc li').count()) === 10);
     await page.getByRole('checkbox', { name: 'I’ve saved them somewhere safe' }).click();
     await tapButton(page, 'Open the coach portal');
-    await page.waitForURL(/\/my-account\/sign-in-security$/, { timeout: 15000 }).catch(() => null);
+    await page.waitForURL(/\/coach\/settings\/sign-in-security$/, { timeout: 15000 }).catch(() => null);
     await page.getByText('Your new recovery codes are in force.').waitFor({ timeout: 10000 }).catch(() => null);
     pass('Make new codes: back on Sign-in security, “10 of 10 left”', (await words(page, '.si-col--account')).includes('10 of 10 left'), (await words(page, '.si-col--account')).slice(0, 200));
     const old = world.factors.find((f) => f.status === 'verified')?.id;
@@ -590,7 +599,7 @@ if (PARTS.includes('flows')) {
     await page.waitForURL(/\/coach\/sign-in\/set-up$/, { timeout: 15000 }).catch(() => null);
     await page.waitForSelector('.si-qr svg', { timeout: 15000 }).catch(() => null);
     await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode); /* goes in by itself on the sixth digit (polish 1, rule 23) */
-    await page.waitForURL(/\/my-account\/sign-in-security$/, { timeout: 15000 }).catch(() => null);
+    await page.waitForURL(/\/coach\/settings\/sign-in-security$/, { timeout: 15000 }).catch(() => null);
     const left = world.factors.filter((f) => f.status === 'verified');
     pass('New phone: the new authenticator is on and the old phone’s is taken off', left.length === 1 && left[0].id !== old, `${left.length} on`);
     await page.getByText('Your authenticator is on your new phone.').waitFor({ timeout: 10000 }).catch(() => null);
@@ -605,7 +614,7 @@ if (PARTS.includes('flows')) {
     ['/coach/sign-in/help', { factor: 'verified' }, async (p) => { await p.getByLabel('Recovery code').fill('k7q2-9fmd'); await tapButton(p, 'Sign in'); }, 'Signing in needs a connection, so try again when you’re back online.', 'auth-lost'],
     ['/coach/sign-in/set-up', { factor: 'none', codesMade: false, codesSaved: false }, null, 'Setting up your authenticator needs a connection, so try again when you’re back online.', 'auth-setup'],
     ['/coach/sign-in/recovery-codes', { factor: 'verified', aal: 'aal2', codesSaved: false }, null, 'Making your recovery codes needs a connection, so try again when you’re back online.', 'auth-codes'],
-    ['/my-account/sign-in-security', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, async (p) => { await p.getByRole('button', { name: 'Make new codes' }).click(); await p.getByRole('textbox', { name: 'Code', exact: true }).fill('123456'); /* goes in by itself on the sixth digit (polish 1, rule 23) */ }, 'Sign-in security needs a connection, so try again when you’re back online.', 'acct-security'],
+    ['/coach/settings/sign-in-security', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, async (p) => { await p.getByRole('button', { name: 'Make new codes' }).click(); await p.getByRole('textbox', { name: 'Code', exact: true }).fill('123456'); /* goes in by itself on the sixth digit (polish 1, rule 23) */ }, 'Sign-in security needs a connection, so try again when you’re back online.', 'acct-security'],
   ].flatMap((row) => OFFLINE_SIZES.map(([w, m]) => [...row, w, m]))) {
     const { ctx, page, world, errors } = await open(setUp, { width, mode });
     if (press) {
@@ -642,9 +651,13 @@ if (PARTS.includes('flows')) {
     await sleep(2500);
     pass('A client with no authenticator opens Home as before', path(page) === '/welcome', path(page));
     pass('A client’s pages never ask about the coach authenticator', !world.calls.some((c) => /coach_auth_state|\/auth\/v1\/factors/.test(c)), world.calls.filter((c) => /coach_|factors/.test(c)).join(', '));
+    // Stage D, item 13: the old My Account address sends a client to My Account; the coach portal's sends them Home.
     await page.goto(`${APP}/my-account/sign-in-security`);
     await page.waitForURL(/\/my-account$/, { timeout: 15000 }).catch(() => null);
-    pass('Sign-in security is for coaches only', path(page) === '/my-account', path(page));
+    pass('Sign-in security is for coaches only (the old address)', path(page) === '/my-account', path(page));
+    await page.goto(`${APP}/coach/settings/sign-in-security`);
+    await page.waitForURL(/\/welcome$/, { timeout: 15000 }).catch(() => null);
+    pass('Sign-in security is for coaches only (the coach portal\'s address)', path(page) === '/welcome', path(page));
     await page.goto(`${APP}/coach`);
     await page.waitForURL((u) => !/^\/coach/.test(u.pathname), { timeout: 15000 }).catch(() => null);
     pass('A client opening /coach is sent home, never to set-up', !/sign-in/.test(path(page)) && world.enrolled === 0, path(page));

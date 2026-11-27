@@ -1,7 +1,7 @@
 // The Health Check's words (mock-up M7b version 51; Success Factors, never
 // Critical Success Factors: Tim, 14 Nov, 09:38), and its results worked
 // out from src/lib/scores/m20.js (methods M20.1, version 1.4). Definitions are
-// Claude's drafts, for Adie to edit.
+// Claude's drafts, for a coach to edit.
 
 import { cleanItems } from '../pages/alignment/alignmentFlow.js';
 import { roundPct } from '../lib/alignmentScore.js';

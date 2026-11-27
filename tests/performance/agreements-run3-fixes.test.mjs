@@ -70,7 +70,10 @@ test('finding 2: a price review is an amendment: numbers carry on, the new price
 test('finding 11: a pause moves every invoice due from its start on by its length; an early end stops the rest', () => {
   const v1 = ver('v1', 1, retainer(), '2026-01-10T10:00:00Z');
   const plan = s.agreementSchedule([v1], { until: '2026-06-30', agreement: { status: 'signed', paused_from: '2026-03-01', paused_to: '2026-03-28' } });
-  assert.deepEqual(plan.map((p) => p.day), ['2026-01-10', '2026-02-10', '2026-04-07', '2026-05-08', '2026-06-07']);
+  // Stage D item 16: the pause's one length (endDate.js's pauseDays), from its first day to the weekday coaching starts
+  // again: Sun 1 Mar to Sat 28 Mar resumes Mon 30 Mar, 29 days (it was the days plus 1, 28, while the end moved by the
+  // days plus 3).
+  assert.deepEqual(plan.map((p) => p.day), ['2026-01-10', '2026-02-10', '2026-04-08', '2026-05-09', '2026-06-08']);
   const ended = s.agreementSchedule([v1], { until: '2026-12-31', agreement: { status: 'signed', ending_on: '2026-04-30', ending_by: 'client' } });
   assert.equal(ended.at(-1).day, '2026-04-10');
   assert.deepEqual(s.agreementSchedule([v1], { until: '2026-12-31', agreement: { status: 'cancelled' } }), []);

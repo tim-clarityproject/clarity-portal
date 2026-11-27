@@ -103,18 +103,19 @@ export async function typeRows(page, rows, noun) {
  * must be open on its first screen.
  */
 export async function fillTo(page, to, { pick = [0, 1] } = {}) {
-  const order = ['goal', 'cons', 'opps', 'opts', 'will', 'steps', 'sum'];
+  // Stage D, Draft 11 (Tim's answer 8): what's working comes before what's in the way.
+  const order = ['goal', 'opps', 'cons', 'opts', 'will', 'steps', 'sum'];
   const stop = order.indexOf(to);
   await onQuestion(page, 'What do you want to achieve?');
   await page.locator('.ds-guide-body .ds-text').first().fill(M9.goal);
   if (stop === 0) return;
   await pressNext(page);
-  await onQuestion(page, 'What’s in the way of');
-  await typeRows(page, M9.cons, 'constraint');
-  if (stop === 1) return;
-  await pressNext(page);
   await onQuestion(page, 'What’s already working');
   await typeRows(page, M9.opps, 'opportunity');
+  if (stop === 1) return;
+  await pressNext(page);
+  await onQuestion(page, 'What’s in the way of');
+  await typeRows(page, M9.cons, 'constraint');
   if (stop === 2) return;
   await pressNext(page);
   await onQuestion(page, 'What could you do to reach');
@@ -125,7 +126,7 @@ export async function fillTo(page, to, { pick = [0, 1] } = {}) {
   for (const k of pick) await page.locator('.ds-answer').nth(k).click();
   if (stop === 4) return;
   await pressNext(page);
-  await onQuestion(page, 'What exactly will you do?');
+  await onQuestion(page, 'What will you do, and when?');
   for (let j = 0; j < pick.length; j += 1) if (M9.acts[j]) await page.locator('.ds-nextstep .ds-text').nth(j).fill(M9.acts[j]);
   if (stop === 5) return;
   await pressNext(page);
@@ -356,6 +357,7 @@ export async function addPerson(page, name, role = '') {
  * first question on screen, as far as the results ("Your team").
  * `stopAfter`: how many questions to answer before stopping (all by default).
  */
+export const TEAM_COMMIT = 'Ask them to walk me through their plan on Tuesday';
 export async function rateTeam(page, { stopAfter = Infinity, people = M10.people } = {}) {
   let n = 0;
   for (const p of people) {
@@ -366,6 +368,15 @@ export async function rateTeam(page, { stopAfter = Infinity, people = M10.people
       await page.locator('.ds-guide-body .ds-answer').nth(p[kind][0] - 1).click();
       n += 1;
     }
+    // Stage D, Draft 11: "What’s working well with [name] right now?" after each person's three; it can be left empty.
+    await until(async () => { const q = await questionText(page); return q.startsWith('What’s working well with') && q.includes(p.name); }, 15000);
+    await pressNext(page);
+  }
+  // Stage D, Draft 11: the commit question, once, last; it can't be skipped.
+  const at = await until(async () => ((await questionText(page)).startsWith('What will you do first with') ? 'commit' : (await title(page).count()) ? 'results' : null), 15000);
+  if (at === 'commit') {
+    await page.locator('.ds-guide-body textarea').first().fill(TEAM_COMMIT);
+    await pressNext(page);
   }
   await title(page).waitFor({ timeout: 15000 });
 }
@@ -373,38 +384,40 @@ export async function rateTeam(page, { stopAfter = Infinity, people = M10.people
 // ------------------------------------------------------------ M10's Emotional wash
 export const WASH_PATH = '/emotional-wash';
 
-/** M10's own invented wash (its script's `A`). */
+/** An invented wash (M10's own story, in Draft 6's screens with Draft 7's words; Polish 1, Stage D, 27 Nov). */
 export const EW = {
   what: 'The chair backed the board member who undermined my plan in front of everyone.',
-  kind: 'Present angst',
-  words: ['Disappointment', 'Anger', 'Contempt'],
-  rel: ['Respect', 'Loyalty'],
+  family: 'Angry',
+  words: ['Resentful', 'Betrayed'],
+  strength: 'Strong',
   thoughts: ['The chair has never rated me.', 'If I push back, I’ll look weak.', 'I need to win the board back before the next meeting.'],
   step: 'Ask the chair for 20 minutes before the next board meeting.',
-  question: 'What would show me where I stand with the chair?',
 };
 
 /**
- * M10's wash as the tool keeps it while it is open. `at`: how far it has
- * got, as M10 draws each screen: 'steps' (the first thought judged not
- * true and parked with no question yet, the second not washed, the third
- * acted on) or 'sum' (every screen answered, the second thought trashed,
- * the step's to-do in this week).
+ * The wash as the tool keeps it while it is open. `at`: 'steps' (every
+ * screen answered up to the choices, the third thought to act on with its
+ * step typed and no day yet) or 'sum' (every screen answered, the second
+ * thought let go, the step's to-do in this week).
  */
 export function m10Wash(at = 'steps') {
   const sum = at === 'sum';
-  const th = (id, text, more) => ({ id, text, t: null, l: null, h: null, wash: null, step: '', question: '', where: null, strategyId: null, ...more });
+  const th = (id, text, more) => ({ id, text, choice: null, step: '', when: null, where: null, strategyId: null, ...more });
+  const day = new Date(Date.now() + 3 * 86400000);
+  const when = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
   return {
     what: EW.what,
-    kind: 'pa',
+    family: 'angry',
     words: [...EW.words],
-    rel: [...EW.rel],
+    own: '',
+    strength: 4,
     thoughts: [
-      th('m10-thought-1', EW.thoughts[0], { t: 'no', l: sum ? 'unsure' : null, h: sum ? 'no' : null, wash: 'park', question: sum ? EW.question : '' }),
-      th('m10-thought-2', EW.thoughts[1], sum ? { t: 'unsure', l: 'no', h: 'no', wash: 'trash' } : {}),
-      th('m10-thought-3', EW.thoughts[2], { t: sum ? 'yes' : null, l: sum ? 'yes' : null, h: sum ? 'yes' : null, wash: 'act', step: EW.step, where: 'week' }),
+      th('story', EW.thoughts[0], { choice: 'park' }),
+      th('m10-thought-2', EW.thoughts[1], sum ? { choice: 'go' } : {}),
+      th('m10-thought-3', EW.thoughts[2], { choice: 'act', step: EW.step, when: sum ? when : null, where: 'week' }),
     ],
     todos: sum ? { 'm10-thought-3': { id: '99999999-9999-4999-8999-999999999999', text: EW.step, where: 'week', strategyId: null } } : {},
+    legacy: null,
   };
 }
 
@@ -434,8 +447,8 @@ export async function withSeededTodo(context) {
   });
 }
 
-/** The place of each screen in the tool, with M10's three thoughts typed. */
-export const WASH_INDEX = { what: 0, kind: 1, words: 2, rel: 3, story: 4, true: 5, logical: 6, helpful: 7, wash1: 8, wash2: 12, wash3: 16, sum: 17 };
+/** The place of each screen in the tool, with the three thoughts typed and the third to act on (Draft 6). */
+export const WASH_INDEX = { what: 0, family: 1, words: 2, strength: 3, story: 4, others: 5, choice1: 6, choice2: 7, choice3: 8, commit: 9, sum: 10 };
 
 /** Everything the Emotional wash keeps on this device is taken off. */
 export async function clearWash(page) {

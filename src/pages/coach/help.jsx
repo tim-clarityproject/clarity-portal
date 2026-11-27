@@ -4,7 +4,7 @@ import { useCoachPortal } from './parts';
 
 // Help that can be dismissed (Tim, 19 Nov): every explanation panel ends
 // with "Don’t show me this again", which hides the link that opens it, with
-// Undo. Settings, Look has "Hidden help" with "Show it again". What is
+// Undo. Settings, Appearance has "Hidden help" with "Show it again". What is
 // hidden is kept with the coach's settings (coach_settings.hidden_help,
 // migration 050), so it follows them to every device.
 
@@ -20,7 +20,7 @@ export function useHiddenHelp() {
     isHidden: (key) => hidden[key] === true,
     hide: (key) => {
       save({ ...hidden, [key]: true });
-      toast.saved({ message: 'Hidden. Settings, Look shows it again.', long: true, onUndo: () => save(hidden) });
+      toast.saved({ message: 'Hidden. Settings, Appearance shows it again.', long: true, onUndo: () => save(hidden) });
     },
     showAll: () => {
       save({});

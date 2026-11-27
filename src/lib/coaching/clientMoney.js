@@ -263,7 +263,7 @@ export function accountRows({ hasAgreement = false, seesInvoices = false, planLi
   return rows;
 }
 
-/** "10 hours 40 minutes used of 13 hours 20 minutes" for My Account's row (M28 draws Adie's own words there). */
+/** "10 hours 40 minutes used of 13 hours 20 minutes" for My Account's row (M28 draws the client's own words there). */
 export function hoursMeta(h) {
   if (!h) return '';
   const block = Math.max(0, Math.round(Number(h.blockMinutes ?? h.block_minutes) || 0));

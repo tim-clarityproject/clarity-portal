@@ -337,7 +337,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
   pass(`${tag}: Went well`, (await heading(page)) === 'What went well today?');
   await body(page).locator('textarea').first().fill('The Harbour call landed and the proposal went out at 11:50.');
   await checkScreen(page, `${tag} went well`);
-  await page.getByRole('button', { name: 'Add unplanned win' }).click();
+  await page.getByRole('button', { name: /^Add (an )?unplanned win$/ }).click(); // walk item 4: the card's add is named "Add an unplanned win"
   const panel = page.getByRole('dialog', { name: 'Add unplanned win' });
   await panel.locator('textarea').first().waitFor();
   await panel.locator('textarea').first().fill(WIN);
@@ -350,21 +350,21 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await next(page);
 
   // 5. Differently
-  pass(`${tag}: Differently`, (await heading(page)) === 'What would you do differently next time?');
+  pass(`${tag}: Differently`, (await heading(page)) === 'What will you do differently tomorrow?');
   await checkScreen(page, `${tag} differently`);
   await body(page).locator('textarea').first().fill('Leave ten minutes between calls.');
   if (deep) {
     // A refresh mid-step: the step and the typing come back.
     await page.reload();
     await page.waitForSelector('.ds-guide-question, .ds-tool-q', { timeout: 30000 });
-    pass(`${tag}: a refresh mid-step stays on the step`, (await heading(page)) === 'What would you do differently next time?', await heading(page));
+    pass(`${tag}: a refresh mid-step stays on the step`, (await heading(page)) === 'What will you do differently tomorrow?', await heading(page));
     const kept = await until(async () => (await body(page).locator('textarea').first().inputValue()) === 'Leave ten minutes between calls.', 8000);
     pass(`${tag}: a refresh mid-step restores the draft`, Boolean(kept), await body(page).locator('textarea').first().inputValue());
   }
   await next(page);
 
   // 6. Strategies
-  pass(`${tag}: Strategies`, (await heading(page)) === 'Which Strategies moved today?');
+  pass(`${tag}: Strategies`, (await heading(page)) === 'Which of your Strategies moved today?');
   const nudges = await page.locator('.ds-guide-nudge').allInnerTexts();
   pass(`${tag}: the morning's reminder names both Strategies`, nudges.includes('This morning you said today would serve Deepen my coaching craft and Grow through referrals most.'), nudges.join(' | '));
   await page.getByRole('button', { name: 'Grow through referrals' }).click();
@@ -374,11 +374,11 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await next(page);
 
   // 7. Tomorrow, as rows
-  pass(`${tag}: Tomorrow`, (await heading(page)) === 'What are the most important things to do tomorrow?');
+  pass(`${tag}: Tomorrow`, (await heading(page)) === 'What will you do first tomorrow?');
   // Three numbered rows, 1 to 3 (Tim, 5 Nov).
   for (let i = 0; i < 3; i += 1) await page.getByRole('textbox', { name: `Priority ${i + 1} for tomorrow` }).fill(THINGS[i]);
   pass(`${tag}: three numbered rows, 1 to 3`, (await page.locator('.ds-prio-n').allInnerTexts()).join(',') === '1,2,3');
-  await page.getByRole('textbox', { name: 'Is there anything else on your mind?' }).fill(NOTE);
+  await page.getByRole('textbox', { name: 'What else is on your mind?' }).fill(NOTE);
   await checkScreen(page, `${tag} tomorrow`);
   await shot(page, `${tag}-7-tomorrow`);
   await next(page);

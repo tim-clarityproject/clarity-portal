@@ -1,0 +1,151 @@
+/* How it works (Draft 9; Stage D item 8): five sections and "Private by default", each a 13px grey label, a 20px
+   line and two or three sentences in the reading size, 32px apart; the cycle under section 2 in thin lines. */
+
+.ui-root .hiw {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hiw-gap);
+  min-width: 0;
+}
+
+.ui-root .hiw-section {
+  margin: 0;
+  min-width: 0;
+}
+
+.ui-root .hiw .hiw-label {
+  margin: 0;
+}
+
+.ui-root .hiw-line {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-question);
+  line-height: 1.35;
+  color: var(--text);
+  text-wrap: balance;
+}
+
+.ui-root .hiw-text {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  overflow-wrap: break-word;
+}
+
+.ui-root .hiw-label + .hiw-text {
+  margin-top: var(--space-2);
+}
+
+/* The page's one main button, 32px under the last section (Draft 9: "One main button at the foot"). */
+.ui-root .hiw-foot {
+  margin-top: var(--space-5);
+}
+
+/* ---------- The cycle ---------- */
+
+.ui-root .hiw-cycle {
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  max-width: var(--mission-panel-w);
+  font-family: var(--font-body);
+  font-size: var(--fs-text);
+  color: var(--text);
+}
+
+/* Reset beside the Sprint: above it, joined by a short dashed line (it isn't a step of the cycle). */
+.ui-root .hiw-cycle-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ui-root .hiw-cycle-tie {
+  display: block;
+  height: var(--space-3);
+  border-left: var(--line-w) dashed var(--text-2);
+}
+
+.ui-root .hiw-cycle-row {
+  display: flex;
+  align-items: center;
+}
+
+.ui-root .hiw-node {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--hiw-node-w);
+  min-height: var(--btn-h);
+  padding: 0 var(--space-1);
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-control);
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.ui-root .hiw-node--side {
+  border-style: dashed;
+  color: var(--text-2);
+}
+
+/* Each step: a thin line to the next box, ending in the chevron that points at it. */
+.ui-root .hiw-cycle-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1 1 0;
+  min-width: var(--space-4);
+  height: var(--btn-h);
+  padding-right: var(--space-1);
+  color: var(--text-2);
+}
+
+.ui-root .hiw-cycle-step::before {
+  content: '';
+  position: absolute;
+  left: var(--space-1);
+  right: var(--space-2);
+  top: 50%;
+  border-top: var(--line-w) solid var(--text-2);
+}
+
+/* Back to Plan: a line from under Review round to under Plan, its chevron pointing up into Plan. */
+.ui-root .hiw-cycle-back {
+  position: relative;
+  height: var(--space-4);
+  margin: 0 calc(var(--hiw-node-w) / 2);
+  border: var(--line-w) solid var(--text-2);
+  border-top: 0;
+  border-radius: 0 0 var(--radius-control) var(--radius-control);
+  color: var(--text-2);
+}
+
+.ui-root .hiw-cycle-up {
+  position: absolute;
+  top: 0;
+  left: calc(var(--space-2) * -1 - var(--line-w) / 2);
+  display: flex;
+  line-height: 0;
+  background: transparent;
+}
+
+@media (forced-colors: active) {
+  .ui-root .hiw-cycle-step::before,
+  .ui-root .hiw-cycle-back,
+  .ui-root .hiw-cycle-tie {
+    border-color: CanvasText;
+  }
+}
+
+/* In the pop-up behind "How the system fits together": the page's grey line first, under the pop-up's own title. */
+.ui-root .ds-system .hiw-intro {
+  margin: 0 0 var(--hiw-gap);
+}

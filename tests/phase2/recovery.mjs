@@ -195,7 +195,7 @@ await everyLayout('running-with-link', async (page) => go(page, '/performance-sp
   await link.click();
   await page.waitForSelector('.rec-question', { timeout: 15000 });
   pass('it opens /recovery', page.url().endsWith('/recovery'));
-  pass('the question', (await text(page, '.rec-question')) === 'How long would you like to recover for?');
+  pass('the question', (await text(page, '.rec-question')) === 'How long do you want to recover for?');
   pass('1 week, suggested', (await text(page, '.ds-daycount-value')) === '1 weeksuggested', await text(page, '.ds-daycount-value'));
   pass('the end date follows', plain(await text(page, '.rec-note')) === `Your recovery ends on ${dayName(addDays(today, 7), today)}.`);
   const plus = page.getByRole('button', { name: 'One day more' });
@@ -234,7 +234,7 @@ await everyLayout('running-with-link', async (page) => go(page, '/performance-sp
   pass('Good morning-style greeting with the first name', /^Good (morning|afternoon|evening)/i.test(await text(page, 'h1')), await text(page, 'h1'));
   pass('the banner says until when', plain(await text(page, '.ds-rec-banner-lead')) === `You're in recovery until ${dayName(recoveryEndOn(r.open), today)}.`);
   pass('... and the days to go', (await text(page, '.ds-rec-banner-left')) === '7 days to go.');
-  pass('the daily question', (await text(page, '.rec-qh')) === 'What would help you recharge today?');
+  pass('the daily question', (await text(page, '.rec-qh')) === 'What will help you recharge today?');
   // The eye alone, its words for screen readers (rules of 5 Nov).
   pass('it is Only you', ((await page.locator('.rec-qfoot .ds-who').first().getAttribute('aria-label')) || (await text(page, '.rec-qfoot .ds-who'))).includes('Only you'));
   pass('... and optional', (await text(page, '.rec-hint')) === 'This is optional, like everything here.');

@@ -589,7 +589,7 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
   if (has('settings')) {
     await open(page, '/coach/settings');
     const sections = await page.locator('.cc-setnav-item').allInnerTexts();
-    pass('settings: two panes, with the owner’s sections', sections.join(', ') === 'Your details, Away and cover, Notifications, Booking, Working hours, Time zones, My calendars, Agreements, Business, Email, Tags and fields, Note layouts, Coaches, Activity log, Look', sections.join(', '));
+    pass('settings: two panes, with the owner’s sections', sections.join(', ') === 'Your details, Sign-in security, Away and cover, Notifications, Booking, Working hours, Time zones, My calendars, Agreements, Business, Email, Tags and fields, Note layouts, Coaches, Activity log, Appearance', sections.join(', ')); // Stage D, items 12 (Look is Appearance) and 13 (Sign-in security after Your details)
     const panes = await page.evaluate(() => { const n = document.querySelector('.cc-setnav').getBoundingClientRect(); const p = document.querySelector('.cc-setpane').getBoundingClientRect(); return n.right <= p.left && Math.abs(n.top - p.top) < 80; });
     pass('settings: the list is on the left and the chosen section on the right', panes);
     pass('settings: no box shows until Edit is pressed', (await page.locator('.cc-setpane input').count()) === 0);
@@ -693,15 +693,17 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     const log = (await text(page)).replace(/\n+/g, ' ');
     pass('activity log: who, what, when', /Alex Morgan exported 6 clients to a spreadsheet\./.test(log) && /Alex Morgan moved Owen Price to Maya Collins\./.test(log), log.slice(0, 200));
 
+    // Stage D, item 12: Look is Appearance, and the old address lands on it.
     await open(page, '/coach/settings/look');
-    await button(page, 'Edit Look').click();
+    pass('appearance: the old Look address lands on Appearance', new URL(page.url()).pathname === '/coach/settings/appearance', page.url());
+    await button(page, 'Edit Appearance').click();
     await settle(page, 300);
     await page.getByRole('radio', { name: 'Dark' }).click();
     pass('look: nothing changes until Save', (await page.evaluate(() => document.documentElement.getAttribute('data-theme'))) === 'light');
     await button(page, 'Save').click();
     await settle(page, 500);
     pass('look: Save changes the mode', (await page.evaluate(() => document.documentElement.getAttribute('data-theme'))) === 'dark');
-    await button(page, 'Edit Look').click();
+    await button(page, 'Edit Appearance').click();
     await page.getByRole('radio', { name: 'Light' }).click();
     await button(page, 'Save').click();
     await settle(page, 400);
@@ -735,7 +737,7 @@ if (has('associate')) {
   await settle(page, 700);
   // Polish 1: the phone's list of sections is one card of rows (.ds-li), each a real link.
   const list = await page.locator('.cc-set-list .ds-li-name').allInnerTexts();
-  pass('associate, phone: Settings is a list of their sections', list.join(', ') === 'Your details, Away and cover, Notifications, Booking, Working hours, Time zones, My calendars, Agreements, Tags and fields, Look', list.join(', '));
+  pass('associate, phone: Settings is a list of their sections', list.join(', ') === 'Your details, Sign-in security, Away and cover, Notifications, Booking, Working hours, Time zones, My calendars, Agreements, Tags and fields, Appearance', list.join(', ')); // Stage D, items 12 and 13
   pass('associate: never Coaches, the Activity log, Email or Note layouts', !list.some((s) => /Coaches|Activity log|Email|Note layouts/.test(s)));
   await page.locator('.cc-set-list .ds-li', { hasText: 'Away and cover' }).click();
   await settle(page, 600);
@@ -743,7 +745,7 @@ if (has('associate')) {
   pass('associate: Away has no cover', !/Cover/.test(await text(page)));
   await page.locator('.ui-back-link').click();
   await settle(page, 500);
-  pass('associate, phone: Back returns to the list', new URL(page.url()).pathname === '/coach/settings' && (await page.locator('.cc-set-list .ds-li').count()) === 10);
+  pass('associate, phone: Back returns to the list', new URL(page.url()).pathname === '/coach/settings' && (await page.locator('.cc-set-list .ds-li').count()) === 11); // Stage D, item 13: Sign-in security is one of them
   for (const [path, why] of [['/coach/settings/coaches', 'Coaches'], ['/coach/settings/log', 'the Activity log']]) {
     await open(page, path);
     pass(`associate: the address for ${why} goes back to their Settings`, new URL(page.url()).pathname === '/coach/settings', new URL(page.url()).pathname);

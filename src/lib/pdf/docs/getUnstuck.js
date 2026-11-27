@@ -78,8 +78,9 @@ export function getUnstuckPdf({
     sections: [
       list('Your next steps', stepItems, true),
       { title: 'Your goal', blocks: goal ? [{ type: 'text', text: goal }] : [] },
-      list('What’s in the way', constraints),
+      // What's working first, as the tool asks it (Stage D, Draft 11).
       list('What’s already working', opportunities),
+      list('What’s in the way', constraints),
       list('Your options', options),
     ],
   };

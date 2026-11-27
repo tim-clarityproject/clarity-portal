@@ -106,11 +106,11 @@ test('the sponsor’s words (M28 s-s-sign, s-s-signed)', () => {
 
 test('the block of hours: meter, balance and entries, newest first (item 24; M28 s-h-client)', () => {
   const v = m.hoursView({ agreement_id: 'a', work: 'The team Health Check', block_minutes: 800, used_minutes: 640, entries: [
-    { day: '2026-11-10', minutes: 90, note: 'Outline agreed with Adie' }, { day: '2026-11-23', minutes: 120, note: 'Scoring for the team report' },
+    { day: '2026-11-10', minutes: 90, note: 'Outline agreed with Rhys' }, { day: '2026-11-23', minutes: 120, note: 'Scoring for the team report' },
   ] }, '2026-11-25');
   assert.equal(v.share, 0.8);
   assert.equal(v.line, '10 hours 40 minutes used of 13 hours 20 minutes, 2 hours 40 minutes left.');
-  assert.deepEqual(v.entries.map((e) => [e.title, e.meta, e.length]), [['Scoring for the team report', 'Mon 23 Nov', '2 hours'], ['Outline agreed with Adie', 'Tue 10 Nov', '1 hour 30 minutes']]);
+  assert.deepEqual(v.entries.map((e) => [e.title, e.meta, e.length]), [['Scoring for the team report', 'Mon 23 Nov', '2 hours'], ['Outline agreed with Rhys', 'Tue 10 Nov', '1 hour 30 minutes']]);
   assert.equal(m.hoursMeta({ block_minutes: 800, used_minutes: 640 }), '80% used');
 });
 

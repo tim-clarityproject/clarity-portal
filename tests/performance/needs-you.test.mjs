@@ -10,7 +10,7 @@ import { refund14, offered } from '../../src/lib/agreements/coolingOff.js';
 const today = '2026-11-25';
 const now = Date.parse('2026-11-25T15:00:00Z');
 const coachId = 'c1';
-const clients = [{ id: 'p1', name: 'Sam Reid' }, { id: 'p2', name: 'Jo Patel' }, { id: 'p3', name: 'Adie Ward' }, { id: 'p4', name: 'Alex Morgan' }];
+const clients = [{ id: 'p1', name: 'Sam Reid' }, { id: 'p2', name: 'Jo Patel' }, { id: 'p3', name: 'Rhys Evans' }, { id: 'p4', name: 'Alex Morgan' }];
 const organisations = [{ id: 'o1', name: 'Northfield Logistics' }];
 const signedAt = '2026-11-01T10:00:00Z';
 const v = (id, agreementId, terms, extra = {}) => ({ id, agreement_id: agreementId, coach_id: coachId, version: 1, status: 'signed', client_signed_at: signedAt, terms, ...extra });
@@ -60,7 +60,7 @@ test('a block of hours at 80%: the top-up drafted, counted again after each top-
   const agreements = [{ id: 'a3', coach_id: coachId, profile_id: 'p3', engagement_id: 'e1', status: 'signed' }];
   const entries = [90, 240, 190, 120].map((m, i) => ({ id: `t${i}`, engagement_id: 'e1', started_at: `2026-11-1${i}T09:00:00Z`, ended_at: new Date(Date.parse(`2026-11-1${i}T09:00:00Z`) + m * 60000).toISOString() }));
   const [it] = d.needsYouItems({ coachId, today, now, agreements, versions: [v('v3', 'a3', t)], entries, clients });
-  assert.equal(it.title, 'Adie’s block is 80% used');
+  assert.equal(it.title, 'Rhys’s block is 80% used');
   assert.equal(it.line, '10 hours 40 minutes of 13 hours 20 minutes');
   assert.equal(it.key, 'hours:a3:0');
   const after = d.needsYouItems({ coachId, today, now, agreements, versions: [v('v3', 'a3', t)], entries, clients, invoices: [{ agreement_id: 'a3', kind: 'top_up', status: 'sent' }] });
@@ -82,7 +82,7 @@ test('renewal a month before the 6 months end; price review 6 weeks before it is
   assert.equal(d.needsYouItems({ coachId, today: '2027-01-12', now, agreements: [...agreements, { id: 'a6', coach_id: coachId, renews_id: 'a4', status: 'draft' }], versions: [v('v4', 'a4', sessionsT)], clients }).filter((i) => i.kind === 'renew').length, 0);
 });
 
-test('overdue: in Needs you only with a reminder waiting, never also in Who needs attention', () => {
+test('overdue: in Needs you with a reminder waiting or owed, never also in Who needs attention', () => {
   const inv = { id: 'i1', coach_id: coachId, profile_id: 'p1', status: 'sent', number: 1243, total_minor: 300000, paid_minor: 0, due_on: '2026-11-11', currency: 'GBP' };
   const waiting = [{ id: 'r1', invoice_id: 'i1', stage: 14, drafted_at: '2026-11-25T03:15:00Z' }];
   assert.equal(d.overdueInNeedsYou(inv, { reminders: waiting, coachId, today }), true);
@@ -93,7 +93,10 @@ test('overdue: in Needs you only with a reminder waiting, never also in Who need
   assert.equal(d.overdueInNeedsYou(inv, { reminders: [...waiting, { id: 'r0', invoice_id: 'i1', stage: 7, sending_at: '2026-11-20T00:00:00Z' }], coachId, today }), false);
   assert.equal(d.overdueInNeedsYou(inv, { reminders: waiting, pauses: [{ profile_id: 'p1' }], coachId, today }), false);
   assert.equal(d.overdueInNeedsYou({ ...inv, coach_id: 'someone else' }, { reminders: waiting, coachId, today }), false);
-  assert.equal(d.overdueInNeedsYou(inv, { reminders: [], coachId, today }), false);
+  // Stage D, item 15: owed and not drafted yet (the nightly round hadn't run) is in Needs you too, so it and Finances
+  // agree; under 3 days overdue nothing is owed yet, and Who needs attention keeps it.
+  assert.equal(d.overdueInNeedsYou(inv, { reminders: [], coachId, today }), true);
+  assert.equal(d.overdueInNeedsYou({ ...inv, due_on: '2026-11-23' }, { reminders: [], coachId, today }), false);
 });
 
 test('a purchase order held, a supplier portal to upload to, a change asked for, the pound moved', () => {

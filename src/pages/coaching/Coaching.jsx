@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { Button, Card, Checkbox, Chevron, Empty, LoadError, Row, Rows, TextBox, ToolTodoPanel, useCoach, useToast, PageOpening } from '../../components/design';
-import { savePdf, PDF_ERROR } from '../../components/design/pdfSave';
+import { openPdf, PDF_ERROR } from '../../components/design/pdfSave';
 import { useCachedLoad } from '../../lib/pageCache';
 import { useDraft } from '../../lib/drafts';
 import { formatClockTime, formatSavedDate, getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
@@ -84,7 +84,8 @@ export default function Coaching() {
     if (making.current) return;
     making.current = true;
     try {
-      await savePdf(() => agreementDocument({ userId, version }), 'light');
+      // Stage D item 14: a signed agreement's row opens its PDF to read (its viewer has Download), never quietly saves it.
+      await openPdf(() => agreementDocument({ userId, version }), 'light');
     } catch (e) {
       toast.error(isOffline(e) ? needsConnection('This PDF') : PDF_ERROR);
     } finally {

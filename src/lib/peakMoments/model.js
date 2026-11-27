@@ -625,7 +625,7 @@ export function reviewAnswers(kind) {
 }
 
 export const REVIEW_HELPED = 'What helped your energy and focus most?';
-export const REVIEW_NEXT = 'What would you keep or change for next time?';
+export const REVIEW_NEXT = 'What will you keep, and what will you change?';
 export const REVIEW_SAVED = 'Saved for your next peak moment';
 
 /** The review's summary rows (M18 "Your review"), the lead-up last and with no Edit: it's a record. */

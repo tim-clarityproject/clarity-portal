@@ -11,6 +11,9 @@ import { BackLink } from '../components/ui/DiscardLink';
 import { Loading, PageOpening, Button, PdfDownload, useToast } from '../components/design';
 import { meetingPlanPdf, meetingEndTime } from '../lib/pdf/docs/meetingPlan';
 import SavedItemActions from '../components/SavedItemActions';
+import { dayLabel } from '../components/design/dates';
+import { filled } from '../lib/draft6Tools/shared';
+import { NOTHING, VERSION, fromForm, peopleIn } from '../lib/draft6Tools/meetingPlanner';
 
 // "Fri, 2 Oct" - UK order, device local time. Plain input[type=date]
 // string ("YYYY-MM-DD"), so noon is used to dodge UTC/local day-shift.
@@ -132,9 +135,12 @@ export default function MeetingSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageOpening label="Meeting planner" title={data.title || 'Meeting plan'} line={B3_LINES.meetingSummary} />
+          <PageOpening label="Meeting planner" title={data.title || meeting.title || 'Meeting plan'} line={B3_LINES.meetingSummary} />
         </div>
 
+        {data.v >= VERSION && <Draft6Summary data={data} />}
+
+        {(!(data.v >= VERSION) || data.date || data.time || data.chair || agenda.length > 0) && (
         <div className="plan-facts">
           <div>
             <b>Date</b>
@@ -153,6 +159,7 @@ export default function MeetingSummary() {
             <span>{data.chair || 'Not set'}</span>
           </div>
         </div>
+        )}
 
         {data.meetingContext && (
           <div className="plan-sum">
@@ -236,6 +243,55 @@ export default function MeetingSummary() {
         </div>
         <SavedItemActions />
       </div>
+    </div>
+  );
+}
+
+// A meeting plan made to Draft 6 (Polish 1, Stage D item 1): the outcome, the
+// room, your opening and the decision, and what you'll do before it.
+function Draft6Summary({ data }) {
+  const a = fromForm(data, () => '');
+  const people = peopleIn(a);
+  const allies = filled(a.allies);
+  const pushback = filled(a.pushback);
+  const row = (label, value) => (value ? (
+    <div className="plan-sum-row">
+      <div className="plan-sum-label">{label}</div>
+      <p className="plan-sum-value">{value}</p>
+    </div>
+  ) : null);
+  return (
+    <div className="plan-sum">
+      {row('What’s been agreed', a.agreed)}
+      {people.length > 0 && (
+        <div className="plan-sum-row">
+          <div className="plan-sum-label">Who’s in the room</div>
+          <div className="plan-sum-value">
+            {people.map((p) => (
+              <div key={p.id}>
+                <p>{p.name || 'Someone'}</p>
+                {p.wants && <p className="plan-none">{`What they want: ${p.wants}`}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {row('Who’s with you', allies.map((r) => r.text).join(', '))}
+      {row('Who’ll push back', pushback.map((r) => r.text).join(', '))}
+      {row('What you won’t give up', a.wontGive)}
+      {row('What they’ll ask', a.ask)}
+      {row('What they need early', a.earlyNothing ? NOTHING : a.early)}
+      {row('How you’ll open', a.opening)}
+      {row('The decision you need', a.decision)}
+      {a.before.text && (
+        <div className="plan-sum-row">
+          <div className="plan-sum-label">Before the meeting</div>
+          <div className="plan-sum-value">
+            <p>{a.before.text}</p>
+            {a.before.date && <p className="plan-none">{dayLabel(a.before.date)}</p>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

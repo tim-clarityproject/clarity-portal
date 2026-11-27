@@ -87,8 +87,8 @@ export const COACH_AUTH_WORDS = {
   },
   security: {
     title: 'Sign-in security',
-    back: 'My Account',
-    link: 'Sign-in security', // Claude's: My Account's row that opens it
+    back: 'Settings', // Stage D, item 13: Sign-in security is in the coach portal's Settings
+    link: 'Sign-in security', // Claude's: Settings' section that opens it
     linkButton: 'Edit my sign-in security', // Claude's: that row's link (rule 29am: Edit)
     app: 'Authenticator app',
     newPhone: 'Set up on a new phone',
@@ -185,24 +185,24 @@ export function usedCodeLine(left) {
 
 /**
  * The line after You're in's own, when the codes are running out (Claude's):
- * "Then make new codes in My Account, under Sign-in security." Null with
+ * "Then make new codes in Settings, under Sign-in security." Null with
  * more than 2 left.
  */
 export function makeNewCodesLine(left) {
-  return Number(left) <= LOW_CODES ? 'Then make new codes in My Account, under Sign-in security.' : null;
+  return Number(left) <= LOW_CODES ? 'Then make new codes in Settings, under Sign-in security.' : null;
 }
 
 /**
  * The 2-or-fewer line, shown once after a sign-in with the 6-digit code
  * (the prompt's "the same line", reworded for a sign-in that used no
  * recovery code): "You have 2 recovery codes left. Make new codes in My
- * Account, under Sign-in security." Null with more than 2 left.
+ * Account, under Sign-in security." (Settings since Stage D, item 13.) Null with more than 2 left.
  */
 export function lowCodesLine(left) {
   const n = Math.max(0, Math.floor(Number(left) || 0));
   if (n > LOW_CODES) return null;
   const count = n === 0 ? 'You have no recovery codes left.' : `You have ${n} recovery code${n === 1 ? '' : 's'} left.`;
-  return `${count} Make new codes in My Account, under Sign-in security.`;
+  return `${count} Make new codes in Settings, under Sign-in security.`;
 }
 
 /** My Account: "9 of 10 left"; "None left" at 0. */
@@ -349,7 +349,7 @@ export function codesFileText(codes, date = new Date()) {
     `These were made on ${formatDocDate(date)} at ${formatClockTime(date)}.`,
     'If you lose your phone, each code gets you in once instead of your 6-digit code.',
     'Keep them somewhere safe, away from your phone.',
-    'Making new codes in My Account, under Sign-in security, stops these working.',
+    'Making new codes in Settings, under Sign-in security, stops these working.',
     '',
     ...(codes || []).map((code, i) => `${String(i + 1).padStart(2, ' ')}. ${showRecoveryCode(code)}`),
     '',
@@ -452,7 +452,10 @@ export const COACH_AUTH_PATHS = {
   codes: '/coach/sign-in/recovery-codes',
   lost: '/coach/sign-in/help',
   in: '/coach/sign-in/in',
-  security: '/my-account/sign-in-security',
+  // Stage D, item 13 (Tim, 27 Nov): in the coach portal's Settings, in the coach frame. The old My Account address
+  // forwards here for coaches (App.jsx), so a bookmark or an older link still lands.
+  security: '/coach/settings/sign-in-security',
+  oldSecurity: '/my-account/sign-in-security',
 };
 
 /**

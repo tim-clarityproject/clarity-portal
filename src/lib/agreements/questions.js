@@ -99,7 +99,7 @@ export function questionWords(key, t, ctx = {}) {
   const c = t.currency || 'GBP';
   const payerWords = ctx.pkgMode ? 'your client' : selfFunded(t) && k !== 'team' ? first : org;
   switch (key) {
-    case 'payer': return { question: 'Who’s paying for the coaching?' };
+    case 'payer': return { question: 'Who’s funding the coaching?' };
     case 'org': return { question: 'Which organisation?', hint: `${first} still signs their own agreement for the coaching. The organisation is invoiced.` };
     case 'sponsor': return k === 'team'
       ? { question: `Who signs for ${org}?`, hint: 'They sign by a link in their email. No account needed.' }
@@ -122,14 +122,14 @@ export function questionWords(key, t, ctx = {}) {
     case 'rsess': return { question: 'How many coaching sessions a month?', hint: 'It runs in 6-month terms, renewing unless either of you says otherwise.' };
     case 'tsess': return { question: 'How many coaching sessions each?' };
     case 'fee': {
-      const after = ctx.pkgMode ? '' : ` If ${first} pays in another currency, you’ll see it in theirs next.`;
+      const after = ctx.pkgMode ? '' : ` If ${first} settles in another currency, you’ll see it in theirs next.`;
       if (k === 'oneoff') return { question: 'What’s the fee for the work, in pounds?', hint: `Always set in pounds first.${after}` };
       if (k === 'team') return { question: 'What’s the programme’s total, in pounds?', hint: `Always set in pounds first.${after}` };
       if (k === 'hours') return { question: 'How big is the block, in pounds?', hint: 'The hours it buys are worked out from your rate.' };
       return { question: 'What’s your fee each month, in pounds?', hint: `Always set in pounds first.${after}` };
     }
-    case 'rate': return { question: 'What’s your hourly rate, in pounds?', hint: ctx.pkgMode ? 'Always set in pounds first.' : `Always set in pounds first. If ${first} pays in another currency, you’ll see it in theirs next.` };
-    case 'cur': return { question: `Which currency will ${first} pay in?`, hint: 'Type a currency or a country.' };
+    case 'rate': return { question: 'What’s your hourly rate, in pounds?', hint: ctx.pkgMode ? 'Always set in pounds first.' : `Always set in pounds first. If ${first} settles in another currency, you’ll see it in theirs next.` };
+    case 'cur': return { question: `Which currency will ${first} settle in?`, hint: 'Type a currency or a country.' };
     case 'local': {
       const exact = localFor('exact', t.gbpMinor, c, ctx.rate);
       return {
@@ -387,8 +387,8 @@ export { perWords };
 
 // ---------------------------------------------------------------- the "So far:" line and the check
 
-/** The words for who pays: "paid by Sam" or "paid by Morrow Cycles". */
-const paidBy = (t, first) => (selfFunded(t) && kindOf(t) !== 'team' ? `paid by ${first}` : `paid by ${text(t.orgName) || text(t.fundedBy) || 'the organisation'}`);
+/** The words for who funds it (Stage D item 11: clients invest and settle, organisations fund): "funded by Sam" or "funded by Morrow Cycles". */
+const paidBy = (t, first) => (selfFunded(t) && kindOf(t) !== 'team' ? `funded by ${first}` : `funded by ${text(t.orgName) || text(t.fundedBy) || 'the organisation'}`);
 // A day in the lines: with `today` known, the year shows only when it isn't today's (writing rule 28); without it, as before
 // (the start without its year, the end with it).
 const startWords = (day, today = null) => (day ? dayKeyWords(day, today ? { year: true, today } : {}) : '');

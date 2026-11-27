@@ -10,6 +10,8 @@ import { capacityFromTyped } from '../../lib/coach/day';
 import { clean, coverState, dayWords, hoursWords, isEmail, NOTIFICATION_KINDS, notificationOn, parseHours, rangeWords, START_ZONES } from '../../lib/coach/model';
 import { HOURS_NAMES, hoursProblem, isDayOff } from '../../lib/coach/calendar';
 import { SETTINGS_SECTIONS } from '../../lib/coach/navigation';
+import { CoachSignInSecurity } from '../signin/SignInSecurity';
+import { SIGN_IN_LINES } from '../../content/pageLines/signin';
 import { SETTINGS_LINE, settingsSectionLine } from '../../content/pageLines/coach';
 import { Back, Line, MenuItem, PopMenu, SettingRow, TextLink, useCoachPortal } from './parts';
 import { supabase } from '../../lib/supabase';
@@ -37,7 +39,7 @@ import BusinessSettings from './BusinessSettings';
 // and Cancel. Switches for on and off.
 //
 // Built fully now: Your details, Away and cover (cover is the owner's),
-// Notifications, Coaches (owner), Look, Tags and fields, the Activity log
+// Notifications, Coaches (owner), Appearance, Tags and fields, the Activity log
 // (owner), and since run 3 Booking (BookingSettings.jsx), Working hours and
 // Time zones, which the calendar and booking read. Rows and storage now,
 // put to work in later runs: Email, Note layouts. (My calendars' connections: run 3, calSync.jsx.)
@@ -827,17 +829,17 @@ function ActivityLog() {
   ));
 }
 
-// ---------------------------------------------------------------- Look
-function Look() {
+// ---------------------------------------------------------------- Appearance (Stage D, item 12: was Look)
+function Appearance() {
   const { choice, setChoice } = useColourMode();
   const help = useHiddenHelp();
   return (
     <>
     <SettingRow
-      label="Look"
+      label="Appearance"
       value={choice}
       words={LOOKS.find((l) => l.value === choice)?.label}
-      editor={({ value, setValue }) => <InlineChoice ariaLabel="Look" options={LOOKS} value={value} onChange={setValue} form="pills" />}
+      editor={({ value, setValue }) => <InlineChoice ariaLabel="Appearance" options={LOOKS} value={value} onChange={setValue} form="pills" />}
       onSave={async (v) => { setChoice(v); }}
     />
     <Line title="Hidden help" small={help.count === 0 ? 'Nothing is hidden.' : help.count === 1 ? '1 explanation is hidden.' : `${help.count} explanations are hidden.`}>
@@ -853,7 +855,9 @@ const SECTIONS = SETTINGS_SECTIONS;
 // Sections drawn as their own cards already (Agreements: the terms, packages and What to say), never a card in a card.
 const OWN_CARDS = new Set(['agreements']);
 
-const PANES = { business: BusinessSettings, you: YourDetails, away: AwayAndCover, notifications: Notifications, booking: BookingSettings, hours: WorkingHours, zones: TimeZones, calendars: Calendars, agreements: AgreementSettings, email: Email, tags: TagsAndFields, layouts: NoteLayouts, coaches: Coaches, log: ActivityLog, look: Look };
+const PANES = { business: BusinessSettings, you: YourDetails, 'sign-in-security': CoachSignInSecurity, away: AwayAndCover, notifications: Notifications, booking: BookingSettings, hours: WorkingHours, zones: TimeZones, calendars: Calendars, agreements: AgreementSettings, email: Email, tags: TagsAndFields, layouts: NoteLayouts, coaches: Coaches, log: ActivityLog, appearance: Appearance };
+// Older section addresses that land on their section's new name (Stage D, item 12).
+const SECTION_ALIASES = { look: 'appearance' };
 
 export default function Settings() {
   const { isOwner } = useCoachPortal();
@@ -863,7 +867,8 @@ export default function Settings() {
   const sections = SECTIONS.filter((s) => !s.owner || isOwner);
   const known = sections.find((s) => s.key === section);
   // An address for a section this coach doesn't have goes back to the list.
-  useEffect(() => { if (section && !known) navigate('/coach/settings', { replace: true }); }, [section, known, navigate]);
+  const alias = SECTION_ALIASES[section];
+  useEffect(() => { if (section && !known) navigate(alias ? `/coach/settings/${alias}` : '/coach/settings', { replace: true }); }, [section, known, alias, navigate]);
   const chosen = known || (isPhone ? null : sections[0]);
   const Pane = chosen ? PANES[chosen.key] : null;
 
@@ -890,7 +895,7 @@ export default function Settings() {
       <div className="cc-page">
         <div className="cc-col">
           <Back to="Settings" onClick={() => navigate('/coach/settings')} />
-          <PageOpening title={chosen.label} line={settingsSectionLine(chosen.label)} />
+          <PageOpening title={chosen.label} line={chosen.key === 'sign-in-security' ? SIGN_IN_LINES.security : settingsSectionLine(chosen.label)} />
           {/* Each section's settings in one card (UI tester P12), as every other page's. */}
           <div className="cc-settings">{OWN_CARDS.has(chosen.key) ? <section className="cc-setpane" aria-label={chosen.label}><Pane /></section> : <Card className="cc-setpane" aria-label={chosen.label}><Pane /></Card>}</div>
         </div>

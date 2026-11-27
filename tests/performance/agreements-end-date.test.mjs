@@ -38,3 +38,48 @@ test('pausing Mon 1 Mar to Fri 26 Mar moves the end by 4 weeks, to Fri 30 Jul 20
   assert.equal(e.pauseMove('2027-07-02', '2027-03-26', '2027-03-01').line, 'Choose an Until date after From.');
   assert.equal(e.pauseMove('2027-07-02', '2027-03-01', '2027-03-26', '2027-02-24').line, 'Coaching pauses for 4 weeks, so the end date moves to Fri 30 Jul.');
 });
+
+// Stage D item 16 (Tim, 27 Nov): one pause length for the end date and the invoices, and the coaching sessions booked
+// inside a pause listed for the coach to move or cancel, none moved or cancelled by itself.
+test('a pause moves the end date and the invoices by the same length, whole weeks from a Monday to a Friday', async () => {
+  const { agreementSchedule } = await import('../../src/lib/agreements/settling.js');
+  assert.equal(e.resumeDay('2027-03-26'), '2027-03-29', 'a Friday resumes on Monday');
+  assert.equal(e.resumeDay('2027-03-27'), '2027-03-29', 'a Saturday resumes on Monday');
+  assert.equal(e.resumeDay('2027-03-24'), '2027-03-25', 'a Wednesday resumes on Thursday');
+  assert.equal(e.pauseDays('2027-03-01', '2027-03-26'), 28);
+  assert.equal(e.pauseDays('2027-03-26', '2027-03-01'), 0);
+  assert.equal(e.pauseMove('2027-07-02', '2027-03-01', '2027-03-26').days, 28);
+  // A retainer invoiced monthly on the 4th: the invoice due inside the pause moves 28 days, as the end does.
+  const t = { kind: 'retainer', retainer: { sessions: 'Up to 2 a month, 60 minutes each', feeMinor: 300000, invoice: 'monthly' }, startsOn: '2027-01-04', currency: 'GBP', dueDays: 14 };
+  const v = { id: 'v1', version: 1, status: 'signed', terms: t, client_signed_at: '2027-01-04T10:00:00Z', settle_choice: 'plan' };
+  const plain = agreementSchedule([v], { until: '2027-06-30', agreement: { status: 'signed' } });
+  const paused = agreementSchedule([v], { until: '2027-06-30', agreement: { status: 'signed', paused_from: '2027-03-01', paused_to: '2027-03-26' } });
+  const moved = paused.filter((p) => p.n > 1 && plain.find((q) => q.n === p.n).day >= '2027-03-01');
+  assert.ok(moved.length > 0);
+  for (const p of moved) assert.equal(daysBetweenKeys(plain.find((q) => q.n === p.n).day, p.day), e.pauseDays('2027-03-01', '2027-03-26'));
+});
+
+const daysBetweenKeys = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
+
+test('the coaching sessions booked inside a pause: the client’s, still to come, by their day on the zone’s clock', () => {
+  const now = Date.parse('2027-02-24T12:00:00Z');
+  const S = (id, at, extra = {}) => ({ id, profile_id: 'sam', kind: 'coaching', starts_at: at, ...extra });
+  const sessions = [
+    S('late', '2027-03-22T10:00:00Z'), S('first', '2027-03-08T10:00:00Z'),
+    S('before', '2027-02-26T10:00:00Z'), S('after', '2027-03-29T10:00:00Z'),
+    S('edge-start', '2027-03-01T00:30:00Z'), // Mon 1 Mar 00:30 in London, still Sun 28 Feb 19:30 in Toronto
+    S('edge-end', '2027-03-26T23:30:00Z'), // Fri 26 Mar 23:30 in London
+    S('chemistry', '2027-03-10T10:00:00Z', { kind: 'chemistry' }), S('someone', '2027-03-10T10:00:00Z', { profile_id: 'jo' }),
+    S('said', '2027-03-15T10:00:00Z', { outcome: 'happened' }),
+  ];
+  const ids = (list) => list.map((s) => s.id);
+  assert.deepEqual(ids(e.sessionsInPause(sessions, { from: '2027-03-01', to: '2027-03-26', profileId: 'sam', zone: 'Europe/London', now })),
+    ['edge-start', 'first', 'late', 'edge-end']);
+  assert.deepEqual(ids(e.sessionsInPause(sessions, { from: '2027-03-01', to: '2027-03-26', profileId: 'sam', zone: 'America/Toronto', now })),
+    ['first', 'late', 'edge-end'], 'the day on the zone’s own clock');
+  assert.deepEqual(ids(e.sessionsInPause(sessions, { from: '2027-03-01', to: '2027-03-26', profileId: 'sam', zone: 'Europe/London', now: Date.parse('2027-03-10T00:00:00Z') })),
+    ['late', 'edge-end'], 'only those still to come');
+  assert.deepEqual(e.sessionsInPause(sessions, { from: '2027-03-26', to: '2027-03-01' }), []);
+  // Nothing is changed: the rows come back as they were.
+  assert.equal(e.sessionsInPause(sessions, { from: '2027-03-01', to: '2027-03-26', profileId: 'sam', now })[1], sessions[1]);
+});

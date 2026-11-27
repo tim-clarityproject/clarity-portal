@@ -43,7 +43,10 @@ import {
   DAY_TEXT_MAX,
   GRATITUDE_EXAMPLE,
   MAX_DAY_STRATEGIES,
+  MOST_IMPORTANT,
   RECOVERY_DAY_LINE,
+  RESPONSE_NEEDED,
+  RISK_QUESTION,
   SLEEP_MAX_HOURS,
   SLEEP_QUALITY_OPTIONS,
   WAY_MAX,
@@ -58,6 +61,8 @@ import {
   ifItHappens,
   localToday,
   nightBefore,
+  responseQuestion,
+  topFirst,
   WIND_DOWN_SOURCES,
   thingKey,
   sleepSaveDay,
@@ -91,10 +96,14 @@ import { rangeWords } from '../../lib/performance/sleepChart';
 //              over list (M19: Daily review's things for tomorrow, then
 //              last night's sleep wind down thoughts, each with where it
 //              came from), then This week's to-dos and weekly habits; last
-//              night's note; Add to-do
-//   Priority   "Which one is your highest priority?" on its own screen
-//   Strategy   "Which Strategies does today serve most?" one recommended, two at most
-//   Risk       "What’s the biggest risk to today?" two boxes
+//              night's note; Add to-do. The first chosen is the most
+//              important: a small grey "Most important" on its row and
+//              "Move to top" on the others (Stage D, Draft 11: no
+//              separate priority screen, six questions, no stars)
+//   Strategy   "Which of your Strategies does today move forward?" two at most
+//   Risk       "What’s most likely to knock today off course?" then, under
+//              it, "If “[their answer]” happens, what will you do?", the
+//              commit question: it can't be skipped (Draft 11)
 //   Your day   the summary, with the score this week so far; Set my day
 //   Peak       (M18; Phase 8b) in the 3 days before a peak moment, straight
 //              after Sleep: one question in the moment's own words, with
@@ -532,6 +541,13 @@ function PlanFlow({ userId, date, today, loaded }) {
   };
 
   const chooseTop = (key) => applyPicks(view.picks, key);
+  // The first chosen is the most important (Draft 11): the list numbers it 1, with "Move to top" on the others.
+  const pickOrder = topFirst(view.picks, view.top);
+  const pickSide = (option, on) => {
+    if (!on || pickOrder.length < 2) return null;
+    if (option.value === pickOrder[0]) return { text: MOST_IMPORTANT };
+    return { action: 'Move to top', ariaLabel: `Move “${option.label}” to the top`, onClick: () => chooseTop(option.value) };
+  };
 
   const chooseStrategies = (ids) => {
     if (ids.length > MAX_DAY_STRATEGIES) return;
@@ -713,7 +729,6 @@ function PlanFlow({ userId, date, today, loaded }) {
       key: 'gratitude',
       name: 'Gratitude',
       question: 'What’s one thing you’re grateful for today?',
-      nudges: ['It can be something small.'],
       example: GRATITUDE_EXAMPLE,
       render: () => (
         <TextBox ariaLabel="One thing you’re grateful for today" maxLength={DAY_TEXT_MAX} value={answers.grateful} onChange={(grateful) => change({ grateful })} />
@@ -723,7 +738,6 @@ function PlanFlow({ userId, date, today, loaded }) {
       key: 'be',
       name: 'Be',
       question: 'How do you want to be today?',
-      nudges: ['Choose one way of being for today.'],
       render: () => {
         const pick = (list, name) => (
           <Choice ariaLabel={name} form="rows" options={list.map((w) => ({ value: w, label: w }))} value={list.find((w) => w === answers.way.trim()) ?? null} onChange={(way) => change({ way })} />
@@ -763,8 +777,9 @@ function PlanFlow({ userId, date, today, loaded }) {
               variant="pick"
               ariaLabel="What will you do today?"
               options={dayOptions}
-              values={view.picks}
+              values={pickOrder}
               onChange={choosePicks}
+              side={pickSide}
               // The group names only when something is carried over (no stray "This week" under the label).
               groups={dayOptions.some((o) => o.group === 'carried') ? [{ key: 'carried', title: 'Carried over' }, { key: 'week', title: 'This week' }] : undefined}
             />
@@ -782,8 +797,9 @@ function PlanFlow({ userId, date, today, loaded }) {
                   variant="pick"
                   ariaLabel="From your Backlog"
                   options={backlogOptions}
-                  values={view.picks}
+                  values={pickOrder}
                   onChange={choosePicks}
+                  side={pickSide}
                 />
               </Collapsible>
             </div>
@@ -795,43 +811,14 @@ function PlanFlow({ userId, date, today, loaded }) {
         </div>
       )),
     },
-    // With exactly one to-do or habit chosen, that one is the priority
-    // (applyPicks makes the first chosen the top), so the step isn't asked
-    // (Polish 1, Stage C, the functionality tester P2; rule 21).
-    ...(view.picks.length === 1 ? [] : [{
-      key: 'priority',
-      name: 'Priority',
-      question: 'Which one is your highest priority?',
-      nudges: ['It comes first on Home and in your Daily review.'],
-      oneTap: view.picks.length > 0,
-      render: (tool) => (view.picks.length ? (
-        <div className="day-narrow">
-          {eye}
-          <Choice
-          ariaLabel="Which one is your highest priority?"
-          form="rows"
-          options={view.ordered.map((o) => ({ value: o.value, label: o.label }))}
-          value={view.top}
-          onChange={chooseTop}
-          onChoose={() => tool.next()}
-          />
-        </div>
-      ) : (
-        <div className="day-quiet">
-          <p>You haven’t chosen any to-dos yet.</p>
-          <Button variant="text" onClick={() => tool.go(stepIndex('do'))}>Choose my to-dos</Button>
-        </div>
-      )),
-    }]),
     {
       key: 'strategy',
       name: 'Strategy',
-      question: 'Which Strategies does today serve most?',
-      nudges: ['One is best, so the day has a clear focus.', 'You can choose two if you need to.', 'Your Daily review will ask how they moved tonight.'],
+      question: 'Which of your Strategies does today move forward?',
       render: () => (!view.hasPlan ? noPlan : (
         <div className="day-narrow">
         <MultiChoice
-          ariaLabel="Which Strategies does today serve most?"
+          ariaLabel="Which of your Strategies does today move forward?"
           options={view.strategies}
           values={view.dayStrategies}
           onChange={chooseStrategies}
@@ -843,12 +830,14 @@ function PlanFlow({ userId, date, today, loaded }) {
     {
       key: 'risk',
       name: 'Risk',
-      question: 'What’s the biggest risk to today?',
-      nudges: ['Name what could knock today off course.', 'Then decide what you’ll do if it happens.'],
+      question: RISK_QUESTION,
+      // The commit question is the second box (Draft 11): it can't be skipped.
+      required: true,
+      check: () => (answers.response.trim() ? null : RESPONSE_NEEDED),
       render: () => (
         <div className="day-stack">
-          <TextBox label="What could knock today off course?" maxLength={DAY_TEXT_MAX} value={answers.risk} onChange={(risk) => change({ risk })} />
-          <TextBox label="If it happens, what will you do?" maxLength={DAY_TEXT_MAX} value={answers.response} onChange={(response) => change({ response })} />
+          <TextBox ariaLabel={RISK_QUESTION} maxLength={DAY_TEXT_MAX} value={answers.risk} onChange={(risk) => change({ risk })} />
+          <TextBox label={responseQuestion(answers.risk)} maxLength={DAY_TEXT_MAX} value={answers.response} onChange={(response) => change({ response })} />
         </div>
       ),
     },

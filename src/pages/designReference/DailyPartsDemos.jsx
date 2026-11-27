@@ -43,7 +43,7 @@ export function ScaleLevelDemo() {
   return (
     <div className="dr-stack dr-stack--fill">
       <LevelChoice
-        ariaLabel="Which Strategies moved today?"
+        ariaLabel="Which of your Strategies moved today?"
         who="me"
         options={STRATEGIES}
         values={moved}

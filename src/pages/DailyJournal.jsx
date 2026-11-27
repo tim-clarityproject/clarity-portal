@@ -16,6 +16,8 @@ import { JOURNAL_QUESTION, TOOL_CLOSED } from '../content/pageLines/client';
 
 // × with no connection: the edit waits in the offline queue, so it isn't "Saved." yet (Q4).
 const CLOSED_WILL_SYNC = 'Kept on this device. It saves when you’re back online.';
+// How long after the typing stops the journal saves itself (Draft 6: "Saves as you type").
+const AUTOSAVE_MS = 1500;
 import DiscardDialog from '../components/ui/DiscardDialog';
 import {
   Crosshair, Loading, WhoSees, SaveStatus, TextBox, useToast,
@@ -23,12 +25,12 @@ import {
 
 // The Journal runs in focus mode like every other tool (Polish 1, Tim's walk of Stage B, items 1 to 4): FormTool's
 // ToolFrame gives × ("Close and save my place"), the day as the small grey label (no year for a day this year,
-// writing rule 28), the question, Save journal at the foot and Save as draft and Discard as quiet links under it.
+// writing rule 28), the question, Done at the foot and Discard as a quiet link under it; it saves as you type (Draft 6).
 // The menu, My Mission and Breathe step aside. The prompts wait behind a quiet "Need a prompt?" link and show only
 // when asked; the writing boxes sit in one column with the shared gap, the last one a tall page to write on.
 const JOURNAL_CSS = `
 .ui-root .jrn-ask { margin-top: var(--space-3); }
-/* A quiet underlined link, as Save as draft and Discard under the foot (formTool.css .ft-link). */
+/* A quiet underlined link, as Discard under the foot (formTool.css .ft-link). */
 .ui-root .jrn-ask .jrn-ask-link {
   color: var(--text-2);
   text-decoration: underline;
@@ -246,17 +248,43 @@ export default function DailyJournal() {
     return saved;
   };
 
-  // × on a journal already saved (a draft or finished) and edited since: the edit goes to the database as Save
-  // sends it (straight there, or through the offline queue), so My Journals' word count and other devices see it.
-  // "Saved." is said only when that is true; queued, it says it will sync (the functionality tester, Q4).
-  // Writing never saved stays on the device, as every tool's × keeps it.
+  // Saves as you type (Draft 6, Polish 1 Stage D: "Saves as you type; private and unlinked"): a quiet save a moment
+  // after the typing stops, as a draft until Done finishes it (a finished journal stays finished). Nothing is said
+  // unless it goes wrong at Done or ×; SaveStatus shows Saving and Saved. A day that hasn't loaded, an empty page or
+  // one past the limit waits, and the device's draft keeps the writing meanwhile.
+  const autosaving = useRef(null);
+  const statusRef = useRef(existingStatus);
+  statusRef.current = existingStatus;
+  useEffect(() => {
+    if (isLoading || !serverKnown) return undefined;
+    const text = textOf(blocks);
+    if (!text || text.length > MAX_CHARS || savedTextRef.current === text) return undefined;
+    const timer = setTimeout(() => {
+      if (savingRef.current) return;
+      savingRef.current = true;
+      setIsSaving(true);
+      autosaving.current = persist(statusRef.current !== 'final')
+        .then((saved) => { if (saved && !saved.queued) setSaveStatus('Saved'); })
+        .catch((error) => { console.error('[DailyJournal] autosave failed:', error); })
+        .finally(() => { savingRef.current = false; setIsSaving(false); autosaving.current = null; });
+    }, AUTOSAVE_MS);
+    return () => clearTimeout(timer);
+    // persist reads the newest blocks; only a change of writing starts a save.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocks, isLoading, serverKnown]);
+
+  // × on a journal edited since it was last saved: the edit goes to the database as Done sends it (straight there,
+  // or through the offline queue), so My Journals' word count and other devices see it. "Saved." is said only when
+  // that is true; queued, it says it will sync (the functionality tester, Q4). A day that hasn't loaded keeps the
+  // writing on the device, as every tool's × keeps it.
   const handleClose = async () => {
+    if (autosaving.current) await autosaving.current;
     if (isLoading || savingRef.current) return null;
     const text = textOf(blocks);
-    if (!existingId || !text || savedTextRef.current === text) return TOOL_CLOSED;
+    if (!serverKnown || !text || savedTextRef.current === text) return TOOL_CLOSED;
     savingRef.current = true;
     try {
-      const saved = await persist(existingStatus === 'draft');
+      const saved = await persist(existingStatus !== 'final');
       if (!saved) return null;
       return saved.queued ? CLOSED_WILL_SYNC : TOOL_CLOSED;
     } catch (error) {
@@ -269,8 +297,10 @@ export default function DailyJournal() {
   };
 
   const handleSaveJournal = async () => {
+    // A quiet save as you type may be on its way: Done waits for it, then finishes the journal.
+    if (autosaving.current) await autosaving.current;
     // A double tap starts one save, not two.
-    if (isSaving || savingRef.current) return;
+    if (savingRef.current) return;
     savingRef.current = true;
     setIsSaving(true);
     try {
@@ -279,27 +309,6 @@ export default function DailyJournal() {
       if (saved && !saved.queued) navigate('/daily-journals', { state: { toast: 'Journal saved. It is in My Reviews too.' } });
     } catch (error) {
       console.error('[DailyJournal] save failed:', error);
-      toast.error('That didn’t save. Check your connection and try again.');
-    } finally {
-      savingRef.current = false;
-      setIsSaving(false);
-    }
-  };
-
-  const handleSaveDraft = async () => {
-    // A double tap starts one save, not two.
-    if (isSaving || savingRef.current) return;
-    savingRef.current = true;
-    setIsSaving(true);
-    try {
-      const saved = await persist(true);
-      if (saved && !saved.queued) {
-        setSaveStatus('Draft saved');
-        toast.show('Draft saved.');
-        navigate('/daily-journals');
-      }
-    } catch (error) {
-      console.error('[DailyJournal] draft save failed:', error);
       toast.error('That didn’t save. Check your connection and try again.');
     } finally {
       savingRef.current = false;
@@ -348,8 +357,7 @@ export default function DailyJournal() {
         question={JOURNAL_QUESTION}
         eye={<WhoSees audience="me" />}
         onNext={() => { if (!isLoading) handleSaveJournal(); }}
-        nextLabel="Save journal"
-        onSaveDraft={() => { if (!isLoading) handleSaveDraft(); }}
+        nextLabel="Done"
         onDiscard={() => setDiscardOpen(true)}
         closeTo="/daily-journals"
         onClose={handleClose}

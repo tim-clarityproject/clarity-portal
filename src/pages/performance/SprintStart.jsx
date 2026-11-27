@@ -72,6 +72,8 @@ import {
 } from '../../lib/performance/sprintSetup';
 import { SPRINT_LABEL_PLACEHOLDER, exampleRole } from '../../content/planBuilder';
 import { usePeakMoments } from '../../lib/peakMoments/store';
+import { COMMIT_NEEDED, DAY_ONE_QUESTION, commitTodo } from '../../lib/performance/commitQuestions';
+import CommitTodo from './CommitTodo';
 import { metaItems, sprintMoments, whenWords } from '../../lib/peakMoments/model';
 import { addDays as addDayKey } from '../../lib/scores/dates.js';
 import '../peakMoments/peakMoments.css';
@@ -85,7 +87,9 @@ import { TOOL_CLOSED } from '../../content/pageLines/client';
 // suggested, and an optional label), when it starts (any day), the
 // performance standard (85 suggested; 85 and fixed for an organisation
 // seat), the habits it takes from the plan (keep, change or remove each,
-// or add one for this sprint only), then Ready.
+// or add one for this sprint only), the peak moments in it, "What will you
+// do on day one?" (Stage D, Draft 11: the commit question, never skipped,
+// saved as a to-do in week 1 for the Strategy it serves), then Ready.
 //
 // Coming from Build your plan, the first sprint was chosen there: it is
 // created straight away from that hand-over (sprintSetup.js), with every
@@ -196,6 +200,8 @@ function SprintStartView({ userId, data }) {
           standard: data.fixedStandard ?? handover.standard,
           label: handover.label,
           habits: allHabits,
+          // Build your plan's commit answer, as a to-do in week 1 (Stage D, Draft 11).
+          firstTodo: handover.firstTodo || null,
         }, newId),
       };
     }
@@ -359,6 +365,8 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
       carry: {},
       added: [],
       addTo: strategies[0]?.id || null,
+      dayOne: '',
+      dayOneStrategy: strategies[0]?.id || null,
     };
   });
   const [draft, setDraft] = useState(initial);
@@ -402,6 +410,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
     return { carry: { ...d.carry, [row.id]: { choice: 'change', edit } } };
   });
   const addTo = strategies.some((s) => s.id === draft.addTo) ? draft.addTo : strategies[0]?.id;
+  const dayOneStrategy = strategies.some((s) => s.id === draft.dayOneStrategy) ? draft.dayOneStrategy : strategies[0]?.id || null;
   const addHabit = () => {
     if (!addTo) return;
     const h = emptyHabit(newId(), addTo);
@@ -430,13 +439,12 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
       name: 'Length',
       label: name,
       question: 'How long is this sprint?',
-      nudges: ['Pick 2 to 16 weeks.', '12 is long enough to see results and short enough to stay focused.'],
       render: () => (
         <div>
           <SprintLengthChoice sprint={sprint} onChange={setSprint} />
           <div className="sprint-start-label">
             <TextBox
-              label="What would you like to call it?"
+              label="What do you want to call it?"
               lines="one"
               maxLength={LABEL_MAX}
               value={draft.label}
@@ -453,9 +461,6 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
       percent: 25,
       name: 'Start',
       question: 'When does it start?',
-      nudges: earliest > today
-        ? ['Pick any day from tomorrow.', 'Today still belongs to your last sprint.']
-        : ['Pick any day.', 'You can move it before it starts.'],
       render: () => <SprintStartChoice sprint={sprint} onChange={setSprint} earliest={earliest} />,
     },
     {
@@ -463,7 +468,6 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
       percent: 50,
       name: 'Standard',
       question: 'What’s your performance standard this time?',
-      nudges: fixedStandard != null ? [] : ['Lower it for a heavy period, or raise it for a stretch.'],
       render: () => <StandardChoice sprint={sprint} onChange={setSprint} fixed={fixedStandard} label="What’s your performance standard this time?" />,
     },
     {
@@ -472,7 +476,6 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
       name: 'Habits',
       label: 'From your plan',
       question: 'Which habits are you bringing across?',
-      nudges: ['Keep, change or remove each one.', 'Changes start with this sprint.'],
       // The eye beside the question (rule 29d, Tim, 5 Nov).
       eye: <WhoSees audience="me" />,
       render: () => (
@@ -537,7 +540,6 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
       percent: 88,
       name: 'Peak moments',
       question: 'When do you need to be at your best?',
-      nudges: ['Add the moments in this sprint that need more of your energy, attention and focus.'],
       render: () => (
         <div>
           <CardHead label="Peak moments in this sprint" as="h3" add={<AddLink label="Add a peak moment" onClick={() => navigate('/peak-moments/add', { state: { from: '/performance-sprint/start' } })} />} />
@@ -551,6 +553,27 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
         </div>
       ),
     },
+    // The commit question (Stage D, Draft 11): it can't be skipped, and the
+    // answer is a to-do in the sprint's first week, for the Strategy chosen.
+    ...(strategies.length ? [{
+      key: 'dayOne',
+      percent: 94,
+      name: 'Day one',
+      question: DAY_ONE_QUESTION,
+      required: true,
+      eye: <WhoSees audience="me" />,
+      check: () => (draft.dayOne.trim() ? null : COMMIT_NEEDED),
+      render: () => (
+        <CommitTodo
+          question={DAY_ONE_QUESTION}
+          text={draft.dayOne}
+          onText={(dayOne) => set({ dayOne })}
+          strategies={strategies}
+          strategyId={dayOneStrategy}
+          onStrategy={(dayOneStrategy) => set({ dayOneStrategy })}
+        />
+      ),
+    }] : []),
   ];
   const stepAt = (key) => Math.max(0, steps.findIndex((s) => s.key === key));
 
@@ -592,6 +615,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
             { label: 'Starts', editName: 'the start date', step: stepAt('start'), value: sprint.start === today ? `Today, ${dayLabel(sprint.start)}` : dayLabel(sprint.start) },
             { label: 'Performance standard', step: stepAt('standard'), value: standard != null ? `${standard}%` : '' },
             { label: 'Habits', step: stepAt('habits'), value: habitsValue },
+            ...(strategies.length ? [{ label: 'Day one', editName: 'what you’ll do on day one', step: stepAt('dayOne'), value: draft.dayOne.trim() }] : []),
           ]}
         />
         {running && (
@@ -629,6 +653,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
       standard,
       label,
       habits: chosen.habits,
+      firstTodo: ((t) => (t ? { ...t, createdOn: today } : null))(commitTodo(draft.dayOne, dayOneStrategy, strategies)),
       finish: running ? { sprintId: running.id, number: running.number, endOn: finishDay(running, recoveriesEnded(data.recoveries, ending), today, sprint.start) } : null,
       endRecovery: ending,
     }, newId));

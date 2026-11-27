@@ -22,7 +22,8 @@ const full = () => {
 };
 
 test('the screens, in M9’s order, with the stage names above the questions', () => {
-  assert.deepEqual(STEP_KEYS, ['goal', 'cons', 'opps', 'opts', 'will', 'steps', 'sum']);
+  // Stage D, Draft 11 (Tim's answer 8): what's working comes first.
+  assert.deepEqual(STEP_KEYS, ['goal', 'opps', 'cons', 'opts', 'will', 'steps', 'sum']);
   assert.deepEqual(STEP_KEYS.map((k) => STAGE[k]), ['Goal', 'Reality', 'Reality', 'Options', 'Will', 'Will', '']);
 });
 
@@ -33,7 +34,7 @@ test('the questions carry the goal in quote marks, word for word', () => {
   assert.equal(question('opps', p), 'What’s already working for you on “Cut our time to hire to 30 days by March”?');
   assert.equal(question('opts', p), 'What could you do to reach “Cut our time to hire to 30 days by March”?');
   assert.equal(question('will', p), 'Which options will you act on?');
-  assert.equal(question('steps', p), 'What exactly will you do?');
+  assert.equal(question('steps', p), 'What will you do, and when?'); // Stage D, Draft 11: the commit question
   assert.equal(question('sum', p, { name: 'Jordan' }), 'Here’s your plan, Jordan.');
   assert.equal(question('sum', p, { name: 'Jordan', guest: true }), 'Here’s your plan.');
   assert.equal(question('sum', p, {}), 'Here’s your plan.');
@@ -51,14 +52,19 @@ test('the line under each question; a guest starts soon, not this week', () => {
   assert.equal(nudge('sum'), null);
 });
 
-test('only the goal and the choice are needed, each with its calm message', () => {
+test('only the goal, the choice and the commit are needed, each with its calm message', () => {
   const p = emptyPlan();
   assert.equal(requiredMessage('goal', p), 'Type your goal to carry on.');
   assert.equal(requiredMessage('goal', { ...p, goal: '   ' }), REQUIRED.goal);
   assert.equal(requiredMessage('goal', { ...p, goal: 'x' }), null);
   assert.equal(requiredMessage('will', p), 'Choose at least one option to carry on.');
   assert.equal(requiredMessage('will', full()), null);
-  for (const k of ['cons', 'opps', 'opts', 'steps', 'sum']) assert.equal(requiredMessage(k, p), null);
+  for (const k of ['cons', 'opps', 'opts', 'sum']) assert.equal(requiredMessage(k, p), null);
+  // Stage D, Draft 11: the commit question can't be skipped; every chosen option's step needs its words.
+  assert.equal(requiredMessage('steps', p), 'Type what you’ll do to carry on.');
+  assert.equal(requiredMessage('steps', full()), null);
+  const blank = full();
+  assert.equal(requiredMessage('steps', setAct(blank, blank.acts[1].id, { text: ' ' })), REQUIRED.steps);
 });
 
 test('choosing an option adds a next step with its words; choosing it again takes it away', () => {
@@ -109,10 +115,11 @@ test('Your plan: five rows in M9’s order, blanks say so, a guest sees no sprin
   let p = full();
   p = setAct(p, p.acts[0].id, { where: WHERE.week });
   const rows = summaryRows(p);
-  assert.deepEqual(rows.map((r) => r.label), ['Your goal', 'What’s in the way', 'What’s already working', 'Your options', 'Your next steps']);
-  assert.deepEqual(rows.map((r) => r.step), ['goal', 'cons', 'opps', 'opts', 'steps']);
-  assert.deepEqual(rows.map((r) => `Edit ${r.editName}`), ['Edit your goal', 'Edit what’s in the way', 'Edit what’s already working', 'Edit your options', 'Edit your next steps']);
-  assert.deepEqual(rows[1].lines, [{ text: 'One recruiter' }]);
+  assert.deepEqual(rows.map((r) => r.label), ['Your goal', 'What’s already working', 'What’s in the way', 'Your options', 'Your next steps']);
+  assert.deepEqual(rows.map((r) => r.step), ['goal', 'opps', 'cons', 'opts', 'steps']);
+  assert.deepEqual(rows.map((r) => `Edit ${r.editName}`), ['Edit your goal', 'Edit what’s already working', 'Edit what’s in the way', 'Edit your options', 'Edit your next steps']);
+  assert.deepEqual(rows[1].lines, [{ text: 'Referrals' }]);
+  assert.deepEqual(rows[2].lines, [{ text: 'One recruiter' }]);
   assert.deepEqual(rows[4].lines[0], { text: 'Agree a 48-hour rule', sub: 'It’s in this week’s sprint.', good: true });
   assert.deepEqual(rows[4].lines[1], { text: 'Pilot one-day loops', sub: 'It isn’t in this week’s sprint yet.', good: false });
   assert.deepEqual(summaryRows(p, { guest: true })[4].lines, [{ text: 'Agree a 48-hour rule' }, { text: 'Pilot one-day loops' }]);
@@ -235,7 +242,7 @@ test('035’s messages show with the portal’s own apostrophe, and a closed lin
   assert.equal(guestError(closed, GUEST_WORDS.save), GUEST_WORDS.closed);
   // With the coach's first name when the link has one (Phase 8a follow-up, step 7).
   assert.equal(openProblem({ ok: false, error: 'closed' }, 'Tim'), 'This link has closed. Ask Tim to send a new one.');
-  assert.equal(guestError(closed, GUEST_WORDS.save, 'Adie'), 'This link has closed. Ask Adie to send a new one.');
+  assert.equal(guestError(closed, GUEST_WORDS.save, 'Rhys'), 'This link has closed. Ask Rhys to send a new one.');
   assert.equal(guestError(closed, GUEST_WORDS.save, '  '), 'This link has closed. Ask your coach to send a new one.');
   assert.equal(guestError({ code: '42501', message: "That isn't yours, so it wasn't changed. Open your own link to carry on." }, GUEST_WORDS.save), 'That isn’t yours, so it wasn’t changed. Open your own link to carry on.');
   assert.equal(openProblem({ ok: false }), GUEST_WORDS.open);

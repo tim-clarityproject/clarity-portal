@@ -51,7 +51,8 @@ export const TODO_NEEDS = {
 export function TodoWhere({ value, onChange, options, label = 'Where should it go?' }) {
   return (
     <div className="ds-todo-where">
-      <Choice label={label} options={options} value={value} onChange={onChange} form="pills" />
+      {/* A joined switch while its equal parts fit, else rows (Stage C: never unequal; the wash's commit screen at twice the text size, Stage D). */}
+      <Choice label={label} options={options} value={value} onChange={onChange} fit />
       {value === TODO_WHERE.backlog && <p className="ds-panel-note" role="status">{BACKLOG_LINE}</p>}
     </div>
   );

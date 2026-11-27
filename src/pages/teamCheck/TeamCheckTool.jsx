@@ -13,6 +13,7 @@ import {
   StartQuestions,
   StepBarRows,
   StepBars,
+  TextBox,
   TextField,
   ToolTodoPanel,
   WhoSees,
@@ -23,6 +24,8 @@ import { newId } from '../../lib/syncQueue';
 import {
   NAME_MAX,
   PEOPLE_MAX,
+  DECIDE_COLOURS,
+  DECIDE_TITLE,
   QUESTIONS_TITLE,
   REQUIRED,
   ROLE_MAX,
@@ -33,10 +36,15 @@ import {
   firstUnanswered,
   headline,
   isComplete,
-  nudge,
   options,
-  percentAt,
   question,
+  COMMIT_MAX,
+  WORKING_MAX,
+  commitMessage,
+  commitPerson,
+  commitText,
+  setCommit,
+  setWorking,
   ratingSteps,
   removePerson,
   requiredMessage,
@@ -126,7 +134,36 @@ function Results({ check, tool, onResults, onEditList }) {
         </div>
       </ResultsSection>
       <StartQuestions title={QUESTIONS_TITLE} questions={startQuestions(check).map((q) => q.text)} />
+      {startQuestions(check).some((q) => q.kind === 'autonomy') && <DecideColours />}
     </>
+  );
+}
+
+// Decide who decides (Stage D, item 4): what each colour of the autonomy
+// question means, in the portal's own data colours (DECIDE_COLOURS; never
+// coral): Green a filled mint light at the top, Amber a mint ring in the
+// middle, Red a filled grey light at the bottom.
+export function TrafficLight({ colour }) {
+  const at = DECIDE_COLOURS.findIndex((c) => c.key === colour);
+  return (
+    <span className="tpc-light" aria-hidden="true">
+      {DECIDE_COLOURS.map((c, i) => <span key={c.key} className={`tpc-light-dot${i === at ? ` tpc-light-dot--${c.key}` : ''}`} />)}
+    </span>
+  );
+}
+
+function DecideColours() {
+  return (
+    <ResultsSection title={DECIDE_TITLE} rows>
+      <ul className="tpc-decide" aria-label={DECIDE_TITLE}>
+        {DECIDE_COLOURS.map((c) => (
+          <li key={c.key} className="tpc-decide-row">
+            <TrafficLight colour={c.key} />
+            <span className="tpc-decide-words"><b>{c.name}</b><span>{c.meaning}</span></span>
+          </li>
+        ))}
+      </ul>
+    </ResultsSection>
   );
 }
 
@@ -208,7 +245,6 @@ export default function TeamCheckTool({
       key: 'people',
       name: 'Who reports to you',
       question: question('people'),
-      nudges: [nudge('people')],
       eye,
       percent: 0,
       check: () => requiredMessage(check),
@@ -230,13 +266,27 @@ export default function TeamCheckTool({
         </>
       ),
     },
-    ...ratings.map((s, j) => ({
+    ...ratings.flatMap((s) => [s, ...(s.kind === 'u' ? [{ key: `w:${s.person.id}`, kind: 'w', person: s.person, n: s.n, of: s.of }] : [])]).map((s, j) => (s.kind === 'w' ? {
+      // What's working, after each person's three ratings (Stage D, Draft 11): it can be skipped.
+      key: s.key,
+      name: s.person.name,
+      label: countLine(s.n, s.of),
+      question: question('w', s.person),
+      percent: Math.round(((j + 1) / (4 * people.length + 1)) * 100),
+      render: () => (
+        <TextBox
+          ariaLabel={question('w', s.person)}
+          maxLength={WORKING_MAX}
+          value={s.person.w || ''}
+          onChange={(words) => onCheck((c) => setWorking(c, s.person.id, words))}
+        />
+      ),
+    } : {
       key: s.key,
       name: s.person.name,
       label: countLine(s.n, s.of),
       question: question(s.kind, s.person),
-      nudges: [nudge(s.kind)],
-      percent: percentAt(j + 1, people.length),
+      percent: Math.round(((j + 1) / (4 * people.length + 1)) * 100),
       // One answer moves straight on (rule 21): no Next, and nothing to skip.
       oneTap: true,
       required: true,
@@ -252,6 +302,23 @@ export default function TeamCheckTool({
         />
       ),
     })),
+    // The commit question (Stage D, Draft 11): once, last, naming one person; it can't be skipped.
+    ...(commitPerson(check) ? [{
+      key: 'commit',
+      name: commitPerson(check).name,
+      question: question('c', commitPerson(check)),
+      percent: Math.round(((4 * people.length) / (4 * people.length + 1)) * 100),
+      required: true,
+      check: () => commitMessage(check),
+      render: () => (
+        <TextBox
+          ariaLabel={question('c', commitPerson(check))}
+          maxLength={COMMIT_MAX}
+          value={commitText(check)}
+          onChange={(words) => onCheck((c) => setCommit(c, words))}
+        />
+      ),
+    }] : []),
     {
       key: 'results',
       name: 'Your team',

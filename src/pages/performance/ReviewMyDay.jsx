@@ -104,11 +104,13 @@ import { TOOL_CLOSED } from '../../content/pageLines/client';
 //               weekly habits
 //   Went well   "What went well today?" with Add an unplanned win (saved to
 //               wins, and by the database to Confidence Bank)
-//   Differently "What would you do differently next time?"
-//   Strategies  "Which Strategies moved today?" Low, Medium or High inside
-//               each, with the morning's reminder
-//   Tomorrow    up to three things, as rows (lists are rows), then anything
-//               else on your mind; tomorrow's Daily plan lists them
+//   Differently "What will you do differently tomorrow?"
+//   Strategies  "Which of your Strategies moved today?" Low, Medium or High
+//               inside each, with the morning's reminder
+//   Tomorrow    "What will you do first tomorrow?" (the commit question: it
+//               can't be skipped) up to three things, as rows (lists are
+//               rows), then "What else is on your mind?"; tomorrow's Daily
+//               plan lists them (Stage D, Draft 11)
 //   Your day    the summary, with the score this week so far
 //   Close       "Ready to close the day?" (M19, approved 29 Oct): what
 //               moves to tomorrow (today's open to-dos, still on this
@@ -600,7 +602,6 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       key: 'do',
       name: 'Do',
       question: planned ? 'Which of today’s to‑dos did you do?' : 'Which of this week’s to‑dos did you do today?',
-      nudges: ['Tick each one you did.'],
       render: () => (!view.hasPlan ? noPlan : (
         <div className="day-narrow">
           {eye}
@@ -646,7 +647,6 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       // being from this morning, it first asks how they wanted to be today;
       // Skip skips both. Never a rating of nothing in particular.
       question: way ? wayQuestion(way) : 'How did you want to be today?',
-      nudges: way ? [] : ['Choose one, or write your own.'],
       render: () => (!way ? (
         <div className="day-narrow day-stack">
           {wayChoices.length > 0 && (
@@ -686,7 +686,6 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       name: 'Numbers',
       // "Log today", as Home's Log today section (Tim, 5 Nov, 10:37).
       title: 'Log today',
-      nudges: ['Anything you logged earlier is already here.'],
       render: () => (
         <div>
           {eye}
@@ -732,7 +731,6 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       key: 'well',
       name: 'Went well',
       question: 'What went well today?',
-      nudges: ['Start with what worked, however small.'],
       render: () => (
         <div>
           <TextBox ariaLabel="What went well today?" maxLength={REVIEW_TEXT_MAX} value={answers.wentWell} onChange={(wentWell) => change({ wentWell })} />
@@ -750,7 +748,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
                     <TodoRow key={w.id} win text={w.text} strategyName={w.strategyName} winTag={`Unplanned win, ${w.day}`} />
                   ))}
                 </TodoList>
-              ) : <p className="day-quiet-line">Did something outside your plan move the needle?</p>}
+              ) : <p className="day-quiet-line">What else helped you perform today?</p>}
             </div>
           )}
         </div>
@@ -759,22 +757,22 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     {
       key: 'differently',
       name: 'Differently',
-      question: 'What would you do differently next time?',
-      nudges: ['Pick one thing you’d change.'],
+      question: 'What will you do differently tomorrow?',
       example: DIFFERENTLY_EXAMPLE,
       render: () => (
-        <TextBox ariaLabel="What would you do differently next time?" maxLength={REVIEW_TEXT_MAX} value={answers.differently} onChange={(differently) => change({ differently })} />
+        <TextBox ariaLabel="What will you do differently tomorrow?" maxLength={REVIEW_TEXT_MAX} value={answers.differently} onChange={(differently) => change({ differently })} />
       ),
     },
     {
       key: 'strategies',
       name: 'Strategies',
-      question: 'Which Strategies moved today?',
-      nudges: ['Choose each one that moved, then how much.', view.reminder],
+      question: 'Which of your Strategies moved today?',
+      // The morning's own choice, so they needn't remember it (kept: it holds their answer, not a hint).
+      nudges: [view.reminder].filter(Boolean),
       render: () => (!view.hasPlan ? noPlan : (
         <div className="day-narrow">
           <LevelChoice
-            ariaLabel="Which Strategies moved today?"
+            ariaLabel="Which of your Strategies moved today?"
             options={view.strategies}
             values={view.moved}
             onChange={chooseMoved}
@@ -786,8 +784,10 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     {
       key: 'tomorrow',
       name: 'Tomorrow',
-      question: 'What are the most important things to do tomorrow?',
-      nudges: ['They’ll be waiting in tomorrow’s Daily plan, in this order.'],
+      question: 'What will you do first tomorrow?',
+      // The commit question (Draft 11): it can't be skipped.
+      required: true,
+      check: () => ((answers.tomorrow || []).some((t) => String(t || '').trim()) ? null : 'Type what you’ll do first to carry on.'),
       example: TOMORROW_EXAMPLE,
       render: () => (
         // One eye for the screen, and both boxes the same width (Tim, 5 Nov).
@@ -801,7 +801,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
             itemLabel={(n) => `Priority ${n} for tomorrow`}
           />
           <div className="rev-gap">
-            <TextBox label="Is there anything else on your mind?" maxLength={REVIEW_TEXT_MAX} value={answers.onMind} onChange={(onMind) => change({ onMind })} />
+            <TextBox label="What else is on your mind?" maxLength={REVIEW_TEXT_MAX} value={answers.onMind} onChange={(onMind) => change({ onMind })} />
           </div>
         </div>
       ),
@@ -845,7 +845,6 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       key: 'close',
       name: 'Close',
       question: 'Ready to close the day?',
-      nudges: ['Check what moves to tomorrow.'],
       // No ⓘ here: the list headed "Moving to tomorrow" below already says it (5e rule 1; Tim, 16 Nov, 23:31).
       render: () => {
         const first = tomorrowToRow(answers.tomorrow)[0];

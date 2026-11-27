@@ -501,6 +501,8 @@ export function InvoicePanels({ panel, onClose }) {
   const remindNow = () => {
     // One that may have gone is sent again only through Send again, once checked: never a second one beside it.
     if (rem.unsure) { ask({ kind: 'send_reminder', reminderId: rem.unsure.id, again: true }, 'Reminder sent, with the payment link.'); return; }
+    // Owed and not drafted yet (Stage D, item 15): the server drafts the reminder owed now, then sends it.
+    if (!rem.waiting && rem.owed) { ask({ kind: 'send_reminder', invoiceId: inv.id }, 'Reminder sent, with the payment link.'); return; }
     if (!rem.waiting) { setProblem(`No reminder is waiting to send. ${rem.lines[1] ? `${rem.lines[1]}.` : ''}`.trim()); return; }
     ask({ kind: 'send_reminder', reminderId: rem.waiting.id }, 'Reminder sent, with the payment link.');
   };

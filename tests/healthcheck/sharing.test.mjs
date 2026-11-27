@@ -25,7 +25,7 @@ const MISSING = Object.assign(new Error('Could not find the function'), { code: 
 test('the line under the choice, from one function (M7b, word for word)', () => {
   assert.equal(sharingLine('Tim', true), 'Tim sent you the link and will see your results.');
   assert.equal(sharingLine('Tim', false), 'Tim won’t see your answers, but you still get your PDF.');
-  assert.equal(sharingLine('  Adie ', true), 'Adie sent you the link and will see your results.');
+  assert.equal(sharingLine('  Rhys ', true), 'Rhys sent you the link and will see your results.');
   assert.equal(sharingLine('', true), 'Your coach sent you the link and will see your results.');
   assert.equal(sharingLine(null, false), 'Your coach won’t see your answers, but you still get your PDF.');
 });

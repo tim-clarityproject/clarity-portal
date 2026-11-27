@@ -186,6 +186,26 @@ async function nextStep(page) {
   await sleep(450);
   await page.locator('.ds-guide-next').click();
 }
+// The Monthly review's commit question (Stage D, Draft 11): last, before the results, and never
+// skipped while the review is open. It shows only with a plan's Strategies to serve; `check`
+// presses Next first to see what's said when nothing is typed.
+const COMMIT_Q = 'What will you do first, and when?';
+async function answerCommit(page, words, check = false) {
+  const on = await until(async () => {
+    const h = await heading(page);
+    return h === COMMIT_Q || h === 'Your month' ? h : null;
+  }, 8000);
+  if (on !== COMMIT_Q) return false;
+  if (check) {
+    pass('commit: no Skip', (await page.locator('.ds-guide-skip').count()) === 0);
+    await nextStep(page);
+    pass('commit: Next with nothing typed says what’s missing', Boolean(await until(async () => (await page.getByText('Type what you’ll do to carry on.').count()) === 1, 4000)));
+  }
+  await page.locator('.ds-guide-body textarea').first().fill(words);
+  await nextStep(page);
+  await sleep(500); // the results' own button: past the tool's double-tap guard
+  return true;
+}
 async function home(page) {
   await page.goto(`${APP}/welcome`);
   await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
@@ -405,6 +425,12 @@ if (part('A')) {
 
     // Results, every figure from src/lib/scores through checkin.js.
     const want = checkinResults({ answers: NOW_ANS, previous: { answers: PREV_ANS } });
+    const asked = await answerCommit(page, 'Book the physio on Monday at 08:00', true);
+    if (asked) {
+      const made = await until(async () => (await db.from('todos').select('id, source, sprint_id').eq('user_id', me).eq('text', 'Book the physio on Monday at 08:00')).data?.[0], 8000);
+      pass('commit: the answer is a to-do (Stage D, Draft 11)', made?.source === 'other_tool', JSON.stringify(made));
+      if (made) await db.from('todos').delete().eq('id', made.id);
+    } else results.push('NOTE  commit: no plan Strategies on this account, so the Monthly review has no commit question');
     await until(async () => (await heading(page)) === 'Your month');
     pass('results: "Your month"', (await heading(page)) === 'Your month', await heading(page));
     pass('results: "Here’s how this month compares with last month."', (await text(page, '.ds-guide-nudge')) === 'Here’s how this month compares with last month.');
@@ -414,7 +440,8 @@ if (part('A')) {
     const improved = await page.locator('.ck-improved li').allInnerTexts();
     pass('results: what improved, up to three, biggest first', JSON.stringify(improved) === JSON.stringify(want.improved.map((x) => x.line)), `${improved} vs ${want.improved.map((x) => x.line)}`);
     // One next step is a short choice (Tim, 5 Nov, 10:30): "What could help with movement?", each option with Already doing this.
-    pass(`results: one thing to work on is ${want.workOn.name}`, (await text(page, '.ck-one-question')) === `What could help with ${want.workOn.name.toLowerCase()}?`, await text(page, '.ck-one-question'));
+    // Stage D, Draft 11: "What will help … this month?"
+    pass(`results: one thing to work on is ${want.workOn.name}`, (await text(page, '.ck-one-question')) === want.workOn.question && /^What will help /.test(want.workOn.question), await text(page, '.ck-one-question'));
     const optionCount = await page.locator('.ck-option').count();
     pass('results: 3 or 4 options, each with Already doing this', optionCount >= 3 && optionCount <= 4 && (await page.locator('.ck-option', { hasText: 'Already doing this' }).count()) === optionCount, optionCount);
     pass('results: Something else and Nothing this month', (await page.locator('.ck-one-add', { hasText: 'Something else' }).count()) === 1 && (await page.locator('.ck-one-nothing').count()) === 1);
@@ -556,6 +583,7 @@ if (part('D')) {
         if (!cq) break;
         await tapAnswer(page, NOW_WORDS[cq.code]);
       }
+      if (await answerCommit(page, 'Book the physio on Monday at 08:00')) await db.from('todos').delete().eq('user_id', me).eq('text', 'Book the physio on Monday at 08:00');
       await until(async () => (await heading(page)) === 'Your month');
       const r = await checkScreen(page, `D results ${width} ${mode}`);
       pass(`D ${width} ${mode}: rises are mint`, r.mintCount > 0 && r.mintOk, `${r.mintCount} ${r.good}`);
@@ -581,6 +609,7 @@ if (part('B')) {
       if (!q) break;
       await tapAnswer(page, offWords[q.code]);
     }
+    await answerCommit(page, 'Book the physio on Monday at 08:00');
     await until(async () => (await heading(page)) === 'Your month');
     pass('offline: the results, worked out on the device', (await page.locator('.ck-scores .ds-stat').count()) === 2);
     pass('offline: "Will sync"', Boolean(await until(async () => /will sync/i.test(await text(page, '.ds-guide-bar')), 5000)), await text(page, '.ds-guide-bar'));
@@ -621,7 +650,7 @@ if (part('C') && !others?.length) {
     else pass('Home: the First check-in is offered (“Start my first check-in”)', /Start my first check-in/.test(await text(page, '.home-page .ds-open-act')));
     await page.goto(`${APP}/monthly-review`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
-    pass('first: "What would make coaching useful for you?"', (await heading(page)) === 'What would make coaching useful for you?');
+    pass('first: "What would make coaching really useful for you?" (Stage D, Draft 11)', (await heading(page)) === 'What would make coaching really useful for you?', await heading(page));
     pass('first: First check-in in the top bar', (await text(page, '.ds-guide-name')).toLowerCase() === 'first check-in');
     pass('first: the two nudges', (await page.locator('.ds-guide-nudge').allInnerTexts()).map((t) => t.trim()).join('|') === 'Let’s start with 5 questions about that.|Then your first Hardware and Software review.');
     // Two terms together, so the side panel (Tim, 16 Nov, 23:31).
@@ -634,10 +663,11 @@ if (part('C') && !others?.length) {
     await checkScreen(page, 'C opening 1280 light');
     pass('first: Start with my goals', (await text(page, '.ds-guide-next')).toLowerCase() === 'start with my goals');
     await nextStep(page);
-    await until(async () => (await heading(page)).startsWith('In 12 months’ time'));
-    pass('G1: Your goals, the question, the nudge', (await text(page, '.ds-guide-label')).toLowerCase() === 'your goals' /* spaced capitals since Polish 1 */ && (await text(page, '.ds-guide-nudge')) === 'Describe what you’d be doing and what others would notice.', `${await text(page, '.ds-guide-label')} / ${await text(page, '.ds-guide-nudge')}`);
+    await until(async () => (await heading(page)) === 'Imagine it’s a year on. How will you know coaching worked?');
+    // Stage D: Draft 11's words, and nothing under the question.
+    pass('G1: Your goals, the question, nothing under it', (await text(page, '.ds-guide-label')).toLowerCase() === 'your goals' /* spaced capitals since Polish 1 */ && (await page.locator('.ds-guide-nudge').count()) === 0, `${await text(page, '.ds-guide-label')} / ${await heading(page)}`);
     await page.locator('.ds-guide-example-link').click();
-    pass('G1: See an example', (await text(page, '.ds-guide-example')).startsWith('For example: '));
+    pass('G1: See an example opens three different examples (question rule 10)', (await page.locator('.ds-guide-examples li').count()) === 3);
     pass('G1: the eye says You and Tim can see this', /you and tim can see this/i.test((await page.locator('.ds-guide-page .ds-page-aside [aria-label]').first().getAttribute('aria-label').catch(() => '')) || ''));
     pass('first: Do this later, never Skip', (await text(page, '.ds-guide-skip')) === 'Do this later');
     await page.locator('.ds-guide-body textarea').first().fill('I’d lead the board calmly through the merger.');
@@ -665,7 +695,8 @@ if (part('C') && !others?.length) {
     await page.locator('.ds-guide-body textarea').first().fill('I say yes to everything.');
     await nextStep(page);
     await until(async () => (await heading(page)) === 'How do you like to be challenged?');
-    pass('G5: names the coach in the nudge', (await text(page, '.ds-guide-nudge')) === 'Add anything else Tim should know about you.');
+    // Stage D (question rule 9): nothing sits under a question, so G5's line naming the coach is gone.
+    pass('G5: nothing under the question', (await page.locator('.ds-guide-nudge').count()) === 0);
     await page.locator('.ds-guide-body textarea').first().fill('Straight talking.');
     await nextStep(page);
     const risky = { ...NOW_WORDS, H3: 'Always', H14: 'No' };

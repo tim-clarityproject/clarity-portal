@@ -1,36 +1,37 @@
-// Emotional wash (mock-up M10, version 5.6; Tim, 13 Nov): the tool's rules,
-// with no screen in them, so the page, the PDF and the tests all read one
-// answer.
+// Emotional wash: the tool's rules, with no screen in them, so the page, the
+// PDF and the tests all read one answer.
 //
-// The screens, in order (one question each):
-//   what       "What happened?"                                   typed
-//   kind       "What kind of feeling are you left with?"          one answer
-//   words      "Which words fit the feeling?"                     as many as fit
-//   rel        "What could the feeling be related to?"            optional
-//   story      "What story are you telling yourself about what’s happened?"
-//                                                                 one thought a box
-//   t:<id>     "Is “thought” true?"       Yes, Not sure, No       (these four repeat
-//   l:<id>     "Is “thought” logical?"                             for each thought,
-//   h:<id>     "Is “thought” helpful?"                             in the list's order)
-//   w:<id>     "How will you wash “thought”?"  Accept and act, Park and reflect, Trash
+// Polish 1, Stage D (27 Nov 2026): Draft 6's nine screens with Draft 7's word
+// list, both approved by Tim word for word (docs/rules/emotional-wash.md;
+// ~/Downloads/clarity-phase-6a/stage-d/). The screens, in order:
+//   what       "What happened?"                                 a box
+//   family     "Which of these is it closest to?"               one tap, the 8 families
+//   words      "Which word fits best?"                          pick any, with meanings; Something else
+//   strength   "How strong is it right now?"                    one tap, Slight to Intense
+//   story      "What are you telling yourself about it?"        a box
+//   others     "What other thoughts come with it?"              a list, one thought a box
+//   d:<id>     "For “thought”, what will you do with it?"       one tap for each thought:
+//              "I’ll act on it." / "I’ll park it for now." / "I’ll let it go."
+//   c:<id>     "What will you do about “thought”, and when?"    a box and a date, for each thought
+//              to act on; it can't be skipped (question rule 34)
 //   sum        "Your wash"
+// Every other screen can be skipped. The family's words show only once a
+// family is chosen. A wash is private, like the Journal: no eye, never shared.
 //
 // A wash while it is being worked on:
-//   { what, kind, words: [word], rel: [word],
-//     thoughts: [{ id, text, t, l, h, wash, step, question, where, strategyId }],
+//   { what, family, words: [word], own, strength,
+//     thoughts: [{ id, text, choice, step, when, where, strategyId }],
 //     todos: { [thought id]: { id, text, where, strategyId } } }
-// t, l and h are 'yes', 'unsure' or 'no' (null until answered). `wash` is
-// 'act', 'park' or 'trash'. An acted-on thought has its one small `step`
-// and where its to-do should go (`where`: 'week', 'backlog' or 'none'); a
-// parked one has its `question`. `todos` holds the to-do really made for a
-// thought's step, so the summary only says "It’s in this week’s to-dos."
-// when it is, and an edit puts a new to-do in the old one's place.
+// thoughts[0] is always the story (id STORY_ID); the rest are the other
+// thoughts. `choice` is 'act', 'park' or 'go'. A thought to act on has its
+// `step`, `when` (a date key) and where its to-do goes (`where`: 'week',
+// 'backlog' or 'none'). `todos` holds the to-do really made for a thought.
 //
-// There is no "how strong" rating anywhere, before or after (Tim, 2 Nov).
-// A wash is private, like the Journal: it is never shared with a coach.
-//
-// Saved in `tool_answers` (migration 043) with tool 'emotional_wash';
-// until 043 has run it is kept on the device (src/lib/toolAnswers.js).
+// Saved in `tool_answers` (migration 043) with tool 'emotional_wash'
+// (answers version 2). A wash saved before 27 Nov (version 1: the kind of
+// feeling, the ten Geneva words, Related to, true, logical, helpful, Accept
+// and act, Park and reflect, Trash) still opens and reads as it was: its
+// words, related words and parked questions are kept (`legacy`).
 
 export const TOOL = 'emotional_wash';
 export const TOOL_NAME = 'Emotional wash';
@@ -38,77 +39,163 @@ export const TOOL_PATH = '/emotional-wash';
 export const TODO_SOURCE = 'other_tool';
 export const WHAT_MAX = 600;
 export const THOUGHT_MAX = 300;
+export const OWN_MAX = 60;
 export const STEP_MAX = 300; // a to-do's own limit
-export const QUESTION_MAX = 300;
 export const WHERE = { week: 'week', backlog: 'backlog', none: 'none' };
+export const STORY_ID = 'story';
 
-/** The three kinds of feeling, each with its line of meaning. */
-export const KINDS = [
-  { value: 'fc', label: 'Future concern', hint: 'It’s fear, anxiety or worry about what might happen.' },
-  { value: 'pa', label: 'Present angst', hint: 'It’s anger, disgust or shock about what’s happening now.' },
-  { value: 'pr', label: 'Past regret', hint: 'It’s sadness, shame or guilt about what happened.' },
-];
-/** The ten difficult feelings of the Geneva Emotion Wheel (Scherer, 2005 and 2013), as M10 has them. */
-export const WORDS = ['Anger', 'Contempt', 'Disappointment', 'Disgust', 'Fear', 'Guilt', 'Hate', 'Regret', 'Sadness', 'Shame'];
-/** What the feeling could be related to: what feels threatened. */
-export const RELATED = ['Trust', 'Respect', 'Fairness', 'Loyalty', 'Recognition', 'Status', 'Control', 'Belonging', 'Security', 'Identity', 'Competence'];
-/** Question starters for Park and reflect: open, kind, easy to pick when overwhelmed (Tim, 13 Nov, 10:41). */
-export const STARTERS = ['What do I know for certain here?', 'What would I say to a friend in my place?', 'What matters most to me in this?'];
-/** The three ways to wash a thought. */
-export const WASHES = [
-  { value: 'act', label: 'Accept and act', hint: 'Simplify it and move to action.' },
-  { value: 'park', label: 'Park and reflect', hint: 'Turn it into a question to come back to.' },
-  { value: 'trash', label: 'Trash', hint: 'It’s an unhelpful story, so let it go.' },
-];
-/** True, logical, helpful: one check a screen, the same three answers. */
-export const CHECK_ANSWERS = [
-  { value: 'yes', label: 'Yes' },
-  { value: 'unsure', label: 'Not sure' },
-  { value: 'no', label: 'No' },
-];
-export const CHECKS = {
-  t: { word: 'true', nudge: 'Think about what you know for certain.' },
-  l: { word: 'logical', nudge: 'Ask whether it follows from what happened, or jumps to a conclusion.' },
-  h: { word: 'helpful', nudge: 'Ask whether thinking it helps you act well.' },
-};
-export const CHECK_KINDS = ['t', 'l', 'h'];
-export const STORY_EXAMPLE = 'The chair has never rated me.';
-export const PLACEHOLDER = {
-  step: 'e.g. Ask the chair for 20 minutes before the next board meeting',
-  question: 'e.g. What would show me where I stand with the chair?',
-};
-export const FOLLOW = {
-  act: { label: 'What’s one small step you’ll take?', hint: 'Keep it small and clear.' },
-  park: { label: 'What’s the question that will be helpful to reflect on?', hint: 'Keep it open, starting with “What” or “How”. Tap one to start, then make it yours.' },
-};
-/** The calm line when Next is pressed on a screen that isn't answered yet (never a greyed-out button). */
+/**
+ * Draft 7: 8 families of difficult feelings and 56 words, each with its one
+ * line of meaning. Families from the most common in leaders' sessions to the
+ * least; words within a family from mildest to strongest.
+ */
+export const FAMILIES = Object.freeze([
+  { value: 'angry', label: 'Angry', words: [
+    ['Irritated', 'Small things are getting to you.'],
+    ['Frustrated', 'Something is blocking what you want.'],
+    ['Indignant', 'You’ve been treated unfairly.'],
+    ['Resentful', 'Still hurt by something unfair.'],
+    ['Betrayed', 'Someone broke your trust.'],
+    ['Bitter', 'Hurt that has hardened over time.'],
+    ['Furious', 'Anger at full strength.'],
+  ] },
+  { value: 'overloaded', label: 'Overloaded', words: [
+    ['Pressured', 'Pushed hard by demands or deadlines.'],
+    ['Stretched', 'Spread too thin across too much.'],
+    ['Scattered', 'Your attention is pulled everywhere.'],
+    ['Overwhelmed', 'More than you can handle right now.'],
+    ['Trapped', 'You can’t see a way out.'],
+    ['Exhausted', 'Nothing left in the tank.'],
+    ['Burnt out', 'Worn down over a long time.'],
+  ] },
+  { value: 'afraid', label: 'Afraid', words: [
+    ['Nervous', 'On edge before something.'],
+    ['Anxious', 'Uneasy about what might happen.'],
+    ['Insecure', 'Unsure you’re good enough.'],
+    ['Threatened', 'Something you value is at risk.'],
+    ['Vulnerable', 'Exposed, with no protection.'],
+    ['Dread', 'Sure something bad is coming.'],
+    ['Panicked', 'Fear has taken over.'],
+  ] },
+  { value: 'uncertain', label: 'Uncertain', words: [
+    ['Hesitant', 'Holding back from a step.'],
+    ['Unsettled', 'Something feels off.'],
+    ['Confused', 'You can’t make sense of it.'],
+    ['Doubtful', 'You question whether it’s right.'],
+    ['Torn', 'Pulled between two things.'],
+    ['Stuck', 'You can’t see the next move.'],
+    ['Lost', 'You’ve lost your sense of direction.'],
+  ] },
+  { value: 'sad', label: 'Sad', words: [
+    ['Flat', 'Low, with little energy or interest.'],
+    ['Disappointed', 'It didn’t go the way you hoped.'],
+    ['Discouraged', 'Losing heart.'],
+    ['Regretful', 'Wishing you’d done it differently.'],
+    ['Hurt', 'Someone’s words or actions stung.'],
+    ['Lonely', 'Missing real connection.'],
+    ['Grieving', 'Feeling a loss deeply.'],
+  ] },
+  { value: 'ashamed', label: 'Ashamed', words: [
+    ['Self-conscious', 'Too aware of how you come across.'],
+    ['Embarrassed', 'Others saw what you’d rather they hadn’t.'],
+    ['Like an imposter', 'Afraid you’ll be found out.'],
+    ['Inadequate', 'Not enough for what’s asked of you.'],
+    ['Guilty', 'You acted against your own values.'],
+    ['Exposed', 'Your weak spots are on show.'],
+    ['Humiliated', 'Made to feel small in front of others.'],
+  ] },
+  { value: 'disconnected', label: 'Disconnected', words: [
+    ['Distant', 'Going through the motions with people.'],
+    ['Let down', 'Someone didn’t do what they said.'],
+    ['Unappreciated', 'Your effort goes unnoticed.'],
+    ['Misunderstood', 'People have the wrong idea about you.'],
+    ['Invisible', 'Overlooked, as if you’re not there.'],
+    ['Excluded', 'Left out on purpose or by habit.'],
+    ['Isolated', 'On your own with it.'],
+  ] },
+  { value: 'guard', label: 'On guard', words: [
+    ['Guarded', 'Keeping people at arm’s length.'],
+    ['Defensive', 'Ready to protect yourself.'],
+    ['Suspicious', 'You don’t trust their motives.'],
+    ['Competitive', 'Needing to win against someone.'],
+    ['Envious', 'Wanting what someone else has.'],
+    ['Jealous', 'Afraid of losing what’s yours to someone.'],
+    ['Cornered', 'Under attack with nowhere to go.'],
+  ] },
+].map((f) => Object.freeze({ ...f, words: Object.freeze(f.words.map(([label, hint]) => Object.freeze({ value: label, label, hint }))) })));
+
+/** Every word of the list, in order. */
+export const WORDS = Object.freeze(FAMILIES.flatMap((f) => f.words.map((w) => w.value)));
+/** The ten words of the version saved before 27 Nov (the Geneva Emotion Wheel's difficult feelings): read, never offered. */
+export const OLD_WORDS = Object.freeze(['Anger', 'Contempt', 'Disappointment', 'Disgust', 'Fear', 'Guilt', 'Hate', 'Regret', 'Sadness', 'Shame']);
+/** How strong it is right now (Draft 7): asked once, with no before-and-after rating. */
+export const STRENGTHS = Object.freeze(['Slight', 'Mild', 'Moderate', 'Strong', 'Intense'].map((label, i) => Object.freeze({ value: i + 1, label })));
+/** What to do with each thought (Draft 6), in their own voice. */
+export const CHOICES = Object.freeze([
+  { value: 'act', label: 'I’ll act on it.' },
+  { value: 'park', label: 'I’ll park it for now.' },
+  { value: 'go', label: 'I’ll let it go.' },
+].map((c) => Object.freeze(c)));
+/** "See an example" on the other thoughts: three different ones, so no one feels it was written for someone else (question rule 10). */
+export const THOUGHT_EXAMPLES = Object.freeze(['They don’t rate me.', 'I’ll let the squad down on Saturday.', 'I should have said no.']);
+/** The calm line when Next is pressed on the one screen that can't be skipped (never a greyed-out button). */
 export const REQUIRED = {
-  what: 'Type what happened to carry on.',
-  words: 'Choose at least one word to carry on.',
-  story: 'Type at least one thought to carry on.',
-  wash: 'Choose one to carry on.',
-  step: 'Type one small step to carry on.',
-  question: 'Type your question to carry on.',
+  step: 'Type what you’ll do to carry on.',
+  when: 'Choose when to carry on.',
   strategy: 'Choose a Strategy to carry on.',
 };
 export const SKIPPED = 'You skipped this.';
+export const OWN_LABEL = 'Something else';
 
 const text = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
 const clean = (v) => text(v).replace(/\s+/g, ' ').trim();
-const said = (v) => (CHECK_ANSWERS.some((a) => a.value === v) ? v : null);
-const washed = (v) => (WASHES.some((w) => w.value === v) ? v : null);
+const chosen = (v) => (CHOICES.some((c) => c.value === v) ? v : null);
 const place = (v) => (Object.values(WHERE).includes(v) ? v : null);
-// The words chosen, in the order they were chosen (as M10 says them back), each once and only real ones.
+const familyOf = (v) => FAMILIES.find((f) => f.value === v) || null;
+const strong = (v) => (STRENGTHS.some((s) => s.value === v) ? v : null);
+const dateKey = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+// The words chosen, in the order they were chosen, each once and only real ones (an older wash's own ten included).
 const among = (list, values) => [...new Set(Array.isArray(values) ? values : [])].filter((w) => list.includes(w));
+const known = [...WORDS, ...OLD_WORDS];
 const list = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`);
 /** Words as a sentence says them: the first as written, the rest in lower case. */
 const inWords = (words) => list(words.map((w, i) => (i ? w.toLowerCase() : w)));
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const newThought = (id, words = '') => ({ id, text: words, t: null, l: null, h: null, wash: null, step: '', question: '', where: null, strategyId: null });
+const newThought = (id, words = '') => ({ id, text: words, choice: null, step: '', when: null, where: null, strategyId: null });
 
-/** A new, empty wash: one empty box for the first thought. */
+/** A new, empty wash: the story's box and one empty box for another thought. */
 export function emptyWash(newId) {
-  return { what: '', kind: null, words: [], rel: [], thoughts: [newThought(newId())], todos: {} };
+  return { what: '', family: null, words: [], own: '', strength: null, thoughts: [newThought(STORY_ID), newThought(newId())], todos: {}, legacy: null };
+}
+
+// ------------------------------------------------------------ the feeling
+
+/** The family's words with their meanings, or none while no family is chosen. */
+export function wordsOf(family) {
+  return familyOf(family)?.words || [];
+}
+
+/** The words named, in the order chosen, then their own word. */
+export function namedWords(wash) {
+  const words = among(known, wash?.words);
+  const own = clean(wash?.own);
+  return own ? [...words, own] : words;
+}
+
+/** The line under "How strong is it right now?": the word chosen ("Resentful"), or nothing. */
+export function strengthLine(wash) {
+  const words = namedWords(wash);
+  return words.length ? inWords(words) : null;
+}
+
+/** Choosing a family keeps only the words that belong to it (and their own word). */
+export function withFamily(wash, family) {
+  const f = familyOf(family);
+  if (!f) return wash;
+  const mine = f.words.map((w) => w.value);
+  return { ...wash, family: f.value, words: (wash.words || []).filter((w) => mine.includes(w)) };
 }
 
 // ------------------------------------------------------------ the thoughts
@@ -117,29 +204,35 @@ export function emptyWash(newId) {
 export function quote(thought) {
   return `“${clean(thought?.text).replace(/[.!?]$/, '')}”`;
 }
-/** The words that lift away when a thought is trashed (the same, without the quotes). */
-export function quoteWords(thought) {
-  return clean(thought?.text).replace(/[.!?]$/, '');
+
+/** The story (what they're telling themselves): always the first thought. */
+export function storyOf(wash) {
+  return (wash?.thoughts || []).find((th) => th.id === STORY_ID) || newThought(STORY_ID);
 }
 
-/** The thoughts with words in them: only they are washed. A trashed one keeps its screens until the wash is finished. */
+/** The other thoughts' boxes (the story is its own screen). */
+export function otherThoughts(wash) {
+  return (wash?.thoughts || []).filter((th) => th.id !== STORY_ID);
+}
+
+/** The thoughts with words in them, the story first: only they are asked about. */
 export function typedThoughts(wash) {
-  return (wash?.thoughts || []).filter((th) => clean(th.text));
+  return [storyOf(wash), ...otherThoughts(wash)].filter((th) => clean(th.text));
 }
 
-/** The boxes on the story screen: every thought that hasn't been trashed. */
-export function storyThoughts(wash) {
-  return (wash?.thoughts || []).filter((th) => th.wash !== 'trash');
+/** The story typed. */
+export function withStory(wash, words) {
+  const story = { ...storyOf(wash), text: text(words).slice(0, THOUGHT_MAX) };
+  return { ...wash, thoughts: [story, ...otherThoughts(wash)] };
 }
 
 /**
- * The story screen's rows changed (RowList's onChange): typing in a box,
- * a new box, a box taken out ({ removed: i }) or put back ({ restored: i }).
+ * The other thoughts' rows changed (RowList's onChange): typing in a box, a
+ * new box, a box taken out ({ removed: i }) or put back ({ restored: i }).
  * `removed` is the thought taken out, kept by the screen for its Undo.
  */
-export function withStoryRows(wash, rows, change, newId, removed = null) {
-  const shown = storyThoughts(wash);
-  const hidden = (wash.thoughts || []).filter((th) => th.wash === 'trash');
+export function withOtherRows(wash, rows, change, newId, removed = null) {
+  const shown = otherThoughts(wash);
   let next;
   if (change?.removed != null) {
     next = shown.filter((_, i) => i !== change.removed);
@@ -150,8 +243,7 @@ export function withStoryRows(wash, rows, change, newId, removed = null) {
     next = rows.map((words, i) => (shown[i] ? { ...shown[i], text: text(words).slice(0, THOUGHT_MAX) } : newThought(newId(), text(words).slice(0, THOUGHT_MAX))));
   }
   if (!next.length) next = [newThought(newId())];
-  // Trashed thoughts keep their place at the end: they have no box, only their own screen.
-  return { ...wash, thoughts: [...next, ...hidden] };
+  return { ...wash, thoughts: [storyOf(wash), ...next] };
 }
 
 /** One thought with something changed. */
@@ -159,122 +251,90 @@ export function setThought(wash, id, patch) {
   return { ...wash, thoughts: (wash.thoughts || []).map((th) => (th.id === id ? { ...th, ...patch } : th)) };
 }
 
-/** One check answered: kind 't', 'l' or 'h'. */
-export function setCheck(wash, id, kind, value) {
-  if (!CHECK_KINDS.includes(kind) || !said(value)) return wash;
-  return setThought(wash, id, { [kind]: value });
+/** What they'll do with a thought: act, park or let go. */
+export function setChoice(wash, id, value) {
+  return chosen(value) ? setThought(wash, id, { choice: value }) : wash;
 }
 
-/** How a thought will be washed. */
-export function setWash(wash, id, value) {
-  return washed(value) ? setThought(wash, id, { wash: value }) : wash;
+/** A thought to act on is answered once its step and its day are there (a thought saved before 27 Nov had no day). */
+export function isCommitted(th) {
+  return Boolean(clean(th?.step) && (dateKey(th?.when) || th?.old));
 }
 
-/** A question on its own washing screen is answered once its follow-up is too. */
-export function isWashed(th) {
-  if (th?.wash === 'trash') return true;
-  if (th?.wash === 'act') return Boolean(clean(th.step));
-  if (th?.wash === 'park') return Boolean(clean(th.question));
-  return false;
-}
-
-/** The screens after the story: four for each typed thought, in order. */
-export function washSteps(wash) {
+/** The screens after the other thoughts: one choice for each typed thought, then one commit screen for each to act on. */
+export function thoughtSteps(wash) {
   const thoughts = typedThoughts(wash);
-  return thoughts.flatMap((th, i) => [
-    ...CHECK_KINDS.map((kind) => ({ key: `${kind}:${th.id}`, kind, thought: th, n: i + 1, of: thoughts.length })),
-    { key: `w:${th.id}`, kind: 'w', thought: th, n: i + 1, of: thoughts.length },
-  ]);
+  const acted = thoughts.filter((th) => th.choice === 'act');
+  return [
+    ...thoughts.map((th, i) => ({ key: `d:${th.id}`, kind: 'd', thought: th, n: i + 1, of: thoughts.length })),
+    ...acted.map((th, i) => ({ key: `c:${th.id}`, kind: 'c', thought: th, n: i + 1, of: acted.length })),
+  ];
 }
 
-/** The first screen still to answer (its key), or null when every thought is washed. */
-export function firstUnanswered(wash) {
-  const step = washSteps(wash).find((s) => (s.kind === 'w' ? !isWashed(s.thought) : !said(s.thought[s.kind])));
-  return step ? step.key : null;
+/** "Thought 1 of 3": the small grey line above a thought's question when there are several. */
+export function countLine(n, of) {
+  return of > 1 ? `Thought ${n} of ${of}` : null;
 }
 
-/** Where an unfinished wash carries on when it is opened from a list: the first screen still to answer (its key). */
+/** The first thought to act on that still has no step or day (the screen that can't be skipped), or null. */
+export function firstUncommitted(wash) {
+  const th = typedThoughts(wash).find((t) => t.choice === 'act' && !isCommitted(t));
+  return th ? `c:${th.id}` : null;
+}
+
+/**
+ * Where an unfinished wash carries on when it is opened from a list: the
+ * first screen with nothing in it yet (its key). Screens can be skipped, so
+ * this is only where to start; the summary shows once nothing is missing.
+ */
 export function resumeStep(wash) {
   if (!clean(wash?.what)) return 'what';
-  if (!KINDS.some((k) => k.value === wash?.kind)) return 'kind';
-  if (!among(WORDS, wash?.words).length) return 'words';
-  if (!typedThoughts(wash).length) return 'story';
-  return firstUnanswered(wash) || 'sum';
+  if (!familyOf(wash?.family) && !namedWords(wash).length) return 'family';
+  if (familyOf(wash?.family) && !namedWords(wash).length) return 'words';
+  if (!strong(wash?.strength)) return 'strength';
+  if (!clean(storyOf(wash).text)) return 'story';
+  const undecided = typedThoughts(wash).find((th) => !chosen(th.choice));
+  if (undecided) return `d:${undecided.id}`;
+  return firstUncommitted(wash) || 'sum';
 }
 
-/** "Thought 1 of 3": the small grey line above each of a thought's questions. */
-export function countLine(n, of) {
-  return `Thought ${n} of ${of}`;
-}
-
-/** Each screen's question. `gone`: the thought has been trashed and has lifted away. */
-export function question(key, thought, { gone = false } = {}) {
+/** Each screen's question (Draft 6, word for word). */
+export function question(key, thought) {
   switch (key) {
     case 'what': return 'What happened?';
-    case 'kind': return 'What kind of feeling are you left with?';
-    case 'words': return 'Which words fit the feeling?';
-    case 'rel': return 'What could the feeling be related to?';
-    case 'story': return 'What story are you telling yourself about what’s happened?';
-    case 't': case 'l': case 'h': return `Is ${quote(thought)} ${CHECKS[key].word}?`;
-    case 'w': return gone ? 'That thought has gone.' : `How will you wash ${quote(thought)}?`;
+    case 'family': return 'Which of these is it closest to?';
+    case 'words': return 'Which word fits best?';
+    case 'strength': return 'How strong is it right now?';
+    case 'story': return 'What are you telling yourself about it?';
+    case 'others': return 'What other thoughts come with it?';
+    case 'd': return `For ${quote(thought)}, what will you do with it?`;
+    case 'c': return `What will you do about ${quote(thought)}, and when?`;
     default: return '';
   }
 }
 
-/** The one line under each question. */
-export function nudge(key, { gone = false } = {}) {
-  switch (key) {
-    case 'what': return 'Write it as it happened, in a sentence or two.';
-    case 'kind': return 'Choose the one that fits best.';
-    case 'words': return 'Choose as many as fit.';
-    case 'rel': return 'Choose what feels threatened.';
-    case 'story': return 'Type one thought in each box.';
-    case 't': case 'l': case 'h': return CHECKS[key].nudge;
-    case 'w': return gone ? 'It won’t appear in your summary.' : 'Choose one.';
-    default: return null;
-  }
-}
-
 /**
- * The % bar on each screen. The first five are M10's own (0, 9, 18, 27,
- * 36); a thought's four screens then share the rest evenly, so the bar
- * only ever moves forward, however many thoughts there are.
- * @param {number} at 0 to 4 for the first five screens, then 5 for the first thought's first question, and on
+ * The calm message when Next is pressed on the screen that can't be skipped
+ * and isn't answered yet, or null. `needsStrategy` when its to-do will be
+ * added and no Strategy is chosen yet.
  */
-export function percentAt(at, thoughtCount) {
-  if (at <= 0) return 0;
-  if (at <= 4) return at * 9;
-  const steps = 4 * Math.max(1, thoughtCount);
-  return Math.min(99, Math.round(36 + ((at - 4) * 64) / (steps + 1)));
-}
-
-/**
- * The calm message when Next is pressed on a screen that isn't answered
- * yet, or null. For a washing screen pass the thought; `needsStrategy`
- * when its to-do will be added and no Strategy is chosen yet.
- */
-export function requiredMessage(key, wash, thought = null, { needsStrategy = false } = {}) {
-  if (key === 'what') return clean(wash?.what) ? null : REQUIRED.what;
-  if (key === 'words') return among(WORDS, wash?.words).length ? null : REQUIRED.words;
-  if (key === 'story') return storyThoughts(wash).some((th) => clean(th.text)) ? null : REQUIRED.story;
-  if (key === 'w') {
-    if (!washed(thought?.wash)) return REQUIRED.wash;
-    if (thought.wash === 'act' && !clean(thought.step)) return REQUIRED.step;
-    if (thought.wash === 'act' && needsStrategy) return REQUIRED.strategy;
-    if (thought.wash === 'park' && !clean(thought.question)) return REQUIRED.question;
-  }
+export function requiredMessage(key, thought = null, { needsStrategy = false } = {}) {
+  if (key !== 'c') return null;
+  if (!clean(thought?.step)) return REQUIRED.step;
+  if (!dateKey(thought?.when)) return REQUIRED.when;
+  if (needsStrategy) return REQUIRED.strategy;
   return null;
 }
 
 // ------------------------------------------------------------ to-dos
 
 /**
- * What the to-do for a thought's step should be: { text, where,
- * strategyId }, or null when there should be none (not acted on, nothing
- * typed, or "Don’t add it").
+ * What the to-do for a thought's step should be: { text, where, strategyId },
+ * or null when there should be none (not acted on, nothing typed, or "Don’t
+ * add it").
  */
 export function wantedTodo(thought) {
-  if (!thought || thought.wash !== 'act' || !clean(thought.step)) return null;
+  if (!thought || thought.choice !== 'act' || !clean(thought.step)) return null;
   if (thought.where !== WHERE.week && thought.where !== WHERE.backlog) return null;
   return { text: clean(thought.step), where: thought.where, strategyId: thought.strategyId || null };
 }
@@ -284,7 +344,7 @@ export function sameTodo(made, wanted) {
   return Boolean(made && wanted && made.text === wanted.text && made.where === wanted.where && (made.strategyId || null) === (wanted.strategyId || null));
 }
 
-/** The to-dos made for thoughts that no longer want one (taken out, parked, trashed): [{ thoughtId, id }]. */
+/** The to-dos made for thoughts that no longer want one (taken out, parked, let go): [{ thoughtId, id }]. */
 export function strayTodos(wash) {
   const byId = new Map((wash?.thoughts || []).map((th) => [th.id, th]));
   return Object.entries(wash?.todos || {})
@@ -300,7 +360,7 @@ export function withTodo(wash, thoughtId, made) {
   return { ...wash, todos };
 }
 
-/** Where a step's to-do is, as the summary says it (M10's words), or null when it isn't anywhere. */
+/** Where a step's to-do is, as the summary says it, or null when it isn't anywhere. */
 export function whereLine(wash, thought) {
   const made = wash?.todos?.[thought?.id];
   if (!made?.id) return null;
@@ -309,50 +369,75 @@ export function whereLine(wash, thought) {
   return null;
 }
 
+/** A step's day as the summary says it: "Thu 3 Dec", with the year only outside this one (writing rule 28). */
+export function whenWords(key, today = new Date()) {
+  const k = dateKey(key);
+  if (!k) return '';
+  const [y, m, d] = k.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return `${DAY[date.getDay()]} ${d} ${MON[m - 1]}${y === today.getFullYear() ? '' : ` ${y}`}`;
+}
+
 // ------------------------------------------------------------ the summary
 
 /** What was named and chosen, with blanks left out: the summary, the PDF and the tests read this. */
-export function washContent(wash) {
-  const kind = KINDS.find((k) => k.value === wash?.kind) || null;
+export function washContent(wash, today = new Date()) {
   const thoughts = typedThoughts(wash);
+  const legacy = wash?.legacy || {};
+  const strength = STRENGTHS.find((s) => s.value === wash?.strength) || null;
   return {
     what: clean(wash?.what),
-    kind: kind ? kind.label : '',
-    words: among(WORDS, wash?.words),
-    related: among(RELATED, wash?.rel),
-    act: thoughts.filter((th) => th.wash === 'act' && clean(th.step)).map((th) => ({ id: th.id, thought: clean(th.text), step: clean(th.step), where: whereLine(wash, th) })),
-    reflect: thoughts.filter((th) => th.wash === 'park' && clean(th.question)).map((th) => ({ id: th.id, thought: clean(th.text), question: clean(th.question) })),
+    family: familyOf(wash?.family)?.label || '',
+    words: namedWords(wash),
+    strength: strength ? strength.label : '',
+    story: clean(storyOf(wash).text),
+    related: Array.isArray(legacy.related) ? legacy.related : [],
+    act: thoughts.filter((th) => th.choice === 'act' && clean(th.step)).map((th) => ({
+      id: th.id,
+      thought: clean(th.text),
+      step: clean(th.step),
+      when: whenWords(th.when, today),
+      where: whereLine(wash, th),
+    })),
+    park: thoughts.filter((th) => th.choice === 'park').map((th) => ({ id: th.id, thought: clean(th.text), question: clean(legacy.questions?.[th.id]) })),
+    go: thoughts.filter((th) => th.choice === 'go').map((th) => ({ id: th.id, thought: clean(th.text) })),
   };
 }
 
+/** A step's one line under it: its day, then where its to-do is. */
+const stepSub = (a) => [a.when ? `By ${a.when}.` : '', a.where || ''].filter(Boolean).join(' ');
+
 /**
- * Your wash: a mirror of what was named and chosen, in M10's order. Each
- * row: { key, step (the screen it opens), label, editName, lines: [{ text,
- * sub, good }] }. A trashed thought never appears. Several steps or
- * questions get a row each, so each opens its own thought.
+ * Your wash: a mirror of what was named and chosen. Each row: { key, step
+ * (the screen it opens), label, editName, lines: [{ text, sub, good }] }.
+ * Several thoughts get a row each, so each opens its own screen.
  */
-export function summaryRows(wash) {
-  const c = washContent(wash);
+export function summaryRows(wash, today = new Date()) {
+  const c = washContent(wash, today);
   const rows = [
     { key: 'what', step: 'what', label: 'What happened', editName: 'what happened', lines: [{ text: c.what || SKIPPED }] },
-    { key: 'kind', step: 'kind', label: 'The feeling', editName: 'the feeling', lines: [{ text: c.kind || SKIPPED, sub: c.words.length ? `${inWords(c.words)}.` : undefined }] },
-    { key: 'rel', step: 'rel', label: 'Related to', editName: 'what it’s related to', lines: [{ text: c.related.length ? inWords(c.related) : SKIPPED }] },
+    { key: 'feeling', step: 'family', label: 'The feeling', editName: 'the feeling', lines: [{ text: c.words.length ? inWords(c.words) : (c.family || SKIPPED), sub: c.words.length && c.family ? c.family : undefined }] },
+    { key: 'strength', step: 'strength', label: 'How strong it is', editName: 'how strong it is', lines: [{ text: c.strength || SKIPPED }] },
   ];
-  c.act.forEach((a, i) => rows.push({
-    key: `act:${a.id}`,
-    step: `w:${a.id}`,
-    label: 'To act on',
-    editName: c.act.length > 1 ? `what to act on, ${i + 1} of ${c.act.length}` : 'what to act on',
-    lines: [{ text: a.step, sub: a.where || undefined, good: Boolean(a.where) }],
+  if (c.related.length) rows.push({ key: 'rel', step: 'family', label: 'Related to', editName: 'what it’s related to', lines: [{ text: inWords(c.related) }] });
+  rows.push({ key: 'story', step: 'story', label: 'What you’re telling yourself', editName: 'what you’re telling yourself', lines: [{ text: c.story || SKIPPED }] });
+  const each = (items, label, name, line) => items.forEach((x, i) => rows.push({
+    key: `${label}:${x.id}`,
+    step: label === 'act' ? `c:${x.id}` : `d:${x.id}`,
+    label: name,
+    editName: items.length > 1 ? `${name.toLowerCase()}, ${i + 1} of ${items.length}` : name.toLowerCase(),
+    lines: [line(x)],
   }));
-  c.reflect.forEach((r, i) => rows.push({
-    key: `park:${r.id}`,
-    step: `w:${r.id}`,
-    label: 'To reflect on',
-    editName: c.reflect.length > 1 ? `what to reflect on, ${i + 1} of ${c.reflect.length}` : 'what to reflect on',
-    lines: [{ text: r.question }],
-  }));
+  each(c.act, 'act', 'To act on', (a) => ({ text: a.step, sub: stepSub(a) || undefined, good: Boolean(a.where) }));
+  each(c.park, 'park', 'Parked for now', (p) => ({ text: p.thought, sub: p.question || undefined }));
+  each(c.go, 'go', 'Letting go', (g) => ({ text: g.thought }));
   return rows;
+}
+
+/** The offer under Your wash (Draft 6; question rule 36), or null without a coach to offer. */
+export function talkLine(coachFirstName) {
+  const name = clean(coachFirstName);
+  return name ? `Want to talk this through with ${name}?` : null;
 }
 
 // ------------------------------------------------------------ saving
@@ -362,86 +447,98 @@ export function washTitle() {
   return 'Your wash';
 }
 
-/**
- * What is saved as the row's answers. A finished wash lets its trashed
- * thoughts go for good: they are not saved.
- */
+/** What is saved as the row's answers (version 2). A finished wash lets its empty boxes go. */
 export function savedAnswers(wash, { finished = false } = {}) {
   const thoughts = (wash.thoughts || [])
-    .filter((th) => !(finished && (th.wash === 'trash' || !clean(th.text))))
+    .filter((th) => th.id === STORY_ID || !(finished && !clean(th.text)))
     .map((th) => ({
       id: text(th.id),
       text: text(th.text).slice(0, THOUGHT_MAX),
-      true: said(th.t),
-      logical: said(th.l),
-      helpful: said(th.h),
-      wash: washed(th.wash),
-      step: th.wash === 'act' ? text(th.step).slice(0, STEP_MAX) : '',
-      question: th.wash === 'park' ? text(th.question).slice(0, QUESTION_MAX) : '',
-      where: th.wash === 'act' ? place(th.where) : null,
-      strategy_id: th.wash === 'act' ? (th.strategyId || null) : null,
+      choice: chosen(th.choice),
+      step: th.choice === 'act' ? text(th.step).slice(0, STEP_MAX) : '',
+      when: th.choice === 'act' ? dateKey(th.when) : null,
+      where: th.choice === 'act' ? place(th.where) : null,
+      strategy_id: th.choice === 'act' ? (th.strategyId || null) : null,
+      ...(th.old ? { old: true } : {}),
     }));
   const ids = new Set(thoughts.map((th) => th.id));
-  return {
-    version: 1,
+  const out = {
+    version: 2,
     what: text(wash.what).slice(0, WHAT_MAX),
-    kind: KINDS.some((k) => k.value === wash.kind) ? wash.kind : null,
-    words: among(WORDS, wash.words),
-    related: among(RELATED, wash.rel),
+    family: familyOf(wash.family)?.value || null,
+    words: among(known, wash.words),
+    own: clean(wash.own).slice(0, OWN_MAX),
+    strength: strong(wash.strength),
     thoughts,
     todos: Object.fromEntries(Object.entries(wash.todos || {})
       .filter(([thoughtId, made]) => ids.has(thoughtId) && made?.id)
       .map(([thoughtId, made]) => [thoughtId, { id: text(made.id), text: text(made.text), where: place(made.where), strategy_id: made.strategyId || null }])),
   };
+  if (wash.legacy && (wash.legacy.related?.length || Object.keys(wash.legacy.questions || {}).length)) out.legacy = wash.legacy;
+  return out;
+}
+
+// A version 1 wash (before 27 Nov): its thoughts become the story and the
+// others, Accept and act reads "I’ll act on it.", Park and reflect "I’ll park
+// it for now." (its question kept) and Trash "I’ll let it go.".
+const OLD_CHOICE = { act: 'act', park: 'park', trash: 'go' };
+function fromVersion1(a, newId) {
+  const old = (Array.isArray(a.thoughts) ? a.thoughts : []).filter((th) => th && typeof th === 'object');
+  const questions = {};
+  const thoughts = old.map((th, i) => {
+    const id = i === 0 ? STORY_ID : (text(th.id) || newId());
+    if (th.wash === 'park' && clean(th.question)) questions[id] = clean(th.question);
+    return { id, text: text(th.text), choice: OLD_CHOICE[th.wash] || null, step: text(th.step), when: null, where: place(th.where), strategyId: th.strategy_id || null, old: true, oldId: text(th.id) };
+  });
+  if (!thoughts.length) thoughts.push(newThought(STORY_ID));
+  if (thoughts.length < 2) thoughts.push(newThought(newId()));
+  const todos = {};
+  if (a.todos && typeof a.todos === 'object') {
+    for (const th of thoughts) {
+      const made = th.oldId && a.todos[th.oldId];
+      if (made && typeof made === 'object' && made.id) todos[th.id] = { id: text(made.id), text: text(made.text), where: place(made.where), strategyId: made.strategy_id || null };
+    }
+  }
+  const related = Array.isArray(a.related) ? a.related.filter((w) => typeof w === 'string' && w) : [];
+  return {
+    what: text(a.what),
+    family: null,
+    words: among(known, a.words),
+    own: '',
+    strength: null,
+    thoughts: thoughts.map(({ oldId, ...th }) => th),
+    todos,
+    legacy: related.length || Object.keys(questions).length ? { related, questions } : null,
+  };
 }
 
 /** A wash from a saved row's answers; anything damaged reads as not answered. */
 export function washFrom(answers, newId = () => `thought-${Math.random().toString(36).slice(2)}`) {
-  const a = answers && typeof answers === 'object' ? answers : {};
-  const thoughts = (Array.isArray(a.thoughts) ? a.thoughts : [])
-    .filter((th) => th && typeof th === 'object')
-    .map((th) => ({
-      id: text(th.id) || newId(),
-      text: text(th.text),
-      t: said(th.true),
-      l: said(th.logical),
-      h: said(th.helpful),
-      wash: washed(th.wash),
-      step: text(th.step),
-      question: text(th.question),
-      where: place(th.where),
-      strategyId: th.strategy_id || null,
-    }));
-  const todos = {};
-  if (a.todos && typeof a.todos === 'object') {
-    for (const [thoughtId, made] of Object.entries(a.todos)) {
-      if (made && typeof made === 'object' && made.id && thoughts.some((th) => th.id === thoughtId)) {
-        todos[thoughtId] = { id: text(made.id), text: text(made.text), where: place(made.where), strategyId: made.strategy_id || null };
-      }
-    }
-  }
-  return {
-    what: text(a.what),
-    kind: KINDS.some((k) => k.value === a.kind) ? a.kind : null,
-    words: among(WORDS, a.words),
-    rel: among(RELATED, a.related),
-    thoughts: thoughts.length ? thoughts : [newThought(newId())],
-    todos,
-  };
+  const a = answers && typeof answers === 'object' && !Array.isArray(answers) ? answers : {};
+  if (a.version !== 2) return fromVersion1(a, newId);
+  return tidyWash({
+    ...a,
+    thoughts: (Array.isArray(a.thoughts) ? a.thoughts : []).map((th) => (th && typeof th === 'object' ? { ...th, strategyId: th.strategy_id } : th)),
+    todos: Object.fromEntries(Object.entries(a.todos && typeof a.todos === 'object' ? a.todos : {}).map(([k, m]) => [k, m && typeof m === 'object' ? { ...m, strategyId: m.strategy_id } : m])),
+  }, newId);
 }
 
 /**
  * A wash the screens can always draw, out of whatever a device kept as a
  * draft: the right shape whatever was there. Each thought has its own id,
- * its words are text, and every answer is one the screens know or nothing.
- * A draft that was damaged, or kept by another version, opens as far as
- * it can be read and never stops the page (the break-it tester, 14 Nov).
+ * the story comes first, its words are text, and every answer is one the
+ * screens know or nothing. A draft kept by the version before 27 Nov reads
+ * as that version's saved answers would.
  */
 export function tidyWash(value, newId = () => `thought-${Math.random().toString(36).slice(2)}`) {
   const w = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  // A draft from the version before 27 Nov (it had `kind` and true, logical, helpful).
+  if ('kind' in w || 'rel' in w) {
+    return fromVersion1({ ...w, related: w.rel, thoughts: (Array.isArray(w.thoughts) ? w.thoughts : []).map((th) => (th && typeof th === 'object' ? { ...th, strategy_id: th.strategyId } : th)), todos: Object.fromEntries(Object.entries(w.todos && typeof w.todos === 'object' ? w.todos : {}).map(([k, m]) => [k, m && typeof m === 'object' ? { ...m, strategy_id: m.strategyId } : m])) }, newId);
+  }
   const words = (v) => (typeof v === 'string' ? v : '');
   const ids = new Set();
-  const thoughts = (Array.isArray(w.thoughts) ? w.thoughts : [])
+  const read = (Array.isArray(w.thoughts) ? w.thoughts : [])
     .filter((th) => th && typeof th === 'object' && !Array.isArray(th))
     .map((th) => {
       let id = words(th.id);
@@ -450,40 +547,58 @@ export function tidyWash(value, newId = () => `thought-${Math.random().toString(
       return {
         id,
         text: words(th.text),
-        t: said(th.t),
-        l: said(th.l),
-        h: said(th.h),
-        wash: washed(th.wash),
+        choice: chosen(th.choice),
         step: words(th.step),
-        question: words(th.question),
+        when: dateKey(th.when),
         where: place(th.where),
         strategyId: words(th.strategyId) || null,
+        ...(th.old === true ? { old: true } : {}),
       };
     });
+  const story = read.find((th) => th.id === STORY_ID) || newThought(STORY_ID);
+  let others = read.filter((th) => th.id !== STORY_ID);
+  if (!others.length) others = [newThought(newId())];
+  const all = new Set([STORY_ID, ...others.map((th) => th.id)]);
   const todos = {};
   if (w.todos && typeof w.todos === 'object' && !Array.isArray(w.todos)) {
     for (const [thoughtId, made] of Object.entries(w.todos)) {
-      if (made && typeof made === 'object' && words(made.id) && ids.has(thoughtId)) {
+      if (made && typeof made === 'object' && words(made.id) && all.has(thoughtId)) {
         todos[thoughtId] = { id: made.id, text: words(made.text), where: place(made.where), strategyId: words(made.strategyId) || null };
       }
     }
   }
+  const legacy = w.legacy && typeof w.legacy === 'object' && !Array.isArray(w.legacy)
+    ? {
+      related: Array.isArray(w.legacy.related) ? w.legacy.related.filter((x) => typeof x === 'string' && x) : [],
+      questions: w.legacy.questions && typeof w.legacy.questions === 'object' && !Array.isArray(w.legacy.questions)
+        ? Object.fromEntries(Object.entries(w.legacy.questions).filter(([, q]) => typeof q === 'string'))
+        : {},
+    }
+    : null;
   return {
     what: words(w.what),
-    kind: KINDS.some((k) => k.value === w.kind) ? w.kind : null,
-    words: among(WORDS, w.words),
-    rel: among(RELATED, w.rel),
-    thoughts: thoughts.length ? thoughts : [newThought(newId())],
+    family: familyOf(w.family)?.value || null,
+    words: among(known, w.words),
+    own: words(w.own).slice(0, OWN_MAX),
+    strength: strong(w.strength),
+    thoughts: [story, ...others],
     todos,
+    legacy: legacy && (legacy.related.length || Object.keys(legacy.questions).length) ? legacy : null,
   };
 }
 
 /** True when anything has been typed or chosen (an untouched tool saves nothing). */
 export function hasAnswers(wash) {
-  return Boolean(clean(wash?.what) || wash?.kind || (wash?.words || []).length || (wash?.rel || []).length || (wash?.thoughts || []).some((th) => clean(th.text)));
+  return Boolean(clean(wash?.what) || wash?.family || (wash?.words || []).length || clean(wash?.own) || wash?.strength
+    || (wash?.thoughts || []).some((th) => clean(th.text)));
 }
 
-/** Every screen is answered: the summary is whole. */
+/**
+ * The wash is whole: something was named, and every thought to act on has
+ * its step and its day (the one screen that can't be skipped). A thought
+ * saved before 27 Nov (`old`) had no day; its step counts as it was.
+ */
 export function isComplete(wash) {
-  return Boolean(clean(wash?.what) && wash?.kind && among(WORDS, wash?.words).length && typedThoughts(wash).length && !firstUnanswered(wash));
+  if (!hasAnswers(wash)) return false;
+  return typedThoughts(wash).every((th) => th.choice !== 'act' || Boolean(clean(th.step) && (dateKey(th.when) || th.old)));
 }

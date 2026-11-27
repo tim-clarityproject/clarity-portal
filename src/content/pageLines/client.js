@@ -72,7 +72,7 @@ export const HUB_LINES = Object.freeze({
 export const HUB_FIRST_GROUP = Object.freeze({ plan: 'Plan ahead', review: 'Reflect' });
 
 /** How long a tile's tool takes, where navigation.js's TOOLS has no time of its own. */
-export const HUB_TIMES = Object.freeze({ ipp: 'Set up once, ~20 minutes', sprint: 'Every week' });
+export const HUB_TIMES = Object.freeze({ ipp: 'Set up once, ~20 minutes', sprint: '~10 minutes to start' });
 
 export const B1_LINES = Object.freeze({
   myPlans: 'Every plan you’ve saved is here, newest first.',

@@ -27,7 +27,7 @@ export const ASKS = Object.freeze({
     send_sign_reminder: { who: 'coach', body: 'versionId, reminder: sign_3|sign_7, subject?, text?, again?', answer: 'sentAt, already?' },
     send_first_payment_reminder: { who: 'coach', body: 'versionId, subject?, text?', answer: 'sentAt, emailed' },
     extend: { who: 'coach', body: 'agreementId, endsOn', answer: 'endsOn, emailed' },
-    pause: { who: 'coach', body: 'agreementId, from, to', answer: 'endsOn, emailed' },
+    pause: { who: 'coach', body: 'agreementId, from, to', answer: 'endsOn, emailed, inside (the ids of the coaching sessions booked inside it, none changed)' },
     end_early: { who: 'coach', body: 'agreementId, endsOn, by: client|coach', answer: 'endingOn, emailed' },
     cancel_14: { who: 'coach', body: 'agreementId', answer: 'refundMinor, currency, creditNoteNumber, emailed, sessionsOff (null: the device removes them), removed [[table, id]], calls [{ id, google_event_id, meeting_id }]' },
     answer_change: { who: 'coach', body: 'requestIds, reply?', answer: 'emailed?' },
@@ -38,7 +38,7 @@ export const ASKS = Object.freeze({
     // 061/062's own kinds (draft, paid_by_hand, refund, credit, bank_payment, one_off) keep their own callers; these two
     // are listed for the fields run 3 added.
     send: { who: 'coach', body: 'invoiceId, poNumber?', answer: '' },
-    send_reminder: { who: 'coach', body: 'reminderId, text?, again?', answer: 'already? | unsure? | settled? | noAddress?' },
+    send_reminder: { who: 'coach', body: 'reminderId (or invoiceId: the owed reminder, drafted first; Stage D item 15), text?, again?', answer: 'already? | unsure? | settled? | noAddress?' },
     delivered_invoice: { who: 'coach', body: 'agreementId, sessionIds', answer: 'invoiceId, number, totalMinor, currency' },
     top_up: { who: 'coach', body: 'agreementId', answer: 'invoiceId, number, totalMinor, currency' },
     org_invoice_preview: { who: 'coach', body: 'organisationId, sessionIds, entryIds, poNumber, rateMinor, evidenceIds, supplierNumber?, reference?', answer: 'pdf (base64), fileName, pages' },

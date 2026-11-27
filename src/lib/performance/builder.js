@@ -571,6 +571,15 @@ export function servesNames(names) {
   return `Serves ${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
+/**
+ * Build your plan's habits question, quoting the Strategy chosen (Stage D,
+ * Draft 11): "What will you do each week to deliver “Grow my people”?".
+ */
+export function habitsQuestion(strategyName) {
+  const t = String(strategyName || '').trim();
+  return t ? `What will you do each week to deliver “${t}”?` : 'What will you do each week to deliver your Strategies?';
+}
+
 /** What the sprint set up here passes to Start a sprint (Phase 2 step 3 creates it). */
 export function sprintSetupFrom(sprint, fixedStandard = null) {
   const weeks = sprintWeeks(sprint);

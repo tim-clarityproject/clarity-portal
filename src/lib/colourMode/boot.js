@@ -64,7 +64,9 @@
       // The booking pages and a poll's page (Phase 6a run 3) too.
       || path.indexOf('/book/') === 0 || path.indexOf('/poll/') === 0
       // A quote's and a sponsor's signing pages (Phase 6b run 3).
-      || path.indexOf('/quote/') === 0 || path.indexOf('/sign/') === 0;
+      || path.indexOf('/quote/') === 0 || path.indexOf('/sign/') === 0
+      // The public How it works page (Stage D item 8).
+      || path === '/how-it-works' || path === '/how-it-works/';
   }
 
   function resolve(c) {

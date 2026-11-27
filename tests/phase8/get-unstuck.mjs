@@ -68,7 +68,8 @@ async function signedIn(browser, width) {
   pass(`${tag}: the stage name is above the question`, (await page.locator('.ds-guide-label').textContent()).trim() === 'Goal');
   // Focus mode (Polish 1, rule 21; B3): × at the top left saves and closes, "Step 1 of 7" at the right, the tool's name over the question as its eyebrow when it has no stage name; no Back on the first step.
   pass(`${tag}: × at the top left, “Step 1 of 7” at the right, no Back on the first step`, (await page.locator('.ds-guide-close[aria-label="Close and save my place"]').count()) === 1 && /^Step 1 of \d+$/.test((await page.locator('.ds-guide-where').innerText()).trim()) && (await page.locator('.ds-guide-back').count()) === 0);
-  pass(`${tag}: the % bar starts at 0`, (await page.locator('.ds-guide-pct').getAttribute('aria-valuenow')) === '0');
+  // Polish 1, Stage C (UI tester P15): step 1 already shows at least 8% filled.
+  pass(`${tag}: the % bar starts at 8`, Number(await page.locator('.ds-guide-pct').getAttribute('aria-valuenow')) >= 8);
   const eyeLabel = await page.locator('.ds-guide-question .ds-who').getAttribute('aria-label');
   pass(`${tag}: the eye is on the first step, and its label ends “Edit who can see this.”`, (await eyes(page)) === 1 && /Edit who can see this\.$/.test(eyeLabel || ''), eyeLabel);
   pass(`${tag}: the goal has no Skip`, (await page.locator('.ds-guide-foot .ds-guide-skip').count()) === 0);
@@ -76,23 +77,24 @@ async function signedIn(browser, width) {
   pass(`${tag}: an empty goal says “Type your goal to carry on.”`, await until(async () => (await page.locator('.ds-guide-problem').innerText()).includes('Type your goal to carry on.')));
   pass(`${tag}: the button is never greyed out`, !(await page.locator('.ds-guide-next').isDisabled()));
   await page.getByRole('button', { name: 'See an example' }).click();
-  pass(`${tag}: See an example shows one example`, (await page.locator('.ds-guide-example').innerText()).trim() === 'For example: Win the Northfield contract renewal by the end of January.');
+  // Stage D (question rule 10): two or three different examples, never one that assumes who they are.
+  pass(`${tag}: See an example shows three different examples`, (await page.locator('.ds-guide-examples li').count()) === 3 && (await page.locator('.ds-guide-examples').innerText()).includes('Win the Northfield contract renewal by the end of January.'));
   await page.locator('.ds-guide-body .ds-text').first().fill(M9.goal);
   pass(`${tag}: the message goes once the goal is typed`, (await page.locator('.ds-guide-problem').count()) === 0);
   await pressNext(page);
 
-  // ---- What's in the way: rows, Deleted and Undo
-  pass(`${tag}: the next question carries the goal`, await onQuestion(page, `What’s in the way of “${M9.goal}”?`));
+  // ---- What's already working first (Stage D, Draft 11), then what's in the way: rows, Deleted and Undo
+  pass(`${tag}: the next question carries the goal`, await onQuestion(page, `What’s already working for you on “${M9.goal}”?`));
   pass(`${tag}: no eye on a middle step`, (await eyes(page)) === 0);
+  await typeRows(page, M9.opps, 'opportunity');
+  await pressNext(page);
+  await onQuestion(page, `What’s in the way of “${M9.goal}”?`);
   await typeRows(page, M9.cons, 'constraint');
   await page.getByRole('button', { name: 'Remove constraint 2' }).click();
   pass(`${tag}: removing a row says Deleted with Undo`, Boolean(await sawToast(page, 'Deleted')) && (await page.locator('.ds-rowlist .ds-text').count()) === 2);
   await page.locator('.ds-toast').getByRole('button', { name: 'Undo' }).click();
   const back = await until(async () => ((await page.locator('.ds-rowlist .ds-text').count()) === 3 ? page.locator('.ds-rowlist .ds-text').nth(1).inputValue() : null));
   pass(`${tag}: Undo puts the row back where it was`, back === M9.cons[1], back);
-  await pressNext(page);
-  await onQuestion(page, 'What’s already working');
-  await typeRows(page, M9.opps, 'opportunity');
   await pressNext(page);
 
   // ---- Options and the timer
@@ -152,7 +154,7 @@ async function signedIn(browser, width) {
   for (const k of [0, 1, 2]) await page.locator('.ds-guide-body .ds-answer').nth(k).click();
   pass(`${tag}: three options are chosen`, (await page.locator('.ds-guide-body .ds-answer[aria-pressed=true]').count()) === 3);
   await pressNext(page);
-  await onQuestion(page, 'What exactly will you do?');
+  await onQuestion(page, 'What will you do, and when?');
   pass(`${tag}: each chosen option is a next step in its own box`, (await page.locator('.ds-nextstep .ds-text').count()) === 3 && (await page.locator('.ds-nextstep .ds-text').nth(2).inputValue()) === M9.opts[2]);
   await page.locator('.ds-nextstep .ds-text').nth(0).fill(M9.acts[0]);
   await page.locator('.ds-nextstep .ds-text').nth(1).fill(M9.acts[1]);
@@ -204,7 +206,7 @@ async function signedIn(browser, width) {
     pass(`${tag}: Undo brings the to-do back`, Boolean(await until(async () => (await backlogTodo())?.deleted_at === null, 12000)));
     pass(`${tag}: … and the option is chosen again`, (await page.locator('.ds-guide-body .ds-answer[aria-pressed=true]').count()) === 3);
     await pressNext(page);
-    await onQuestion(page, 'What exactly will you do?');
+    await onQuestion(page, 'What will you do, and when?');
     pass(`${tag}: … with its next step back in its place`, JSON.stringify(await lines()) === JSON.stringify(['It’s in this week’s sprint.', 'It’s in your backlog.', 'It isn’t in this week’s sprint yet.']), (await lines()).join('|'));
   }
   await page.screenshot({ path: join(out, `steps-${width}.png`) });
@@ -215,7 +217,7 @@ async function signedIn(browser, width) {
   const draft = await until(async () => (await mine()).find((d) => d.title === M9.goal), 12000);
   pass(`${tag}: it is kept as a draft, in the old pages’ shape too`, Boolean(draft) && draft.draft === true && draft.form_data?.version === 2 && typeof draft.form_data?.constraints === 'string' && draft.form_data.next_steps?.length === 3, JSON.stringify(draft && [draft.draft, draft.status]));
   await page.goto(`${APP}/get-unstuck`);
-  pass(`${tag}: coming back opens where it was left`, Boolean(await onQuestion(page, 'What exactly will you do?')) && (await page.locator('.ds-nextstep .ds-text').nth(0).inputValue()) === M9.acts[0] && (await lines())[1] === 'It’s in your backlog.');
+  pass(`${tag}: coming back opens where it was left`, Boolean(await onQuestion(page, 'What will you do, and when?')) && (await page.locator('.ds-nextstep .ds-text').nth(0).inputValue()) === M9.acts[0] && (await lines())[1] === 'It’s in your backlog.');
   await pressNext(page);
 
   // ---- Your plan, and an edit from it
@@ -223,7 +225,7 @@ async function signedIn(browser, width) {
   pass(`${tag}: Your plan has the eye again`, (await eyes(page)) === 1 && /Edit who can see this\.$/.test(await page.locator('.ds-guide-question .ds-who').getAttribute('aria-label')));
   const labels = (await page.locator('.ds-guide-plan-label').allInnerTexts()).map((t) => t.trim());
   // Polish 1: the labels are spaced capitals, so innerText reads them upper case.
-  pass(`${tag}: every answer is on one page`, JSON.stringify(labels.map((l) => l.toLowerCase())) === JSON.stringify(['Your goal', 'What’s in the way', 'What’s already working', 'Your options', 'Your next steps'].map((l) => l.toLowerCase())), labels.join('|'));
+  pass(`${tag}: every answer is on one page`, JSON.stringify(labels.map((l) => l.toLowerCase())) === JSON.stringify(['Your goal', 'What’s already working', 'What’s in the way', 'Your options', 'Your next steps'].map((l) => l.toLowerCase())), labels.join('|'));
   pass(`${tag}: the next steps say where they are`, (await page.locator('.ds-guide-plan-row').nth(4).innerText()).includes('It’s in this week’s sprint.') && (await page.locator('.ds-guide-plan-row').nth(4).innerText()).includes('It’s in your backlog.'));
   await page.getByRole('button', { name: 'Edit your goal' }).click();
   await onQuestion(page, 'What do you want to achieve?');
@@ -352,7 +354,8 @@ async function guest(browser, width) {
   await page.keyboard.press('Escape');
   await sleep(500);
   await fillTo(page, 'steps');
-  pass(`${tag}: a guest’s steps say “start soon”, with no sprint lines`, (await page.locator('.ds-guide-nudge').innerText()).trim() === 'Make each one something you can start soon.' && (await page.locator('.ds-nextstep-meta').count()) === 0);
+  // Stage D (question rule 9): nothing sits under the question, for a guest too.
+  pass(`${tag}: a guest’s steps have nothing under the question and no sprint lines`, (await page.locator('.ds-guide-nudge').count()) === 0 && (await page.locator('.ds-nextstep-meta').count()) === 0);
   const saved = await until(() => state.rows.length === 1 && state.rows[0].form_data?.goal === M9.goal, 8000);
   const save = state.calls.filter((c) => c.name === 'guest_save').pop();
   pass(`${tag}: the answers are saved through guest_save, only the columns a guest may write`, Boolean(saved) && save.args.p_table === 'decisions' && Object.keys(save.args.p_row).every((k) => ['id', 'title', 'form_data', 'status', 'draft'].includes(k)), JSON.stringify(save && Object.keys(save.args.p_row)));
@@ -610,15 +613,15 @@ async function breakIt(browser) {
   for (const typed of [false, true]) {
     await fresh();
     await page.goto(`${APP}/get-unstuck`);
-    await fillTo(page, 'cons');
+    await fillTo(page, 'opps');
     await sleep(900);
     const other = await ctx.newPage();
     other.on('pageerror', (e) => errors.push(e.message.slice(0, 200)));
     await other.goto(`${APP}/get-unstuck`);
-    await onQuestion(other, 'What’s in the way of');
+    await onQuestion(other, 'What’s already working');
     await page.bringToFront();
     await pressNext(page);
-    await onQuestion(page, 'What’s already working');
+    await onQuestion(page, 'What’s in the way of');
     await pressNext(page);
     await onQuestion(page, 'What could you do to reach');
     await page.locator('.ds-rowlist .ds-text').first().fill('An option typed in the first tab');
@@ -626,21 +629,21 @@ async function breakIt(browser) {
     await onQuestion(page, 'Which options will you act on?');
     await page.locator('.ds-answer').first().click();
     await pressNext(page);
-    await onQuestion(page, 'What exactly will you do?');
+    await onQuestion(page, 'What will you do, and when?');
     await pressNext(page);
     await onQuestion(page, 'Here’s your plan');
     await pressNext(page);
     await page.waitForURL(/performance-sprint/, { timeout: 15000 });
     await until(async () => (await mine()).some((d) => d.status === 'completed'), 8000);
     await other.bringToFront();
-    if (typed) { await other.locator('.ds-rowlist .ds-text').first().fill('A constraint typed in the second tab'); await sleep(500); }
+    if (typed) { await other.locator('.ds-rowlist .ds-text').first().fill('An opportunity typed in the second tab'); await sleep(500); }
     await other.locator('.ds-guide-close').click();
     await other.waitForURL(/personal\/plan/, { timeout: 15000 });
     await sleep(1500);
     const rows = await mine();
     const done = rows.filter((d) => d.status === 'completed' && !d.draft);
     const whole = done.length === 1 && (done[0].form_data.options || []).includes('An option typed in the first tab') && (done[0].form_data.next_steps || []).length === 1;
-    if (typed) pass(`${tag}: two tabs: what was typed in the second after the first finished is kept as a plan of its own`, whole && rows.length === 2 && rows.some((d) => d.draft && (d.form_data.constraint_list || []).includes('A constraint typed in the second tab')), JSON.stringify(rows.map((d) => [d.status, d.draft])));
+    if (typed) pass(`${tag}: two tabs: what was typed in the second after the first finished is kept as a plan of its own`, whole && rows.length === 2 && rows.some((d) => d.draft && (d.form_data.opportunity_list || []).includes('An opportunity typed in the second tab')), JSON.stringify(rows.map((d) => [d.status, d.draft])));
     else pass(`${tag}: two tabs: closing the second, unchanged, leaves the finished plan as the first left it`, whole && rows.length === 1, JSON.stringify(rows.map((d) => [d.status, d.draft, (d.form_data.options || []).length])));
     await other.close();
     await cleanUp();

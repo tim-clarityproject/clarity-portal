@@ -41,6 +41,8 @@ import { EVERYWHERE, EXTRA_GROUPS, ROWS } from './compare-m11-run2-screens.mjs';
 import { EVERYWHERE as EVERYWHERE3, EXTRA_GROUPS as EXTRA_GROUPS3, ROWS as ROWS3 } from './compare-m11-run3-screens.mjs';
 import { EVERYWHERE as EVERYWHERE4, EXTRA_GROUPS as EXTRA_GROUPS4, ROWS as ROWS4 } from './compare-m11-run4-screens.mjs';
 
+// Stage D, item 12 (Tim, 27 Nov): Settings' section Look is named Appearance.
+const LOOK_IS_APPEARANCE = 'Tim renamed the section Appearance (Stage D, item 12)';
 const RUNS = (process.env.RUN || '1,2,3,4').split(',');
 const M11 = process.argv[2] || join(homedir(), 'Downloads/clarity-phase-6a/M11-coach-portal-v3.6.html');
 if (RUNS.includes('1') && !existsSync(M11)) { console.log(`The M11 file isn’t at ${M11}. Give its path as the first argument.`); process.exit(1); }
@@ -117,8 +119,8 @@ const SCREENS = [
     ['Kestrel Group', 'Organisation', 'London', 'Who’s who', 'Dana Whitfield', 'Sponsor', 'Decides on renewals', 'Lee Hart', 'Invoices go to Lee', 'Sam Okafor', 'Client', 'Owen Price', 'Maya’s client', 'Kestrel leadership team', 'Room to grow', 'Agreements and proposals', 'seats are free.', 'Seats', 'Organisation area', 'Documents', 'Master services agreement', 'No expiry date.', 'Non-disclosure agreement'],
     [['Invested this year', LATER], ['Price per seat', LATER], ['CLARITY-KESTREL', 'access codes are kept hashed, as already built, so the page can’t show one to copy'], ['Add someone', ADD], ['Add document', ADD]]],
   ['Settings, Your details', 'settings', 'owner', [], 'settings', 'owner',
-    ['Settings', 'Your details', 'Away and cover', 'Notifications', 'Booking', 'Working hours', 'My calendars', 'Email', 'Tags and fields', 'Note layouts', 'Coaches', 'Activity log', 'Look', 'Name clients see', 'Mobile', 'Edit', 'How clients can reach you', 'WhatsApp', 'iMessage'],
-    [['Second time zone', 'the prompt names this section Time zones, with the editable list']]],
+    ['Settings', 'Your details', 'Away and cover', 'Notifications', 'Booking', 'Working hours', 'My calendars', 'Email', 'Tags and fields', 'Note layouts', 'Coaches', 'Activity log', 'Name clients see', 'Mobile', 'Edit', 'How clients can reach you', 'WhatsApp', 'iMessage'],
+    [['Look', LOOK_IS_APPEARANCE], ['Second time zone', 'the prompt names this section Time zones, with the editable list']]],
   ['Settings, a row being edited', 'settings', 'owner', ['sed:name'], 'settings-edit', 'owner', ['Name clients see', 'Save', 'Cancel'], []],
   ['Settings, Away and cover', 'settings', 'owner', ['sets:away'], 'settings-away', 'owner', ['Away and cover', 'Away', 'Each client agrees first', 'cover coach'], [['Maya sees only what they share, until', 'cover is for one client at a time (the prompt: cover coach, client, start, end), so it is a list with Add cover, each with its own dates']]],
   ['Settings, Notifications', 'settings', 'owner', ['sets:noti'], 'settings-notifications', 'owner', ['Bookings, moves and cancellations', 'Agreements signed', 'Payments in and overdue', 'Support flags', '10 minutes before each call', 'This one comes in quiet hours too.', 'The bell in the header keeps everything, whatever you choose here.'], []],
@@ -129,9 +131,9 @@ const SCREENS = [
   ['Settings, Note layouts', 'settings', 'owner', ['sets:lay'], 'settings-layouts', 'owner', ['Note layouts', 'First session', 'What brought them to coaching, What good looks like in 6 months, What to watch for', 'Regular session', 'Focus, Insight, Next time', 'Review', 'Close'], []],
   ['Settings, Coaches', 'settings', 'owner', ['sets:coaches'], 'settings-coaches', 'owner', ['Coaches', 'Maya Collins', 'Associate', 'Approve Maya’s profile', 'Add coach'], [['£100 an hour', 'a rate is written “£100/hr”, heard as “per hour” (Tim, 19 Nov)']]],
   ['Settings, Activity log', 'settings', 'owner', ['sets:log'], 'settings-log', 'owner', ['Activity log', 'moved Owen Price to Maya Collins.'], []],
-  ['Settings, Look', 'settings', 'owner', ['sets:look'], 'settings-look', 'owner', ['Look', 'Match my device', 'Edit'], []],
-  ['Settings, associate', 'settings', 'maya', [], 'settings', 'associate', ['Your details', 'Away and cover', 'Notifications', 'Booking', 'Working hours', 'My calendars', 'Look', 'Name clients see', 'Maya'], [['Second time zone', 'the prompt names this section Time zones']]],
-  ['Settings on a phone', 'settings', 'owner-phone', [], 'settings', 'owner-phone', ['Settings', 'Your details', 'Away and cover', 'Notifications', 'Booking', 'Working hours', 'My calendars', 'Tags and fields', 'Coaches', 'Activity log', 'Look'], [['Tim, email and messages', 'each section’s row is its name alone: its values show inside it']]],
+  ['Settings, Look', 'settings', 'owner', ['sets:look'], 'settings-appearance', 'owner', ['Match my device', 'Edit'], [['Look', LOOK_IS_APPEARANCE]]],
+  ['Settings, associate', 'settings', 'maya', [], 'settings', 'associate', ['Your details', 'Away and cover', 'Notifications', 'Booking', 'Working hours', 'My calendars', 'Name clients see', 'Maya'], [['Look', LOOK_IS_APPEARANCE], ['Second time zone', 'the prompt names this section Time zones']]],
+  ['Settings on a phone', 'settings', 'owner-phone', [], 'settings', 'owner-phone', ['Settings', 'Your details', 'Away and cover', 'Notifications', 'Booking', 'Working hours', 'My calendars', 'Tags and fields', 'Coaches', 'Activity log'], [['Look', LOOK_IS_APPEARANCE], ['Tim, email and messages', 'each section’s row is its name alone: its values show inside it']]],
   ['Past clients', 'past', 'owner', [], 'clients-past', 'owner', ['Clients', 'Past clients', 'Grace Liu', 'Ended'], [['Check-ins due', 'the test’s data: run 1’s seed has no check-ins due (Check-ins due is built in run 4 and held with RUN=4)']]],
   ['Merge into one', 'merge', 'owner', [], 'merge', 'owner', ['Merge into one', 'These two look like the same person. Choose what to keep where they differ.', 'They’re different people', 'Nothing is lost.'], [['Both timelines join into one.', 'said as what joins: “Their notes, files, tags and engagements join into one.”']]],
   ['A name in a quiet line opens a note', 'today:tue', 'owner', ['sheet:bday'], 'today-note', 'owner', ['Priya Nair', 'A note to Priya', 'Happy birthday, Priya!', 'View Priya’s page'], [['Portal message', 'the client portal has no messages page to show one in, so only Email is offered: a message would go nowhere'], ['Send message', 'as above']]],

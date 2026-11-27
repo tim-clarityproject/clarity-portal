@@ -154,12 +154,20 @@ export function daysOverdue(dueKey, now, zone) {
   const today = dayIn(isZone(zone) ? zone : 'Europe/London', new Date(now));
   return Math.max(0, daysBetween(dueKey, today));
 }
+/**
+ * The reminder owed `late` days overdue, given the stages already drafted: the latest stage reached that is later than
+ * every one drafted, or null. An invoice first seen 9 days overdue owes the 7-day one only (never the 3-day one as
+ * well, nor the 3-day one a day later), and the 14-day one on its day (Stage D, item 15).
+ */
+export function stageOwed(late, drafted = []) {
+  const last = Math.max(0, ...(drafted || []).map(Number).filter(Number.isFinite));
+  const due = REMINDER_DAYS.filter((d) => late >= d && d > last);
+  return due.length ? due.at(-1) : null;
+}
 /** Which reminder is due now (3, 7 or 14), given those already drafted; null for none. Never one already drafted. */
 export function reminderDue({ dueKey, now, zone, drafted = [], paid = false, paused = false }) {
   if (paid || paused || !dueKey) return null;
-  const late = daysOverdue(dueKey, now, zone);
-  const due = REMINDER_DAYS.filter((d) => late >= d && !drafted.includes(d));
-  return due.length ? due.at(-1) : null;
+  return stageOwed(daysOverdue(dueKey, now, zone), drafted);
 }
 /** The 14-day reminder's settle-by day: 7 days after that email goes, on the payer's clock ("Fri 4 Dec"). */
 export function settleBy(sentAt, zone) {

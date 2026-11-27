@@ -28,7 +28,7 @@ const COACH = ['/coach', '/coach/todos', '/coach/calendar', '/coach/calendar/boo
   '/coach/clients/past', '/coach/clients?tab=workshops', '/coach/leads', `/coach/leads/${ID}`, '/coach/leads/cold', '/coach/leads/automations',
   '/coach/network', `/coach/network/${ID}`, '/coach/boards', `/coach/boards/${ID}`, '/coach/finances', '/coach/business', `/coach/sessions/${ID}`,
   '/coach/settings', '/coach/settings/coaches', '/coach/settings/you', '/coach/organisations', '/coach/not-a-page'];
-const AFTER_CODE = ['/coach/sign-in/recovery-codes', '/coach/sign-in/in', '/my-account/sign-in-security'];
+const AFTER_CODE = ['/coach/sign-in/recovery-codes', '/coach/sign-in/in', '/coach/settings/sign-in-security'];
 const SIGN_IN = ['/coach/sign-in/code', '/coach/sign-in/set-up', '/coach/sign-in/recovery-codes', '/coach/sign-in/in'];
 const { pass, done } = makeChecks();
 const browser = await chromium.launch();

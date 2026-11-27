@@ -107,11 +107,11 @@ export function HubTilesDemo() {
         <HubTile big name="Reset" line="Get back to your best when the pressure is on." time="3 tools" href="#reset" onClick={go('Reset')} />
       </HubGrid>
       <HubGroup title="Decide">
-        <HubTile name="Daily plan" line="Choose what matters most today." time="~3 minutes" live="Done today" good href="#pmd" onClick={go('Daily plan')} />
-        <HubTile name="Pre-mortem" line="Test a plan by imagining it went wrong." time="~10 minutes" live="Draft saved" href="#inv" onClick={go('Pre-mortem')} />
+        <HubTile name="Daily plan" line="Identify what matters most today." time="~3 minutes" live="Done today" good href="#pmd" onClick={go('Daily plan')} />
+        <HubTile name="Pre-mortem" line="Work out what could go wrong, and avoid it." time="~10 minutes" live="Draft saved" href="#inv" onClick={go('Pre-mortem')} />
       </HubGroup>
       <HubAnchor>
-        <HubTile name="Strategic Alignment Health Check" line="See whether your team’s work matches its strategy." time="~15 minutes" href="#hc" onClick={go('the Health Check')} />
+        <HubTile name="Strategic Alignment Health Check" line="Identify how much your team’s daily work contributes to its objective." time="~15 minutes" href="#hc" onClick={go('the Health Check')} />
         <Button className="ds-hub-new" onClick={() => say('Starts a new Health Check.')}>Start a new Health Check</Button>
       </HubAnchor>
     </>
@@ -140,7 +140,7 @@ export function SavedItemsDemo() {
   return (
     <>
       <HubAnchor>
-        <HubTile name="Strategic Alignment Health Check" line="See whether your team’s work matches its strategy." time="~15 minutes" href="#hc" onClick={(e) => { e.preventDefault(); say('Opens the Health Check.'); }} />
+        <HubTile name="Strategic Alignment Health Check" line="Identify how much your team’s daily work contributes to its objective." time="~15 minutes" href="#hc" onClick={(e) => { e.preventDefault(); say('Opens the Health Check.'); }} />
         <HubTeams
           teams={[
             { key: 'lead', team: 'Leadership team', line: '3 versions, latest Mon 12 Oct', onClick: open('the Leadership team’s versions in My Plans') },

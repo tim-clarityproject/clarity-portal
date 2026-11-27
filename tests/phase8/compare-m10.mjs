@@ -3,8 +3,8 @@
 // (1440) and Phone (390, M10's own phone frame: a 410px box with a 10px
 // bezel), dark and light. Positions and sizes to half a pixel, fonts,
 // sizes, letter-spacing and colours, and every visible sentence word for
-// word. Both tools' screens: the Team performance check's, then the
-// Emotional wash's.
+// word. The Team performance check's screens (the Emotional wash's left M10
+// on 27 Nov for Draft 6 and Draft 7: tests/phase8/emotional-wash.mjs).
 //
 //   node tests/phase8/compare-m10.mjs [folder for screenshots]
 //   ONLY=people,results WIDTHS=1440 MODES=dark   to run a part of it
@@ -24,7 +24,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { APP, M10, M10_FILE, TEAM_PATH, WASH_INDEX, WASH_PATH, block, clearTeamCheck, clearWash, m10Answers, m10Wash, panel, panelGone, readEnv, seedWash, signIn, sleep, until, withCoach, withSeededTodo } from './shared.mjs';
+import { APP, M10, M10_FILE, TEAM_PATH, block, clearTeamCheck, clearWash, m10Answers, panel, panelGone, readEnv, signIn, sleep, until, withCoach, withSeededTodo } from './shared.mjs';
 import { NEW_BAR, compareParts, compareWords, makeReport, measureParts, words } from './compare-lib.mjs';
 
 const out = process.argv[2] || join(process.cwd(), 'tmp-phase8-compare-m10');
@@ -461,41 +461,9 @@ try {
           await panelGone(page);
         }
       }
-      // ---- Emotional wash
-      const openWash = async (screen, at = 'steps') => {
-        // Away from the tool first, so the screen before can't keep its own wash again as it closes.
-        await page.goto(`${APP}/version.json`);
-        await clearWash(page);
-        await seedWash(page, { wash: m10Wash(at), index: WASH_INDEX[screen] });
-        await page.goto(`${APP}${WASH_PATH}`);
-        await page.waitForSelector('.ds-guide-question, .ds-guide-title', { timeout: 20000 });
-        await until(async () => (await page.locator('.ds-guide-body textarea, .ds-answer, .ds-guide-plan-row').count()) > 0, 15000);
-        await page.evaluate(() => document.fonts.ready);
-        await page.evaluate(() => { document.querySelectorAll('.ds-guide-page, .ds-guide-rv, .ds-follow-body').forEach((el) => { el.style.animation = 'none'; }); });
-        await sleep(4200); // "Draft restored" goes
-        // M10 shows each screen with nothing focused.
-        await page.evaluate(() => document.activeElement?.blur());
-        await page.mouse.move(2, 2);
-        await sleep(300);
-      };
-      for (const screen of ['what', 'kind', 'words', 'rel', 'story', 'true', 'logical', 'helpful', 'wash1', 'wash2', 'wash3']) {
-        if (!want(screen) && !(screen === 'what' && want('whoE'))) continue;
-        await openWash(screen);
-        if (want(screen)) await one('ew', screen);
-        if (screen === 'what' && want('whoE')) {
-          await page.locator('.ds-guide-question .ds-who').click();
-          await panel(page).waitFor({ timeout: 10000 });
-          await sleep(700);
-          await one('ew', 'whoE', { isPanel: true });
-          await page.keyboard.press('Escape');
-          await panelGone(page);
-        }
-      }
-      if (want('sum')) {
-        await openWash('sum', 'sum');
-        await one('ew', 'sum');
-      }
-
+      // ---- Emotional wash: no longer compared with M10. Its screens are Draft 6's with Draft 7's word list (Polish 1,
+      // Stage D, 27 Nov; Tim approved both word for word), which M10 doesn't draw; tests/phase8/emotional-wash.mjs walks
+      // them and the design check measures them (docs/rules/emotional-wash.md).
       pass(`${tagBase}: no page errors in the tool`, errors.length === 0, errors.join(' | '));
       await clearTeamCheck(page);
       await clearWash(page);

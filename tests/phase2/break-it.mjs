@@ -444,7 +444,7 @@ if (run('back')) {
     await r.page.waitForSelector('.ds-guide');
     await r.page.waitForTimeout(500);
     await r.page.getByRole('radio', { name: '6 weeks', exact: true }).click();
-    await r.page.getByLabel('What would you like to call it?').fill('Back test sprint');
+    await r.page.getByLabel('What do you want to call it?').fill('Back test sprint');
     await r.page.waitForTimeout(500);
     await next(r.page);
     await r.page.goBack();
@@ -457,7 +457,7 @@ if (run('back')) {
     const body = await r.page.locator('.ds-guide').textContent();
     let label = '';
     for (let i = 0; i < 2 && !label; i += 1) {
-      if (await r.page.getByLabel('What would you like to call it?').count()) label = await r.page.getByLabel('What would you like to call it?').inputValue();
+      if (await r.page.getByLabel('What do you want to call it?').count()) label = await r.page.getByLabel('What do you want to call it?').inputValue();
       else await r.page.locator('.ds-guide-back, [aria-label^="Back"]').first().click().catch(() => null);
       await r.page.waitForTimeout(500);
     }

@@ -91,7 +91,7 @@ test('the screens: three questions for each person, in the list’s order, and M
 
 test('the list: adding, removing, Undo, and never a greyed-out button', () => {
   let c = emptyCheck();
-  assert.deepEqual(c, { people: [], shared: false, last: null });
+  assert.deepEqual(c, { people: [], shared: false, last: null, commit: { id: null, text: '' } });
   assert.equal(requiredMessage(c), 'Add at least one person to carry on.');
   assert.equal(REQUIRED.name, 'Type their name to carry on.');
   assert.equal(hasAnswers(c), false);
@@ -292,7 +292,7 @@ test('Questions to start with: Chaotic first, then trust, then autonomy, each na
   assert.deepEqual(qs.map((q) => q.text), [
     'What would help “Daniel Reyes” explain the organisation’s intent in their own words?',
     'What has changed for “Tom Ellis”, and what would rebuild their trust?',
-    'Which decisions could “Grace Okafor” own, within clear boundaries, to ease your load?',
+    'Which decisions can “Grace Okafor” own, and at which colour?', // Stage D, Draft 11 (Tim's answer 10)
   ]);
   for (const q of qs) assert.ok(words(q.text) <= 15, `${words(q.text)} words: ${q.text}`);
 });
@@ -345,12 +345,14 @@ test('saving: the answers go round trip, and a damaged row reads as not answered
   const c = m10();
   const saved = savedAnswers(c);
   assert.equal(saved.version, 1);
-  assert.deepEqual(saved.people[1], { id: 'p2', name: 'Tom Ellis', role: 'Sales Director', trust: 2, alignment: 4, autonomy: 3 });
-  assert.deepEqual(checkFrom(saved, false), c);
+  assert.deepEqual(saved.people[1], { id: 'p2', name: 'Tom Ellis', role: 'Sales Director', trust: 2, alignment: 4, autonomy: 3, working: '' });
+  assert.equal(saved.commit, null);
+  // Stage D, Draft 11: what's working and the commit come back too; an older row reads with neither.
+  assert.deepEqual(checkFrom(saved, false), { ...c, people: c.people.map((p) => ({ ...p, w: '' })), commit: { id: null, text: '' } });
   assert.equal(isComplete(c), true);
-  assert.deepEqual(checkFrom(null), { people: [], shared: false, last: null });
+  assert.deepEqual(checkFrom(null), { people: [], shared: false, last: null, commit: { id: null, text: '' } });
   const odd = checkFrom({ people: [{ id: 'a', name: 'A', trust: 7, alignment: '3', autonomy: 2 }, { name: 'no id' }, null], last: { at: OCTOBER, people: { a: { t: 1 } } } });
-  assert.deepEqual(odd.people, [{ id: 'a', name: 'A', role: '', t: null, a: null, u: 2 }]);
+  assert.deepEqual(odd.people, [{ id: 'a', name: 'A', role: '', t: null, a: null, u: 2, w: '' }]);
   assert.equal(odd.last, null);
   assert.equal(checkTitle(NOW), 'November team check');
   assert.equal(checkTitle('nonsense').endsWith(' team check'), true);
@@ -379,15 +381,15 @@ test('the tool has its tile, its one time and its place in the lists', () => {
 // The break-it tester, 14 Nov: whatever a device kept as a draft, the
 // screens get a check they can draw.
 test('a check out of whatever a device kept: always the right shape', () => {
-  const good = { people: [{ id: 'p1', name: 'Priya Shah', role: 'Head of Operations', t: 4, a: 3, u: null }], shared: true, last: { at: '2026-10-01T09:00:00.000Z', people: { p1: { t: 4, a: 4, u: 3 } } } };
+  const good = { people: [{ id: 'p1', name: 'Priya Shah', role: 'Head of Operations', t: 4, a: 3, u: null, w: 'Owns the Monday numbers' }], shared: true, last: { at: '2026-10-01T09:00:00.000Z', people: { p1: { t: 4, a: 4, u: 3 } } }, commit: { id: 'p1', text: 'Ask her on Tuesday' } };
   assert.deepEqual(tidyCheck(good), good, 'a good check is left as it is');
-  for (const bad of [null, undefined, 5, 'x', [], [good]]) assert.deepEqual(tidyCheck(bad), { people: [], shared: false, last: null });
+  for (const bad of [null, undefined, 5, 'x', [], [good]]) assert.deepEqual(tidyCheck(bad), { people: [], shared: false, last: null, commit: { id: null, text: '' } });
   const t = tidyCheck({
     people: [null, 5, 'x', { id: 1, name: 'A number for an id' }, { name: 'No id' }, { id: 'q', name: '   ' }, { id: 'p', name: 'Pat', role: {}, t: 9, a: -1, u: 3 }, { id: 'p', name: 'Same id', t: 3, a: 3, u: 3 }],
     shared: 'yes',
     last: { at: 'x', people: 'x' },
   });
-  assert.deepEqual(t, { people: [{ id: 'p', name: 'Pat', role: '', t: null, a: null, u: 3 }], shared: false, last: null });
+  assert.deepEqual(t, { people: [{ id: 'p', name: 'Pat', role: '', t: null, a: null, u: 3, w: '' }], shared: false, last: null, commit: { id: null, text: '' } });
   assert.equal(tidyCheck({ people: 'x', last: 5 }).people.length, 0);
   assert.equal(tidyCheck({ people: [], last: { at: '2026-10-01', people: { p: null, q: 5, r: { t: 3, a: 3, u: 3 } } } }).last.people.r.t, 3);
 });

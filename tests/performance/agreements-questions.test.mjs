@@ -82,7 +82,7 @@ test('the words: M28 version 6’s questions, with the client’s name', () => {
   const t = sam();
   const ctx = { first: 'Sam' };
   assert.equal(q.questionWords('fee', t, ctx).question, 'What’s your fee each month, in pounds?');
-  assert.equal(q.questionWords('fee', t, ctx).hint, 'Always set in pounds first. If Sam pays in another currency, you’ll see it in theirs next.');
+  assert.equal(q.questionWords('fee', t, ctx).hint, 'Always set in pounds first. If Sam settles in another currency, you’ll see it in theirs next.');
   assert.equal(q.questionWords('tz', t, ctx).question, 'Where is Sam based?');
   assert.equal(q.questionWords('often', t, ctx).question, 'After that, how often will you meet?');
   assert.equal(q.questionWords('after', t, ctx).question, 'What happens after the six months?');
@@ -93,9 +93,9 @@ test('"So far:" says what has been answered before the question, and nothing on 
   const t = sam();
   const keys = q.questionKeys(t);
   assert.equal(q.soFar(t, 'payer', keys, { first: 'Sam', coachFirst: 'Tim' }), '');
-  assert.equal(q.soFar(t, 'offer', keys, { first: 'Sam', coachFirst: 'Tim' }), 'So far: Tim · paid by Sam');
+  assert.equal(q.soFar(t, 'offer', keys, { first: 'Sam', coachFirst: 'Tim' }), 'So far: Tim · funded by Sam');
   assert.equal(q.soFar(t, 'cur', keys, { first: 'Sam', coachFirst: 'Tim' }),
-    'So far: Tim · paid by Sam · Six months of one-to-one coaching · from Mon 4 Jan · 16 sessions over 6 months · £750 a month');
+    'So far: Tim · funded by Sam · Six months of one-to-one coaching · from Mon 4 Jan · 16 sessions over 6 months · £750 a month');
   assert.equal(q.soFar(t, 'check', keys, { first: 'Sam', coachFirst: 'Tim' }), '');
 });
 
@@ -104,7 +104,7 @@ test('Does this read right? says it in plain sentences, each with the question i
   const lines = q.checkLines(t, { first: 'Sam', coachFirst: 'Tim' });
   assert.deepEqual(lines.map((l) => [l.key, l.edit]), [['what', 'offer'], ['who', 'payer'], ['when', 'start'], ['fee', 'fee'], ['also', 'extras'], ['terms', 'notice']]);
   assert.equal(lines[0].text, 'Six months of one-to-one coaching');
-  assert.equal(lines[1].text, 'Coached by Tim, paid by Sam');
+  assert.equal(lines[1].text, 'Coached by Tim, funded by Sam');
   assert.equal(lines[2].text, '16 sessions (weekly for 6 weeks, then every 2 weeks), the first 90 minutes, then 60, on Zoom, from Mon 4 Jan to Fri 2 Jul 2027');
   assert.equal(lines[3].text, '£750 a month, by Direct Debit, £4,500 in all');
   assert.equal(lines[4].text, 'Also included: ad hoc support by email and WhatsApp between sessions and The Clarity Portal at the Executive level');

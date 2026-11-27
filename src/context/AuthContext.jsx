@@ -46,20 +46,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        // DIAGNOSTIC: Check what's in localStorage at app launch
-        const storedAuthToken = localStorage.getItem('clarity-portal-auth');
         const hadSession = Boolean(storedSessionUser());
-        console.log('[AuthContext] APP LAUNCH DIAGNOSTIC:');
-        console.log('[AuthContext] - clarity-portal-auth token in localStorage?', !!storedAuthToken);
-        if (storedAuthToken) {
-          try {
-            const parsed = JSON.parse(storedAuthToken);
-            console.log('[AuthContext] - Token expires at:', parsed.expires_at ? new Date(parsed.expires_at * 1000).toISOString() : 'unknown');
-            console.log('[AuthContext] - Token refresh token present?', !!parsed.refresh_token);
-          } catch (e) {
-            console.log('[AuthContext] - Could not parse stored token');
-          }
-        }
 
         // A session that needs refreshing over a slow or absent connection
         // can take many seconds; after 2 the app opens from the session on
@@ -69,31 +56,23 @@ export function AuthProvider({ children }) {
           new Promise((resolve) => { setTimeout(() => resolve(null), 2000); }),
         ]);
         if (!settled && storedSessionUser()) {
-          console.log('[AuthContext] - Session refresh still waiting; opening from the device.');
           setUser(storedSessionUser());
           return;
         }
         const { data: { session }, error } = settled || { data: { session: null }, error: null };
-        console.log('[AuthContext] - getSession() returned:', !!session, 'error:', error?.message || 'none');
-        if (session) {
-          console.log('[AuthContext] - Session token present?', !!session.access_token);
-        }
 
         // Check session validity
         if (session?.user && !error) {
           // Session exists and is valid. The page shows straight away.
-          console.log('[AuthContext] - Session valid, setting user.');
           setUser(session.user);
         } else if (storedSessionUser()) {
           // The refresh could not reach the server (offline, or a slow
           // connection): still signed in, from the session on the device.
           // Supabase refreshes it once the connection is back.
-          console.log('[AuthContext] - Session kept on the device while the refresh waits for a connection.');
           setUser(storedSessionUser());
         } else {
           // Genuinely signed out: nothing kept on the device is cleared
           // here; only a deliberate Sign out does that.
-          console.log('[AuthContext] - No session. Error:', error?.message);
           if (hadSession) noteIfEndedInCoachPortal();
           setUser(null);
         }
@@ -102,14 +81,12 @@ export function AuthProvider({ children }) {
         setUser(storedSessionUser());
       } finally {
         setIsLoading(false);
-        console.log('[AuthContext] Initial auth check complete - isLoading: false');
       }
     };
 
     checkUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[AuthContext] Auth state changed:', event, 'has user?', !!session?.user);
 
       // Use functional update to preserve user object reference when ID unchanged
       // This prevents unnecessary re-renders in components with [user] in dependencies

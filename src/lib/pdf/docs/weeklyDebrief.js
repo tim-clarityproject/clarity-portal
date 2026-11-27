@@ -109,7 +109,7 @@ export function weeklyDebriefPdf(f) {
       }] : [] },
       { title: 'What went well', look: 'label', blocks: [{ type: 'text', text: f.wentWell }] },
       { title: 'What got in the way', look: 'label', blocks: [{ type: 'text', text: f.inTheWay }] },
-      { title: 'What you’ll adjust next week', look: 'label', blocks: [{ type: 'text', text: f.adjust }] },
+      { title: 'What you’ll change next week', look: 'label', blocks: [{ type: 'text', text: f.adjust }] },
       { title: 'Next week’s to-dos', look: 'label', blocks: f.nextWeek.length ? [{ type: 'list', items: f.nextWeek }] : [] },
     ],
   };

@@ -35,16 +35,16 @@ const SCREENS = [
   ['team, trust', 'team', 1],
   ['team, your team', 'team', 16],
   ['team, your team with the table', 'team', 16, 'table'],
+  // Draft 6's screens with Draft 7's words (Polish 1, Stage D, 27 Nov; shared.mjs WASH_INDEX).
   ['wash, what happened', 'wash', 0],
-  ['wash, the kind of feeling', 'wash', 1],
+  ['wash, the family of the feeling', 'wash', 1],
   ['wash, the words', 'wash', 2],
-  ['wash, related to', 'wash', 3],
-  ['wash, the story', 'wash', 4, 'example'],
-  ['wash, is it true', 'wash', 5],
-  ['wash, park and reflect', 'wash', 8],
-  ['wash, how will you wash it', 'wash', 12],
-  ['wash, accept and act', 'wash', 16],
-  ['wash, your wash', 'wash', 17],
+  ['wash, how strong', 'wash', 3],
+  ['wash, what you’re telling yourself', 'wash', 4],
+  ['wash, the other thoughts', 'wash', 5, 'example'],
+  ['wash, what you’ll do with a thought', 'wash', 6],
+  ['wash, what you’ll do and when', 'wash', 9],
+  ['wash, your wash', 'wash', 10],
 ];
 
 // Runs in the page: what scrolls sideways, what runs off the side, what is too small to tap.
@@ -102,7 +102,7 @@ try {
         await clearTeamCheck(page);
         await clearWash(page);
         if (tool === 'wash') {
-          await seedWash(page, { wash: m10Wash(index === 17 ? 'sum' : 'steps'), index });
+          await seedWash(page, { wash: m10Wash(index === 10 ? 'sum' : 'steps'), index });
         } else {
           await page.evaluate(({ c, at }) => {
             let uid = Object.keys(localStorage).map((x) => /^clarity-[a-z-]+:([0-9a-f-]{36})(:|$)/.exec(x)?.[1]).find(Boolean);

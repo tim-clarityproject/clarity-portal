@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { forgetAuthCopy } from './authStorage';
 
 // Session management for persistent login (30+ days)
 export const sessionManager = {
@@ -39,7 +40,6 @@ export const sessionManager = {
         // Suppress "Invalid Refresh Token" errors from unconfirmed email signup
         // These are expected during the signup → email confirmation flow
         if (error.message?.includes('Invalid Refresh Token') || error.message?.includes('Refresh Token Not Found')) {
-          console.log('Refresh token not available (expected during email confirmation), skipping refresh');
           return null;
         }
         throw error;
@@ -88,5 +88,6 @@ export const sessionManager = {
   clearSession() {
     localStorage.removeItem('clarity-portal-auth');
     localStorage.removeItem('clarity-portal-session-meta');
+    forgetAuthCopy('clarity-portal-auth'); // the sign-in's in-memory copy (authStorage.js)
   },
 };

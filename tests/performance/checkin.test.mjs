@@ -85,7 +85,8 @@ test('M13-1 on the results screen: Hardware 68/100, one thing to work on is Move
   assert.equal(r.workOn.name, 'Movement');
   assert.deepEqual(r.workOn.tip, TIPS.movement);
   assert.equal(r.workOn.tip[0], 'Three 30-minute training sessions a week');
-  assert.equal(r.workOn.question, 'What could help with movement?');
+  // Stage D, Draft 11: "will", this month.
+  assert.equal(r.workOn.question, 'What will help with movement this month?');
   // No "Lowest: …" line (Tim, 5 Nov): the lowest bar is coral (methods M0.8).
   assert.equal(r.hardwareAreas.lowest, undefined);
   assert.equal(r.hardwareAreas.rows.find((x) => x.key === 'movement').band, 'lowest');
@@ -189,9 +190,11 @@ test('the graph: every finished month, and this month in its place, oldest first
 });
 
 test('the goals, the toasts and the words around them', () => {
-  const g = goalQuestions('Adie');
+  const g = goalQuestions('Rhys');
   assert.equal(g.length, 5);
-  assert.equal(g[4].nudges[0], 'Add anything else Adie should know about you.');
+  // Stage D, Draft 11: nothing sits under a question; G1 in Tim's "Imagine…" framing.
+  assert.ok(g.every((q) => !q.nudges));
+  assert.equal(g[0].question, 'Imagine it’s a year on. How will you know coaching worked?');
   assert.ok(g[0].example.ceo && g[0].example.coach && g[0].example.leader);
   assert.deepEqual(cleanGoals({ G1: 'Lead well', G3: ['A', '', 'C', 'D'], G9: 'x', G2: '  ' }), { G1: 'Lead well', G3: ['A', '', 'C'] });
   assert.equal(finishToastWords({ kind: 'first', coachName: 'Tim', sharing: true }), 'Saved. Tim will see this before your first session.');
@@ -261,7 +264,9 @@ test('travel is asked only when it applies: No skips the recovery question (Tim,
 
 test('one thing to work on: options with a kind, Already doing this for 90 days, never guideline wording (Tim, 5 Nov)', async () => {
   const { OPTIONS, optionsToOffer, workOnQuestion } = await import('../../src/lib/performance/index.js');
-  assert.equal(workOnQuestion('Fuel and alcohol'), 'What could help with fuel and alcohol?');
+  // Stage D, Draft 11.
+  assert.equal(workOnQuestion('Fuel and alcohol'), 'What will help with food, drink and alcohol this month?');
+  assert.equal(workOnQuestion('Sleep'), 'What will help your sleep this month?');
   for (const [area, list] of Object.entries(OPTIONS)) {
     assert.ok(list.length >= 3, area);
     for (const o of list) {

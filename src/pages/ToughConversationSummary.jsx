@@ -105,6 +105,19 @@ export default function ToughConversationSummary() {
         </div>
 
         <div className="plan-sum">
+          {/* Stage D, Draft 11: the first question and the commit, where they were answered (older ones have neither). */}
+          {data.success && (
+            <div className="plan-sum-row">
+              <p className="plan-sum-label">What success looks like</p>
+              <p className="plan-sum-value">{data.success}</p>
+            </div>
+          )}
+          {data.whenWhere && (
+            <div className="plan-sum-row">
+              <p className="plan-sum-label">When and where</p>
+              <p className="plan-sum-value">{data.whenWhere}</p>
+            </div>
+          )}
           <div className="plan-sum-row">
             <p className="plan-sum-label">Coaching questions</p>
             <div className="plan-sum-value plan-sum-value--list">

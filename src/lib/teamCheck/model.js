@@ -8,10 +8,18 @@
 //   a:<id>            "How well does “Priya Shah” understand what you’re trying to achieve?"
 //   u:<id>            "How much autonomy does “Priya Shah” have to decide how to deliver?"
 //                     (the three repeat for each person, in the list's order)
+//   w:<id>            "What’s working well with “Priya Shah” right now?" (Stage D,
+//                     Draft 11: after each person's three ratings; it can be skipped)
+//   commit            "What will you do first with “Priya Shah”, and when?" the
+//                     commit question, once, last, naming the person the
+//                     questions to start with name first (else the first on the
+//                     list); it can't be skipped
 //   results           "Your team": the headline, the chart, trust, the questions
 //
 // A check while it is being worked on:
-//   { people: [{ id, name, role, t, a, u }], shared, last }
+//   { people: [{ id, name, role, t, a, u, w }], shared, last, commit }
+// w is what's working well with them ('' until typed); commit is
+// { id: the person's id, text } ('' until typed).
 // t, a and u are 1 to 5 (lowest first), or null until answered. `last` is
 // the check before this one, copied in when this one starts, so the
 // results, the PDF and an old saved check never depend on another row:
@@ -60,7 +68,24 @@ export const QUESTIONS_TITLE = 'Questions to start with:';
 export const REQUIRED = {
   people: 'Add at least one person to carry on.',
   name: 'Type their name to carry on.',
+  commit: 'Type what you’ll do to carry on.',
 };
+export const WORKING_MAX = 600;
+export const COMMIT_MAX = 300;
+
+/**
+ * Decide who decides (Stage D, item 4; Tim, 27 Nov): the traffic light the
+ * autonomy question asks about ("at which colour?"), lowest autonomy last.
+ * Drawn in the portal's own data colours, never coral (coral is for mistakes
+ * only): Green a filled mint light at the top, Amber a mint ring in the
+ * middle, Red a filled grey light at the bottom; the word says which.
+ */
+export const DECIDE_COLOURS = Object.freeze([
+  { key: 'green', name: 'Green', meaning: 'They decide, act and report back.' },
+  { key: 'amber', name: 'Amber', meaning: 'They decide, and I confirm before they act.' },
+  { key: 'red', name: 'Red', meaning: 'I decide.' },
+]);
+export const DECIDE_TITLE = 'Decide who decides';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const text = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
@@ -110,19 +135,19 @@ export const AREA_NAME = { hp: 'High-performance', ps: 'Permission seekers', ch:
  * @param {{ at: string, people: Array }|null} before the newest finished check ({ at, people })
  */
 export function emptyCheck(before = null) {
-  const people = (before?.people || []).filter((p) => p && clean(p.name)).map((p) => ({ id: text(p.id), name: clean(p.name), role: clean(p.role), t: null, a: null, u: null }));
+  const people = (before?.people || []).filter((p) => p && clean(p.name)).map((p) => ({ id: text(p.id), name: clean(p.name), role: clean(p.role), t: null, a: null, u: null, w: '' }));
   const rated = (before?.people || []).filter(isRated);
   const last = before?.at && rated.length
     ? { at: before.at, people: Object.fromEntries(rated.map((p) => [text(p.id), { t: p.t, a: p.a, u: p.u }])) }
     : null;
-  return { people, shared: Boolean(before?.shared), last };
+  return { people, shared: Boolean(before?.shared), last, commit: { id: null, text: '' } };
 }
 
 /** The check with one more person, or unchanged when no name was typed. */
 export function addPerson(check, { id, name, role }) {
   const n = clean(name).slice(0, NAME_MAX);
   if (!n) return check;
-  return { ...check, people: [...check.people, { id, name: n, role: clean(role).slice(0, ROLE_MAX), t: null, a: null, u: null }] };
+  return { ...check, people: [...check.people, { id, name: n, role: clean(role).slice(0, ROLE_MAX), t: null, a: null, u: null, w: '' }] };
 }
 
 /** The check without one person. */
@@ -142,6 +167,35 @@ export function restorePerson(check, person, index) {
 export function setRating(check, id, kind, value) {
   if (!KINDS.includes(kind) || !level(value)) return check;
   return { ...check, people: check.people.map((p) => (p.id === id ? { ...p, [kind]: value } : p)) };
+}
+
+/** What's working well with someone, as typed (Draft 11). */
+export function setWorking(check, id, words) {
+  return { ...check, people: check.people.map((p) => (p.id === id ? { ...p, w: text(words).slice(0, WORKING_MAX) } : p)) };
+}
+
+/** The person the commit question names: the first the questions to start with name, else the first rated, else the first on the list. */
+export function commitPerson(check) {
+  const people = check?.people || [];
+  const named = startQuestions(check)[0]?.id;
+  return people.find((p) => p.id === named) || ratedPeople(check)[0] || people[0] || null;
+}
+
+/** The commit answer, for the person it names now. */
+export function setCommit(check, words) {
+  const p = commitPerson(check);
+  return { ...check, commit: { id: p ? p.id : null, text: text(words).slice(0, COMMIT_MAX) } };
+}
+
+/** The commit answer as it is now: the words only while they are about the person the question names. */
+export function commitText(check) {
+  const p = commitPerson(check);
+  return p && check?.commit?.id === p.id ? text(check.commit.text) : '';
+}
+
+/** The calm message when Next is pressed on the commit question with nothing typed, or null. */
+export function commitMessage(check) {
+  return clean(commitText(check)) ? null : REQUIRED.commit;
 }
 
 /** The calm message when Next is pressed on the list with nobody on it, or null. */
@@ -173,6 +227,8 @@ export function question(kind, person) {
   if (kind === 't') return `How much does ${name} trust you as their leader?`;
   if (kind === 'a') return `How well does ${name} understand what you’re trying to achieve?`;
   if (kind === 'u') return `How much autonomy does ${name} have to decide how to deliver?`;
+  if (kind === 'w') return `What’s working well with ${name} right now?`;
+  if (kind === 'c') return `What will you do first with ${name}, and when?`;
   return '';
 }
 
@@ -567,7 +623,8 @@ export function startQuestions(check) {
   // seeker is asked about, up to three (Phase 8a follow-up, step 2); with
   // none, there is nothing to ask and the section is hidden (5e rule 6).
   const seekers = people.filter((p) => areaOf(p) === 'ps' && p !== fell);
-  const autonomy = (p) => ({ kind: 'autonomy', id: p.id, text: ask((n) => `Which decisions could ${n} own, within clear boundaries, to ease your load?`, p) });
+  // Stage D, Draft 11 (Tim's answer 10): the traffic light of Decide who decides, DECIDE_COLOURS.
+  const autonomy = (p) => ({ kind: 'autonomy', id: p.id, text: ask((n) => `Which decisions can ${n} own, and at which colour?`, p) });
   if (!out.length) seekers.slice(0, 3).forEach((p) => out.push(autonomy(p)));
   else if (seekers[0]) out.push(autonomy(seekers[0]));
   return out.slice(0, 3);
@@ -585,8 +642,10 @@ export function checkTitle(at = new Date()) {
 export function savedAnswers(check) {
   return {
     version: 1,
-    people: (check.people || []).map((p) => ({ id: text(p.id), name: clean(p.name), role: clean(p.role), trust: level(p.t), alignment: level(p.a), autonomy: level(p.u) })),
+    people: (check.people || []).map((p) => ({ id: text(p.id), name: clean(p.name), role: clean(p.role), trust: level(p.t), alignment: level(p.a), autonomy: level(p.u), working: text(p.w).trim() })),
     last: check.last?.at ? { at: check.last.at, people: check.last.people || {} } : null,
+    // Stage D, Draft 11: the commit answer, with the person it was about.
+    commit: check.commit?.id && text(check.commit.text).trim() ? { id: text(check.commit.id), text: text(check.commit.text).trim() } : null,
   };
 }
 
@@ -595,7 +654,7 @@ export function checkFrom(answers, shared = false) {
   const a = answers && typeof answers === 'object' ? answers : {};
   const people = (Array.isArray(a.people) ? a.people : [])
     .filter((p) => p && typeof p === 'object' && clean(p.name) && text(p.id))
-    .map((p) => ({ id: text(p.id), name: clean(p.name), role: clean(p.role), t: level(p.trust), a: level(p.alignment), u: level(p.autonomy) }));
+    .map((p) => ({ id: text(p.id), name: clean(p.name), role: clean(p.role), t: level(p.trust), a: level(p.alignment), u: level(p.autonomy), w: typeof p.working === 'string' ? p.working : '' }));
   let last = null;
   if (a.last && typeof a.last === 'object' && a.last.at && a.last.people && typeof a.last.people === 'object') {
     const kept = Object.entries(a.last.people)
@@ -603,7 +662,9 @@ export function checkFrom(answers, shared = false) {
       .filter(([, v]) => isRated(v));
     if (kept.length) last = { at: text(a.last.at), people: Object.fromEntries(kept) };
   }
-  return { people, shared: Boolean(shared), last };
+  const commit = a.commit && typeof a.commit === 'object' && text(a.commit.id) && typeof a.commit.text === 'string'
+    ? { id: text(a.commit.id), text: a.commit.text } : { id: null, text: '' };
+  return { people, shared: Boolean(shared), last, commit };
 }
 
 /**
@@ -620,8 +681,9 @@ export function tidyCheck(value) {
   const people = (Array.isArray(c.people) ? c.people : [])
     .filter((p) => p && typeof p === 'object' && !Array.isArray(p) && words(p.id) && clean(words(p.name)))
     .filter((p) => !ids.has(p.id) && ids.add(p.id))
-    .map((p) => ({ id: p.id, name: clean(words(p.name)), role: clean(words(p.role)), t: level(p.t), a: level(p.a), u: level(p.u) }));
-  return { people, shared: c.shared === true, last: checkFrom({ last: c.last }).last };
+    .map((p) => ({ id: p.id, name: clean(words(p.name)), role: clean(words(p.role)), t: level(p.t), a: level(p.a), u: level(p.u), w: words(p.w) }));
+  const commit = c.commit && typeof c.commit === 'object' && words(c.commit.id) ? { id: c.commit.id, text: words(c.commit.text) } : { id: null, text: '' };
+  return { people, shared: c.shared === true, last: checkFrom({ last: c.last }).last, commit };
 }
 
 /** True when anyone is on the list (an untouched tool saves nothing). */

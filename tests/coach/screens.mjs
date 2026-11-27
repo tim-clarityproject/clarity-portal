@@ -111,7 +111,7 @@ export const SCREENS = [
   ['workshop-past', `/coach/workshops/${ID.wsPast}`],
   ['organisation', `/coach/organisations/${ID.kestrel}`, null, 'owner'],
   ['settings', '/coach/settings'],
-  ...['you', 'away', 'notifications', 'booking', 'hours', 'zones', 'calendars', 'tags', 'look'].map((s) => [`settings-${s}`, `/coach/settings/${s}`]),
+  ...['you', 'away', 'notifications', 'booking', 'hours', 'zones', 'calendars', 'tags', 'appearance'].map((s) => [`settings-${s}`, `/coach/settings/${s}`]),
   ...['email', 'layouts', 'coaches', 'log'].map((s) => [`settings-${s}`, `/coach/settings/${s}`, null, 'owner']),
   ['settings-edit', '/coach/settings/you', async (page) => { await page.getByRole('button', { name: 'Edit Name clients see' }).click(); await settle(page, 300); }],
   ['coming', '/coach/library'],
@@ -488,7 +488,7 @@ export const GROUPS = [
     screens: [
       ['settings-hours-capacity', '/coach/settings/hours', async (page) => { await page.getByText('Coaching hours each week').scrollIntoViewIfNeeded(); await settle(page, 200); }, { expects: ['capacity-row'] }],
       ['settings-capacity-edit', '/coach/settings/hours', async (page) => { await page.getByRole('button', { name: 'Edit Coaching hours each week' }).click(); await settle(page, 300); }],
-      ['settings-look-help', '/coach/settings/look', async (page) => { await page.getByText('Hidden help').scrollIntoViewIfNeeded(); await settle(page, 200); }, { expects: ['hidden-help'] }],
+      ['settings-look-help', '/coach/settings/appearance', async (page) => { await page.getByText('Hidden help').scrollIntoViewIfNeeded(); await settle(page, 200); }, { expects: ['hidden-help'] }],
       ['workshop-emails', `/coach/workshops/${ID.wsNext}`, async (page) => { await emails(page).scrollIntoViewIfNeeded(); await settle(page, 200); }, { full: true }],
       ['workshop-emails-after', `/coach/workshops/${ID.wsPast}`, async (page) => { await emails(page).scrollIntoViewIfNeeded(); await settle(page, 200); }, { full: true }],
       ['workshop-follow-up', `/coach/workshops/${ID.wsPast}`, async (page) => { await emails(page).getByRole('button', { name: 'Send the follow-up' }).click(); await settle(page, 600); }, { expects: ['panel'] }],

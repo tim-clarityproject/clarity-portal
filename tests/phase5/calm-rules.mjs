@@ -172,13 +172,14 @@ const PAGES_ALL = [
   // check, Park and reflect and Accept and act with their follow-ups open
   // in the chosen card, and Your wash, opened on their step from a wash on
   // the device (nothing saved).
+  // Polish 1, Stage D (27 Nov): Draft 6's screens with Draft 7's words, no eye (shared.mjs WASH_INDEX).
   ['wash-what', '/emotional-wash', 'wash:0'],
   ['wash-words', '/emotional-wash', 'wash:2'],
-  ['wash-story', '/emotional-wash', 'wash:4'],
-  ['wash-true', '/emotional-wash', 'wash:5'],
-  ['wash-park', '/emotional-wash', 'wash:8'],
-  ['wash-act', '/emotional-wash', 'wash:16'],
-  ['wash-summary', '/emotional-wash', 'wash:17'],
+  ['wash-strength', '/emotional-wash', 'wash:3'],
+  ['wash-others', '/emotional-wash', 'wash:5'],
+  ['wash-choice', '/emotional-wash', 'wash:6'],
+  ['wash-commit', '/emotional-wash', 'wash:9'],
+  ['wash-summary', '/emotional-wash', 'wash:10'],
   // The Health Check inside the portal (M7 version 8.2): Your teams with no
   // teams and with M7's two, a version's results (Versions after the
   // questions), Compare two versions, the example, and the first step of a
@@ -520,7 +521,7 @@ for (const width of PAGES.length ? WIDTHS : []) {
             }
             if (k === 'wash') {
               // The Emotional wash carries on from the wash kept on the device, at the step it was left on.
-              localStorage.setItem(`clarity-draft:${uid}:emotional-wash:new`, JSON.stringify({ v: { id: '88888888-8888-4888-8888-888888888888', wash: Number(n) === 17 ? washDone : wash, status: 'new', saved: false, createdAt: null, finishedAt: null }, at: Date.now() }));
+              localStorage.setItem(`clarity-draft:${uid}:emotional-wash:new`, JSON.stringify({ v: { id: '88888888-8888-4888-8888-888888888888', wash: Number(n) === 10 ? washDone : wash, status: 'new', saved: false, createdAt: null, finishedAt: null }, at: Date.now() }));
               localStorage.setItem(`ds-guide:emotional-wash-${uid}-new`, JSON.stringify({ index: Number(n), skipped: [] }));
               localStorage.setItem('clarity-tool-answers-not-yet', String(Date.now()));
               return;
@@ -541,13 +542,14 @@ for (const width of PAGES.length ? WIDTHS : []) {
           await page.getByRole('button', { name: 'Review it now' }).click({ timeout: 15000 }).catch(() => null);
         }
         if (kind) {
-          await page.waitForSelector(act === 'team:16' || act === 'wash:17' ? '.ds-guide-title' : '.ds-guide-question', { timeout: 20000 });
-          const want = { 'review:1': 'What worked best in this sprint?', 'review:2': 'What would make the next sprint even better?', 'build:4': 'Which days do you work?', 'unstuck:0': 'What do you want to achieve?', 'unstuck:1': 'What’s in the way of', 'unstuck:3': 'What could you do to reach', 'unstuck:6': 'Here’s your plan', 'team:0': 'Who reports to you?', 'team:1': 'How much does “Priya Shah” trust you as their leader?', 'team:16': 'YOUR TEAM', 'wash:0': 'What happened?', 'wash:2': 'Which words fit the feeling?', 'wash:4': 'What story are you telling yourself', 'wash:5': 'Is “The chair has never rated me” true?', 'wash:8': 'How will you wash “The chair has never rated me”?', 'wash:16': 'How will you wash “I need to win the board back', 'wash:17': 'YOUR WASH' }[act];
+          await page.waitForSelector(act === 'team:16' || act === 'wash:10' ? '.ds-guide-title' : '.ds-guide-question', { timeout: 20000 });
+          const want = { 'review:1': 'What worked best in this sprint?', 'review:2': 'What would make the next sprint even better?', 'build:4': 'Which days do you work?', 'unstuck:0': 'What do you want to achieve?', 'unstuck:1': 'What’s in the way of', 'unstuck:3': 'What could you do to reach', 'unstuck:6': 'Here’s your plan', 'team:0': 'Who reports to you?', 'team:1': 'How much does “Priya Shah” trust you as their leader?', 'team:16': 'YOUR TEAM', 'wash:0': 'What happened?', 'wash:2': 'Which word fits best?', 'wash:3': 'How strong is it right now?', 'wash:5': 'What other thoughts come with it?', 'wash:6': 'For “The chair has never rated me”, what will you do with it?', 'wash:9': 'What will you do about “I need to win the board back', 'wash:10': 'YOUR WASH' }[act];
           const got = (await page.locator('.ds-guide-question, .ds-guide-title').first().innerText()).replace(/\s+/g, ' ').trim();
           pass(`${tag}: opened on "${want}"`, got.toUpperCase().startsWith(want.toUpperCase()), got);
           const eyes = await page.locator('.ds-guide-question .ds-who, .ds-guide-question .ds-page-aside, .ds-guide-title .ds-who').count();
           // Get unstuck shows the eye on its first step and on Your plan only (Tim, 13 Nov, 09:32).
-          if ((kind === 'unstuck' && at !== '0' && at !== '6') || act === 'team:1' || (kind === 'wash' && at !== '0' && at !== '17')) pass(`${tag}: no eye on a middle step`, eyes === 0, `${eyes}`);
+          // The Emotional wash has no eye at all since Draft 6 (Polish 1, Stage D: "Private: no eye, never shared").
+          if ((kind === 'unstuck' && at !== '0' && at !== '6') || act === 'team:1' || kind === 'wash') pass(`${tag}: no eye on a middle step`, eyes === 0, `${eyes}`);
           else pass(`${tag}: the eye is inside the heading`, eyes >= 1, `${eyes}`);
         }
         await page.waitForLoadState('networkidle').catch(() => null);
@@ -1029,14 +1031,14 @@ if (COACH_AUTH) {
       await page.waitForURL(/\/coach\/sign-in\/code$/, { timeout: 15000 });
       await code(page).fill(world.goodCode);
       await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
-      await page.getByText('Make new codes in My Account').waitFor({ timeout: 10000 });
+      await page.getByText('Make new codes in Settings').waitFor({ timeout: 10000 });
     }],
-    ['coach-auth-security', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, '/my-account/sign-in-security', '.si-srow'],
-    ['coach-auth-security-codes', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, '/my-account/sign-in-security', '.si-srow', async (page) => {
+    ['coach-auth-security', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, '/coach/settings/sign-in-security', '.si-srow'],
+    ['coach-auth-security-codes', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, '/coach/settings/sign-in-security', '.si-srow', async (page) => {
       await page.getByRole('button', { name: 'Make new codes' }).click();
       await code(page).waitFor();
     }],
-    ['coach-auth-security-phone', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, '/my-account/sign-in-security', '.si-srow', async (page) => {
+    ['coach-auth-security-phone', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, '/coach/settings/sign-in-security', '.si-srow', async (page) => {
       await page.getByRole('button', { name: 'Set up on a new phone' }).click();
       await code(page).waitFor();
     }],

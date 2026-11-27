@@ -22,8 +22,17 @@ export const MAX_TOMORROW = 3;         // day_reviews.tomorrow holds up to three
 export const TOMORROW_ITEM_MAX = 300;  // the to-do limit (audit R7); day_reviews holds the same once 039 has run
 export const REVIEW_EARLY_HOURS = 4;   // a review started before 04:00 can be for the day before
 
-export const DIFFERENTLY_EXAMPLE = 'Leave ten minutes between calls, so I start each one ready.';
-export const TOMORROW_EXAMPLE = 'Call Evan before 09:00 about the referral.';
+// "See an example": two or three different ones, never one that assumes who they are (Stage D, question rule 10).
+export const DIFFERENTLY_EXAMPLE = [
+  'Leave ten minutes between calls, so I start each one ready.',
+  'Watch the session back the same evening, not at the weekend.',
+  'Put my phone in the other room before dinner.',
+];
+export const TOMORROW_EXAMPLE = [
+  'Call Evan before 09:00 about the referral.',
+  'Talk to our captain about Saturday before training.',
+  'Book the dentist before lunch.',
+];
 export const MOVED_LEVELS = Object.freeze({ 1: 'Low', 2: 'Medium', 3: 'High' });
 
 // "Calm" reads "calm" inside a sentence; an acronym ("CEO-like") and the word "I" ("I’m present") keep their capital.

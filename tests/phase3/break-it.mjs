@@ -323,22 +323,22 @@ const PLAN_Q = {
   gratitude: 'What’s one thing you’re grateful for today?',
   be: 'How do you want to be today?',
   do: 'What will you do today?',
-  priority: 'Which one is your highest priority?',
-  strategy: 'Which Strategies does today serve most?',
-  risk: 'What’s the biggest risk to today?',
+  // Stage D, Draft 11: no priority screen; the risk screen holds the commit question.
+  strategy: 'Which of your Strategies does today move forward?',
+  risk: 'What’s most likely to knock today off course?',
 };
 const REVIEW_Q = {
   do: 'Which of today’s to‑dos did you do?',
   numbers: 'Log today', // as Home (Tim, 5 Nov)
   well: 'What went well today?',
-  differently: 'What would you do differently next time?',
-  tomorrow: 'What are the most important things to do tomorrow?',
+  differently: 'What will you do differently tomorrow?',
+  tomorrow: 'What will you do first tomorrow?',
 };
 const DEBRIEF_Q = {
   numbers: `How did week ${DEBRIEF_WEEK} go?`,
   well: 'What went well this week?',
   way: 'What got in the way?',
-  adjust: 'What will you adjust next week?',
+  adjust: 'What will you change next week?',
   next: 'What’s planned for next week?',
 };
 

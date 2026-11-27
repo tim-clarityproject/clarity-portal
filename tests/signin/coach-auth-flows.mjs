@@ -28,7 +28,7 @@
 //             database can't reach Supabase's sessions, and Supabase's own sign
 //             out of the others never arrives): 055's marker alone refuses it
 //             coach data and signs it out (run 7)
-//   newcodes  Make new codes in My Account (a current code first): the old codes
+//   newcodes  Make new codes in Settings (a current code first): the old codes
 //             stop working, and it reads 10 of 10 left
 //   reset     the owner resets the associate on the Coaches page (the owner's real
 //             test sign-in, the portal's data stood in): the associate's open
@@ -340,7 +340,7 @@ if (PARTS.includes('newcodes')) {
   const tag = `New codes, ${SIZES[0]}`;
   const world = makeWorld({ factor: 'verified', codesLeft: 9, firstMake: 'random', live: true });
   const { ctx, page, errors } = await device(world, { width: SIZES[0], signedIn: true, aal: 'aal2' });
-  await page.goto(`${APP}/my-account/sign-in-security`);
+  await page.goto(`${APP}/coach/settings/sign-in-security`);
   await page.waitForSelector('.si-srow', { timeout: 20000 }).catch(() => null);
   const before = await words(page, '.si-col--account');
   pass(`${tag}: Sign-in security reads "On since" and "9 of 10 left"`, before.includes('On since') && before.includes(codesLeftSummary(9, 10)), before.slice(0, 160));
@@ -537,7 +537,7 @@ if (PARTS.includes('low')) {
   // (It passes them on to wherever the tab was going: Home, in a tab with no place remembered.)
   pass(`${tag}: nor the code page opened again in the same sign-in`, !/\/(in|code)$/.test(path(tab)), path(tab));
   // The code given again in the same sign-in (Make new codes' current code, say) never brings it back.
-  await tab.goto(`${APP}/my-account/sign-in-security`);
+  await tab.goto(`${APP}/coach/settings/sign-in-security`);
   await tab.waitForSelector('.si-srow', { timeout: 20000 }).catch(() => null);
   pass(`${tag}: Sign-in security reads "2 of 10 left"`, (await words(tab, '.si-col--account')).includes(codesLeftSummary(2, 10)));
   await tab.close();
@@ -578,7 +578,7 @@ if (PARTS.includes('client')) {
     ['/coach/sign-in/recovery-codes', 'Save your recovery codes'],
     ['/coach/sign-in/help', 'Lost your authenticator app?'],
     ['/coach/sign-in/in', 'You’re in'],
-    ['/my-account/sign-in-security', 'Sign-in security'],
+    ['/coach/settings/sign-in-security', 'Sign-in security'],
   ]) {
     await page.goto(`${APP}${go}`);
     await sleep(3000);

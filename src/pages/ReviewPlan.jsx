@@ -58,6 +58,15 @@ function formatLongDate(date) {
 
 function PanelBody({ planKind, plan }) {
   const formData = plan?.form_data || {};
+  // A meeting plan made to Draft 6 (Polish 1, Stage D item 1): what was to be agreed, and the decision needed.
+  if (planKind === 'plan_meeting' && formData.v >= 6) {
+    return (
+      <div className="rp-panel-body">
+        {formData.agreed && <div><small>What’s been agreed</small><p>{formData.agreed}</p></div>}
+        {formData.decision && <div><small>The decision you need</small><p>{formData.decision}</p></div>}
+      </div>
+    );
+  }
   if (planKind === 'plan_meeting') {
     const objectives = (formData.objectives || []).filter((o) => o.text?.trim());
     const agenda = (formData.flowItems || []).filter((r) => r.item?.trim());
@@ -79,7 +88,7 @@ function PanelBody({ planKind, plan }) {
     return (
       <div className="rp-panel-body">
         <div>
-          <small>Which situation are you concerned about?</small>
+          <small>The moment</small>
           <p>{formData.situation}</p>
         </div>
         <div>

@@ -34,6 +34,8 @@ export const COACH_PAGES = COACH_MENU;
 // and storage are here now, and a later run puts them to work.
 export const SETTINGS_SECTIONS = [
   { key: 'you', label: 'Your details' },
+  // Stage D, item 13 (Tim, 27 Nov): the authenticator and recovery codes, in the coach frame (was My Account's).
+  { key: 'sign-in-security', label: 'Sign-in security' },
   { key: 'away', label: 'Away and cover' },
   { key: 'notifications', label: 'Notifications' },
   { key: 'booking', label: 'Booking' },
@@ -49,7 +51,8 @@ export const SETTINGS_SECTIONS = [
   { key: 'layouts', label: 'Note layouts', owner: true, wired: false },
   { key: 'coaches', label: 'Coaches', owner: true },
   { key: 'log', label: 'Activity log', owner: true },
-  { key: 'look', label: 'Look' },
+  // Stage D, item 12: "Look" is Appearance (its old address, /coach/settings/look, lands here).
+  { key: 'appearance', label: 'Appearance' },
 ];
 
 export const COACH_NAME = 'Clarity Coach';

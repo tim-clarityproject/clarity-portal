@@ -482,7 +482,19 @@ const EW_M10 = {
   ],
 };
 const EW_LONG = 'I keep going over the way the meeting ended, because the decision we had agreed on beforehand was reopened without warning, and three people who had told me privately that they supported the plan then sat silently while it was taken apart line by line, which makes me think that nothing I bring to that room is ever really settled until the chair has said so twice';
+// Draft 6 and Draft 7 (Polish 1, Stage D, 27 Nov): the wash as the tool keeps it now; the ones above are washes from before.
+const EW_NOW = {
+  what: 'The chair backed the board member who undermined my plan in front of everyone.',
+  family: 'angry', words: ['Resentful', 'Betrayed'], own: '', strength: 4,
+  thoughts: [
+    { id: 'story', text: 'The chair has never rated me.', choice: 'park', step: '', when: null, where: null, strategyId: null },
+    { id: 't2', text: 'If I push back, I’ll look weak.', choice: 'go', step: '', when: null, where: null, strategyId: null },
+    { id: 't3', text: 'I need to win the board back before the next meeting.', choice: 'act', step: 'Ask the chair for 20 minutes before the next board meeting.', when: '2026-11-19', where: 'week', strategyId: 's1' },
+  ],
+  todos: { t3: { id: 'todo-3', text: 'Ask the chair for 20 minutes before the next board meeting.', where: 'week', strategyId: 's1' } },
+};
 const EW = {
+  'Emotional wash, 27 Nov': emotionalWashPdf({ person: 'Sam Carter', createdAt: EW_AT, wash: EW_NOW }),
   'Emotional wash, normal': emotionalWashPdf({ person: 'Sam Carter', createdAt: EW_AT, wash: washOf(EW_M10) }),
   'Emotional wash, one thought': emotionalWashPdf({ person: 'Sam Carter', createdAt: EW_AT, wash: washOf({ what: 'I lost my temper.', kind: 'pr', words: ['Regret'], thoughts: [['I always do this.', 'park', 'What sets it off?']] }) }),
   'Emotional wash, many thoughts': emotionalWashPdf({

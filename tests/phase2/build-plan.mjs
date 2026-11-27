@@ -158,6 +158,7 @@ const next = async (page) => {
   await page.locator('.ds-guide-next').click();
   await page.waitForTimeout(650);
 };
+const FIRST_STEP = 'Call two past clients on Monday at 09:00';
 const savedShown = async (page) => {
   await page.waitForFunction(() => /Saved/.test(document.querySelector('.ds-guide-bar')?.textContent || ''), null, { timeout: 15000 });
 };
@@ -235,7 +236,7 @@ try {
   await next(page);
 
   // Strategies, one screen per objective.
-  pass('build: Strategies for the first objective', (await heading(page)) === 'How will you move “Coaching clients”?', await heading(page));
+  pass('build: Strategies for the first objective', (await heading(page)) === 'How will you achieve “Coaching clients”?', await heading(page)); // Stage D, Draft 11
   pass('build: the help panel uses rule 40’s words', (await page.locator('.ds-help-panel').textContent()).startsWith('Strategies are medium to long-term approaches to achieving your objectives.'));
   await page.getByRole('button', { name: 'Add a Strategy' }).click(); // walk item 4: the card's add is named "Add a Strategy"
   await page.waitForTimeout(150);
@@ -260,7 +261,8 @@ try {
   await next(page);
 
   // Habits.
-  pass('build: habits step', /Which habits will carry out each Strategy/.test(await heading(page)));
+  // Stage D, Draft 11: the Strategy chosen, quoted back.
+  pass('build: habits step', /^What will you do each week to deliver “.+”\?$/.test(await heading(page)), await heading(page));
   const habit = (i) => page.locator('.ds-habed').nth(i);
   const measure = async (i, name) => {
     await habit(i).locator('.ds-dd').click();
@@ -314,6 +316,16 @@ try {
   await page.getByRole('radio', { name: '80%' }).click();
   await next(page);
 
+  // The commit question (Stage D, Draft 11): never skipped; a to-do in the first sprint's week 1.
+  pass('build: the commit question', (await heading(page)) === 'What will you do first, and when?', await heading(page));
+  pass('build: the commit has no Skip', (await page.locator('.ds-guide-skip').count()) === 0);
+  await page.waitForTimeout(450);
+  await page.locator('.ds-guide-next').click();
+  pass('build: Next with nothing typed says what’s missing', (await page.getByText('Type what you’ll do to carry on.').count()) === 1 && (await heading(page)) === 'What will you do first, and when?');
+  await page.locator('.ds-guide-body textarea').first().fill(FIRST_STEP);
+  pass('build: the commit asks which Strategy, with more than one', (await page.getByText('Which Strategy does it serve?').count()) > 0);
+  await next(page);
+
   // Ready.
   const ready = await page.locator('.ds-guide-body').textContent();
   {
@@ -332,6 +344,8 @@ try {
   await page.waitForURL(/\/performance-sprint$/, { timeout: 30000 });
   await page.waitForTimeout(800);
   const made = (await db.from('sprints').select('number, length_weeks, standard, status').eq('user_id', me)).data;
+  const first = (await db.from('todos').select('planned_week, source, sprint_id').eq('user_id', me).eq('text', FIRST_STEP)).data;
+  pass('build: the commit answer is a to-do in Sprint 1, week 1', first?.length === 1 && first[0].planned_week === 1 && first[0].source === 'other_tool', JSON.stringify(first));
   pass('build: Start a sprint makes Sprint 1 as chosen', made.length === 1 && made[0].number === 1 && made[0].length_weeks === 8 && made[0].standard === 80 && made[0].status === 'running', JSON.stringify(made));
   await shot(page, 'flow-sprint-handover');
   const versions = (await db.from('plan_versions').select('major, minor, kind').eq('user_id', me)).data;

@@ -97,6 +97,8 @@ import { PORTAL_NAME } from '../../lib/navigation';
 import { getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
 import { B2_LINES } from '../../content/pageLines/client';
 import './performance.css';
+import { COMMIT_NEEDED, PLAN_FIRST_QUESTION, commitTodo } from '../../lib/performance/commitQuestions';
+import CommitTodo from './CommitTodo';
 
 // The Hardware and Software check-in (mock-up M12 version 14, read in full
 // with its notes; Phase 5 step 1). Two flows on one guided tool, one
@@ -436,12 +438,13 @@ function CheckinFlow({ userId, today, month, loaded }) {
   const results = useMemo(() => checkinResults({ answers, previous }), [answers, previous]);
   const points = useMemo(() => checkinPoints(data.checkins, { month, answers }), [data.checkins, month, answers]);
   const goalQs = goalQuestions(coach);
+  const finishedBefore = row?.status === 'finished';
 
   const intro = first
     ? {
       key: 'start',
       name: 'Start',
-      question: 'What would make coaching useful for you?',
+      question: 'What would make coaching really useful for you?',
       nudges: ['Let’s start with 5 questions about that.', 'Then your first Hardware and Software review.'],
       nudgeInfo: { label: 'What are hardware and software?', explain: HARDWARE_SOFTWARE_EXPLAIN, helpKey: 'checkin-hardware-software' },
       nextLabel: 'Start with my goals',
@@ -463,7 +466,6 @@ function CheckinFlow({ userId, today, month, loaded }) {
     name: 'Goals',
     label: 'Your goals',
     question: g.question,
-    nudges: g.nudges,
     example: g.example,
     // The eye beside the question (Tim, 5 Nov, 11:09).
     eye,
@@ -542,10 +544,59 @@ function CheckinFlow({ userId, today, month, loaded }) {
     ),
   };
 
-  const steps = [intro, ...goalSteps, ...questionSteps, resultsStep];
+  // The Monthly review ends on its commit question (Stage D, Draft 11): it
+  // can't be skipped, and its answer is a to-do this week (the Backlog with
+  // no sprint running), for the Strategy it serves, made when Next is
+  // pressed and edited in place after. Kept on the device as _first until then.
+  const planStrategies = (sprint.data?.strategies || []).map((x) => ({ value: x.id, label: x.name }));
+  const firstStrategy = planStrategies.some((x) => x.value === answers._firstStrategy) ? answers._firstStrategy : planStrategies[0]?.value;
+  const committing = useRef(false);
+  const commitFirst = async () => {
+    const t = commitTodo(latest.current.answers._first, latest.current.answers._firstStrategy, planStrategies);
+    const sv = sprint.data ? sprintPageView(sprint.data, { today }) : null;
+    if (!t || committing.current || !sv) return;
+    const had = latest.current.answers._firstTodo;
+    if (had && had.text === t.text && had.strategyId === t.strategyId) return;
+    committing.current = true;
+    try {
+      const id = had?.id || newId();
+      const running = sv.state === 'running';
+      const sprintId = running ? sv.sprintId : null;
+      const week = running ? sv.current : null;
+      patchAnswers((a) => ({ ...a, _firstTodo: { id, text: t.text, strategyId: t.strategyId } }));
+      sprint.setData((d) => ({
+        ...d,
+        todos: [...(d.todos || []).filter((x) => x.id !== id), { id, strategy_id: t.strategyId, text: t.text, impact: 2, sprint_id: sprintId, planned_week: week, created_on: today, done_on: null, source: 'other_tool', source_id: null, move_on: null, deleted_at: null }],
+      }));
+      // No source_id: the review's "work on" offer reads a to-do with this review's id as its own (WorkOn's inSprint).
+      await sent(() => saveTodo(userId, { id, strategyId: t.strategyId, text: t.text, impact: 2, sprintId, week, createdOn: today, source: 'other_tool', sourceId: null }));
+    } finally {
+      committing.current = false;
+    }
+  };
+  const commitStep = !first && planStrategies.length ? [{
+    key: 'first',
+    name: 'First step',
+    question: PLAN_FIRST_QUESTION,
+    required: !finishedBefore,
+    eye,
+    check: () => (finishedBefore || (answers._first || '').trim() ? null : COMMIT_NEEDED),
+    onNext: () => { commitFirst(); },
+    render: () => (
+      <CommitTodo
+        question={PLAN_FIRST_QUESTION}
+        text={answers._first || ''}
+        onText={(v) => patchAnswers((a) => ({ ...a, _first: v }))}
+        strategies={planStrategies}
+        strategyId={firstStrategy}
+        onStrategy={(v) => patchAnswers((a) => ({ ...a, _firstStrategy: v }))}
+      />
+    ),
+  }] : [];
+
+  const steps = [intro, ...goalSteps, ...questionSteps, ...commitStep, resultsStep];
   const backTo = location.state?.from || '/welcome';
   const draftKey = `checkin-${userId}-${month}`;
-  const finishedBefore = row?.status === 'finished';
 
   const leave = (words) => {
     if (waiting.current) send();
@@ -787,7 +838,7 @@ function MyGoals({ goals }) {
     <Section title="My goals" as="h3" className="ck-sec">
       <div className="ck-goals">
         {(goals.G1 || '').trim() && (
-          <div className="ck-goal"><span className="ck-goal-label">In 12 months’ time</span><span className="ck-goal-text">{goals.G1}</span></div>
+          <div className="ck-goal"><span className="ck-goal-label">A year on</span><span className="ck-goal-text">{goals.G1}</span></div>
         )}
         {three.length > 0 && (
           <div className="ck-goal">

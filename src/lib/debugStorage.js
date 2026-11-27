@@ -1,3 +1,5 @@
+import { forgetAuthCopy } from './authStorage';
+
 // Debugging utility for session storage issues
 export const debugStorage = {
   checkSessionStorage() {
@@ -39,6 +41,7 @@ export const debugStorage = {
   clearSession() {
     if (typeof window === 'undefined') return;
     localStorage.removeItem('clarity-portal-auth');
+    forgetAuthCopy('clarity-portal-auth');
     console.log('Cleared session from localStorage');
   },
 
@@ -49,7 +52,8 @@ export const debugStorage = {
   },
 };
 
-// Make it available globally for debugging in browser console
-if (typeof window !== 'undefined') {
+// Available in the browser's console in development only: never in a build people use (Polish 1, Stage D, item 17),
+// since listAllStorage prints what the device keeps for the sign-in.
+if (import.meta.env?.DEV && typeof window !== 'undefined') {
   window.debugStorage = debugStorage;
 }

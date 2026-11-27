@@ -1,4 +1,4 @@
-import { addDays, dayIn, daysBetween } from '../time/index.js';
+import { addDays, dayIn } from '../time/index.js';
 import { parseDbTimestamp } from '../dateFormatter.js';
 import { instalments } from '../billing/money.js';
 import { moneyText, rateText, lowerFirst, roundDeposit } from './currency.js';
@@ -6,6 +6,7 @@ import { extrasTotal, planTotal, sessions } from './pricing.js';
 import { kindOf, selfFunded } from './terms.js';
 import { finalTotal, retainerUpfront, saving, sixUpFront, upfrontActive, UPFRONT_PERCENT } from './upfront.js';
 import { perSession, withoutExtras } from './delivered.js';
+import { pauseDays } from './endDate.js';
 
 // How an agreement is settled (brief items 4 and 8; M28's settleOpts, firstPay, payTitle and payRest). Four ways for
 // set sessions: in full up front; a deposit of 30% (rounded to the nearest £100) then 5 monthly instalments; 6 equal
@@ -319,8 +320,9 @@ export function agreementSchedule(versions, { zone = 'Europe/London', until = nu
     const from = i === 0 ? firstDay : [signedDay, t.priceFrom].filter(Boolean).sort().pop();
     return { v, t, from, plan: schedule(t, { signedDay: firstDay, choice, chosen: t.extrasChosen || [], until }) };
   });
+  // The pause's one length (endDate.js's pauseDays), the same the end date moved by (Stage D item 16).
   const paused = agreement?.paused_from && agreement?.paused_to && agreement.paused_to > agreement.paused_from
-    ? { from: agreement.paused_from, days: daysBetween(agreement.paused_from, agreement.paused_to) + 1 } : null;
+    ? { from: agreement.paused_from, days: pauseDays(agreement.paused_from, agreement.paused_to) } : null;
   const stop = agreement?.ending_on && agreement?.ending_by ? agreement.ending_on : null;
   const out = [];
   for (const p of plans[0].plan) {

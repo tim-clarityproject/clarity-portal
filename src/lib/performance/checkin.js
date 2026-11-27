@@ -289,10 +289,9 @@ export const UNITS_GUIDE = Object.freeze({
  * the person's role (CEO or executive, Head coach, Leader; Other gets
  * Leader's). G3 is three boxes, one thing each.
  */
-export function goalQuestions(coachName) {
-  const coach = coachName || 'your coach';
+export function goalQuestions() {
   return [
-    { code: 'G1', question: 'In 12 months’ time, how would you know this coaching had been useful?', nudges: ['Describe what you’d be doing and what others would notice.'],
+    { code: 'G1', question: 'Imagine it’s a year on. How will you know coaching worked?',
       example: {
         ceo: 'I’d lead the board through the merger without losing sleep, and my exec team would bring me solutions, not problems.',
         coach: 'I’d run the season with a clear head, and my staff and players would say I’m calmer under pressure.',
@@ -304,14 +303,14 @@ export function goalQuestions(coachName) {
         coach: 'Pre-season starts in six weeks and I want to be ready.',
         leader: 'I’ve just taken on a bigger team and I want to start well.',
       } },
-    { code: 'G3', question: 'What 3 things do you most want from coaching?', nudges: ['Write one in each box.'], three: true },
+    { code: 'G3', question: 'What 3 things do you most want from coaching?', three: true },
     { code: 'G4', question: 'What has got in the way of progress before?',
       example: {
         ceo: 'I plan well, then the week takes over and I drop the things that matter.',
         coach: 'Match weeks take over and my own routines are the first thing to go.',
         leader: 'I plan well, then the week takes over and I drop the things that matter.',
       } },
-    { code: 'G5', question: 'How do you like to be challenged?', nudges: [`Add anything else ${coach} should know about you.`],
+    { code: 'G5', question: 'How do you like to be challenged?',
       example: 'Be direct with me. I work best with a clear next step.' },
   ];
 }
@@ -486,9 +485,16 @@ export function optionsToOffer(area, doing = {}, today) {
   return (OPTIONS[area] || []).filter((o) => !recent(o.key)).slice(0, OPTIONS_SHOWN);
 }
 
-/** "What could help with fuel and alcohol?" */
+/**
+ * The Monthly review's one thing to work on (Stage D, Draft 11: "will", this
+ * month): "What will help your sleep this month?", "What will help with
+ * food, drink and alcohol this month?", "What will help with stress this month?".
+ */
 export function workOnQuestion(name) {
-  return `What could help with ${String(name || '').toLowerCase()}?`;
+  const area = String(name || '').toLowerCase().trim();
+  if (area === 'sleep') return 'What will help your sleep this month?';
+  if (area === 'fuel and alcohol') return 'What will help with food, drink and alcohol this month?';
+  return `What will help with ${area} this month?`;
 }
 
 /** The descriptions under the first results' two scores (M12 kresults; glossary, writing rule 40). */

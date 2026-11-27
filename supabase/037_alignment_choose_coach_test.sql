@@ -9,13 +9,13 @@
 -- (On the feature branch, 035 goes before 036 as well.)
 --
 -- WHAT IT DOES
---   Makes invented people (Tim the owner, Adie a coach, two coaches who share
+--   Makes invented people (Tim the owner, Rhys a coach, two coaches who share
 --   a first name, a coach who has left, and someone who is not a coach) and
 --   checks who a new link can be made for: by first name or email, in the SQL
 --   editor and signed in, with and without the coaches list (the list is
 --   hidden for a moment inside the transaction to check the second). It
 --   checks that a refused coach makes no link, that no message repeats an
---   email, that Adie reads the answers on a link made for her by name, and
+--   email, that Rhys reads the answers on a link made for her by name, and
 --   that the helper stays closed to the app and the server. No email address
 --   is ever shown. Everything it makes is undone at the end.
 --
@@ -80,8 +80,8 @@ $f$;
 do $t$
 declare
   f text[] := '{}';
-  tim uuid; adie uuid; sam1 uuid; sam2 uuid; gone uuid; other uuid;
-  adie_email text;
+  tim uuid; rhys uuid; sam1 uuid; sam2 uuid; gone uuid; other uuid;
+  rhys_email text;
   links_before integer;
   got text;
   j jsonb; tok text;
@@ -91,24 +91,24 @@ begin
     raise exception 'FAILED: this test needs the coaches list (026), which the test project has.';
   end if;
   begin
-    tim := pg_temp.t37_user('owner'); adie := pg_temp.t37_user('adie');
+    tim := pg_temp.t37_user('owner'); rhys := pg_temp.t37_user('rhys');
     sam1 := pg_temp.t37_user('samone'); sam2 := pg_temp.t37_user('samtwo');
     gone := pg_temp.t37_user('gone'); other := pg_temp.t37_user('other');
-    select email into adie_email from auth.users where id = adie;
+    select email into rhys_email from auth.users where id = rhys;
     execute 'insert into public.coaches (user_id, role, display_first_name, active) values
-               ($1, ''owner'', ''Tim037'', true), ($2, ''coach'', ''Adie037'', true),
+               ($1, ''owner'', ''Tim037'', true), ($2, ''coach'', ''Rhys037'', true),
                ($3, ''coach'', ''Sam037'', true), ($4, ''coach'', ''Sam037'', true),
                ($5, ''coach'', ''Gone037'', false)'
-      using tim, adie, sam1, sam2, gone;
+      using tim, rhys, sam1, sam2, gone;
 
     -- ------------------------------------------------ 1. Tim in the SQL editor
     perform pg_temp.t_admin();
-    f := f || pg_temp.t_eq('1a a link for Adie by first name records Adie', pg_temp.t37_make('Adie037'), adie::text);
-    f := f || pg_temp.t_eq('1b ... in any case, with spaces', pg_temp.t37_make('  aDIE037 '), adie::text);
-    f := f || pg_temp.t_eq('1c ... or by her email', pg_temp.t37_make(upper(adie_email)), adie::text);
+    f := f || pg_temp.t_eq('1a a link for Rhys by first name records Rhys', pg_temp.t37_make('Rhys037'), rhys::text);
+    f := f || pg_temp.t_eq('1b ... in any case, with spaces', pg_temp.t37_make('  rHYS037 '), rhys::text);
+    f := f || pg_temp.t_eq('1c ... or by her email', pg_temp.t37_make(upper(rhys_email)), rhys::text);
     f := f || pg_temp.t_eq('1d a link for Tim by first name records Tim', pg_temp.t37_make('Tim037'), tim::text);
-    j := public.create_alignment_session('037 test organisation', '037-test-guest@example.invalid', 'Adie037');
-    f := f || pg_temp.t_eq('1e the reply names the coach chosen', j ->> 'coach_name', 'Adie037');
+    j := public.create_alignment_session('037 test organisation', '037-test-guest@example.invalid', 'Rhys037');
+    f := f || pg_temp.t_eq('1e the reply names the coach chosen', j ->> 'coach_name', 'Rhys037');
     f := f || pg_temp.t_eq('1f ... and says a coach is recorded', j ->> 'coach_recorded', 'true');
     f := f || pg_temp.t_eq('1g ... and never holds an email', (position('@' in j::text) > 0)::text, 'false');
     f := f || pg_temp.t_eq('1h no coach given records nobody, as before', pg_temp.t37_make(null), 'none');
@@ -133,41 +133,41 @@ begin
 
     -- ------------------------------------------------ 2. someone signed in
     perform pg_temp.t_admin_as(tim);
-    f := f || pg_temp.t_eq('2a the owner, signed in, may choose another coach', pg_temp.t37_make('Adie037'), adie::text);
-    perform pg_temp.t_admin_as(adie);
-    f := f || pg_temp.t_eq('2b a coach makes a link for themselves', pg_temp.t37_make('Adie037'), adie::text);
-    f := f || pg_temp.t_eq('2c ... also with no coach given', pg_temp.t37_make(null), adie::text);
+    f := f || pg_temp.t_eq('2a the owner, signed in, may choose another coach', pg_temp.t37_make('Rhys037'), rhys::text);
+    perform pg_temp.t_admin_as(rhys);
+    f := f || pg_temp.t_eq('2b a coach makes a link for themselves', pg_temp.t37_make('Rhys037'), rhys::text);
+    f := f || pg_temp.t_eq('2c ... also with no coach given', pg_temp.t37_make(null), rhys::text);
     got := pg_temp.t37_make('Tim037');
     f := f || pg_temp.t_eq('2d a coach can''t make a link for another coach', left(got, 13), 'refused 42501');
     perform pg_temp.t_admin_as(other);
     f := f || pg_temp.t_eq('2e someone who is not a coach can''t make a link for themselves', left(pg_temp.t37_make(null), 13), 'refused 42501');
-    f := f || pg_temp.t_eq('2f ... nor for a coach', left(pg_temp.t37_make('Adie037'), 13), 'refused 42501');
+    f := f || pg_temp.t_eq('2f ... nor for a coach', left(pg_temp.t37_make('Rhys037'), 13), 'refused 42501');
     perform pg_temp.t_admin_as(gone);
     f := f || pg_temp.t_eq('2g a coach who has left can''t either', left(pg_temp.t37_make(null), 13), 'refused 42501');
 
-    -- ------------------------------------------------ 3. Adie reads the answers on her link
+    -- ------------------------------------------------ 3. Rhys reads the answers on her link
     perform pg_temp.t_admin();
-    j := public.create_alignment_session('037 test organisation', '037-test-guest-adie@example.invalid', 'Adie037');
+    j := public.create_alignment_session('037 test organisation', '037-test-guest-rhys@example.invalid', 'Rhys037');
     tok := j ->> 'token';
     perform pg_temp.t_anon();
-    f := f || pg_temp.t_eq('3a the guest finishes the link made for Adie by name',
-      public.alignment_save(tok, '037-test-guest-adie@example.invalid', j ->> 'access_code', answers, null, 0, true) ->> 'status', 'complete');
-    f := f || pg_temp.t_eq('3b ... and is told it is Adie',
-      public.alignment_open(tok, '037-test-guest-adie@example.invalid', j ->> 'access_code') ->> 'coach_name', 'Adie037');
-    perform pg_temp.t_as(adie);
-    f := f || pg_temp.t_eq('3c Adie reads the answers', (public.alignment_coach_answers(tok) -> 'data' = answers)::text, 'true');
+    f := f || pg_temp.t_eq('3a the guest finishes the link made for Rhys by name',
+      public.alignment_save(tok, '037-test-guest-rhys@example.invalid', j ->> 'access_code', answers, null, 0, true) ->> 'status', 'complete');
+    f := f || pg_temp.t_eq('3b ... and is told it is Rhys',
+      public.alignment_open(tok, '037-test-guest-rhys@example.invalid', j ->> 'access_code') ->> 'coach_name', 'Rhys037');
+    perform pg_temp.t_as(rhys);
+    f := f || pg_temp.t_eq('3c Rhys reads the answers', (public.alignment_coach_answers(tok) -> 'data' = answers)::text, 'true');
     perform pg_temp.t_as(tim);
     f := f || pg_temp.t_eq('3d Tim (the owner) doesn''t', public.alignment_coach_answers(tok) ->> 'ok', 'false');
     perform pg_temp.t_as(sam1);
     f := f || pg_temp.t_eq('3e nor another coach', public.alignment_coach_answers(tok) ->> 'ok', 'false');
     perform pg_temp.t_admin();
-    f := f || pg_temp.t_eq('3f the email server is told Adie''s address (compared here, never shown)',
-      ((public.alignment_recipients(tok) ->> 'coach_email') = adie_email)::text, 'true');
+    f := f || pg_temp.t_eq('3f the email server is told Rhys''s address (compared here, never shown)',
+      ((public.alignment_recipients(tok) ->> 'coach_email') = rhys_email)::text, 'true');
 
     -- ------------------------------------------------ 4. without the coaches list (live before go-live)
     alter table public.coaches rename to coaches_hidden_037;
-    f := f || pg_temp.t_eq('4a by email, the account is recorded', pg_temp.t37_make(adie_email), adie::text);
-    got := pg_temp.t37_make('Adie037');
+    f := f || pg_temp.t_eq('4a by email, the account is recorded', pg_temp.t37_make(rhys_email), rhys::text);
+    got := pg_temp.t37_make('Rhys037');
     f := f || pg_temp.t_refused('4b a first name is refused', got);
     f := f || pg_temp.t_eq('4c ... saying to give the email', (got like '%give the coach''s email%')::text, 'true');
     f := f || pg_temp.t_refused('4d an email no account has is refused', pg_temp.t37_make('no-such-coach-037@example.invalid'));

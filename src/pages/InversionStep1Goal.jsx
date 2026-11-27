@@ -1,221 +1,164 @@
-import { useState, useContext, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
-import { discardDecisionDraft } from '../lib/discardDraft';
-import { clearProgress } from '../lib/saveProgress';
-import { clearDraft as forgetDraft, useDraft } from '../lib/drafts';
-import FormTool from './toolFocus/FormTool';
-import DiscardDialog from '../components/ui/DiscardDialog';
-import NameDialog from '../components/ui/NameDialog';
-import { Loading, TextBox, useToast } from '../components/design';
+import { GuidedSummary, GuidedTool, MultiChoice, TextBox, dayLabel } from '../components/design';
+import DecisionFlow from './toolFocus/DecisionFlow';
+import { BoxAndWhen, ListAnswer } from './toolFocus/Draft6Parts';
+import { filled, quote } from '../lib/draft6Tools/shared';
+import * as PM from '../lib/draft6Tools/preMortem';
 
-const MAX_NAME_LENGTH = 60;
-
-// Saved or discarded: no step of this pre-mortem keeps a draft on the
-// device. Each step keeps its own (inversion-1, -2 and -3), named after
-// the saved decision, or "new" for one not saved yet.
-function forgetInversionDrafts(userId, recordKey) {
-  [1, 2, 3].forEach((step) => forgetDraft(userId, `inversion-${step}:${recordKey}`));
-}
-
-function suggestNameFrom(goal) {
-  const trimmed = (goal || '').trim();
-  if (!trimmed) return 'New pre-mortem';
-  return trimmed.length > MAX_NAME_LENGTH ? trimmed.slice(0, MAX_NAME_LENGTH) : trimmed;
-}
+// The Pre-mortem (Polish 1, Stage D item 1): Draft 6's ten screens, word for
+// word, one question per screen in focus mode (GuidedTool), at /pre-mortem.
+// It replaces the older three pages (/pre-mortem/risks and /pre-mortem/plan
+// now come here) and opens every pre-mortem they saved
+// (src/lib/draft6Tools/preMortem.js). Every question can be skipped but
+// the last, "What will you do first, and when?". The summary's button saves
+// it and opens its summary page, as Finish did.
 
 export default function InversionStep1Goal() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useContext(AuthContext);
-  const [decisionId, setDecisionId] = useState(location.state?.decisionId || null);
-
-  const [goal, setGoal] = useState(location.state?.goal || '');
-  const [risks, setRisks] = useState(location.state?.risks || []);
-  const [riskAnswers, setRiskAnswers] = useState(location.state?.riskAnswers || []);
-  const [legacyPlan, setLegacyPlan] = useState(location.state?.legacyPlan || '');
-  const [currentTitle, setCurrentTitle] = useState(location.state?.problemTitle || '');
-  const [isLoading, setIsLoading] = useState(Boolean(decisionId) && !location.state?.goal);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
-  const [discardOpen, setDiscardOpen] = useState(false);
-  const [nameDialog, setNameDialog] = useState(null); // null | 'draft'
-  const toast = useToast();
-
-  // Typing survives a refresh or a closed tab (Tim, 26 Oct).
-  const recordKey = location.state?.decisionId || 'new';
-  const { clear: clearDraft } = useDraft({
-    userId: user?.id,
-    name: `inversion-1:${recordKey}`,
-    value: { goal },
-    ready: !isLoading,
-    onRestore: (draft) => {
-      if (typeof draft?.goal === 'string') setGoal(draft.goal);
-    },
-  });
-  const forgetDrafts = () => {
-    clearDraft();
-    forgetInversionDrafts(user?.id, recordKey);
-  };
-
-  useEffect(() => {
-    if (!decisionId || !user || location.state?.goal) {
-      setIsLoading(false);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from('decisions')
-        .select('*')
-        .eq('id', decisionId)
-        .eq('user_id', user.id)
-        .single();
-      if (cancelled) return;
-      if (error) {
-        console.error('[InversionStep1Goal] load failed:', error);
-        setIsLoading(false);
-        return;
-      }
-      if (data?.title) setCurrentTitle(data.title);
-      const formData = data?.form_data || {};
-      setGoal(formData.goal || data.title || '');
-      setRisks(formData.risks || []);
-      setRiskAnswers(formData.riskAnswers || []);
-      setLegacyPlan(formData.riskAnswers ? '' : (formData.plan || ''));
-      setIsLoading(false);
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [decisionId, user?.id]);
-
-  const buildState = (overrides = {}) => ({
-    decisionId,
-    goal,
-    risks,
-    riskAnswers,
-    legacyPlan,
-    problemTitle: currentTitle,
-    ...overrides,
-  });
-
-  const persistDraft = async (name) => {
-    const payload = {
-      form_data: { goal, risks, riskAnswers },
-      title: name,
-      draft: true,
-      status: 'draft',
-      updated_at: new Date().toISOString(),
-    };
-    if (decisionId) {
-      const { data, error } = await supabase
-        .from('decisions')
-        .update(payload)
-        .eq('id', decisionId)
-        .eq('user_id', user.id)
-        .select();
-      if (error) throw error;
-      if (!data || data.length === 0) throw new Error('Could not find this entry to update.');
-      return decisionId;
-    }
-    const { data, error } = await supabase
-      .from('decisions')
-      .insert({ user_id: user.id, tool_type: 'inversion', ...payload })
-      .select();
-    if (error) throw error;
-    if (!data || data.length === 0) throw new Error('Save did not return an entry.');
-    return data[0].id;
-  };
-
-  const handleSaveDraftConfirm = async (name) => {
-    if (!user || isSaving) return;
-    setSaveError('');
-    setIsSaving(true);
-    try {
-      const savedId = await persistDraft(name);
-      setDecisionId(savedId);
-      setCurrentTitle(name);
-      setNameDialog(null);
-      clearProgress();
-      forgetDrafts();
-      toast.show(`Draft saved as ${name}.`);
-      navigate('/my-plans');
-    } catch (error) {
-      console.error('[InversionStep1Goal] draft save failed:', error);
-      setNameDialog(null);
-      setSaveError('That didn’t save. Check your connection and try again.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Deletes the saved row only if it is still a draft - a completed
-  // decision is never deleted by walking away from it. The condition
-  // lives in the query (see discardDraft.js), which is what makes this
-  // safe on the steps that never fetch the row and so cannot tell a
-  // draft from a completed one in page code (patch D1).
-  const handleDiscard = async () => {
-    setDiscardOpen(false);
-    forgetDrafts();
-    if (decisionId) {
-      try {
-        await discardDecisionDraft(user.id, decisionId);
-      } catch (error) {
-        console.error('[InversionStep1Goal] draft delete on discard failed:', error);
-      }
-    }
-    navigate('/my-plans', { state: { toast: 'Discarded.' } });
-  };
-
-  const canContinue = goal.trim().length > 0;
-  const suggestedName = currentTitle || suggestNameFrom(goal);
-
-  const [asked, setAsked] = useState(false);
-
   return (
-    <div className="ui-root">
-      <FormTool
-        name="Pre-mortem"
-        step={1}
-        steps={3}
-        question="What are you trying to achieve?"
-        onNext={() => { if (!canContinue) { setAsked(true); return; } if (!isSaving) navigate('/pre-mortem/risks', { state: buildState() }); }}
-        need={asked && !canContinue ? 'Type what you’re trying to achieve to carry on.' : ''}
-        saveError={saveError}
-        onSaveDraft={() => { if (!isSaving) setNameDialog('draft'); }}
-        onDiscard={() => setDiscardOpen(true)}
-        closeTo="/personal/plan"
-      >
-        {isLoading ? (
-          <Loading label="Loading your pre-mortem" />
-        ) : (
+    <DecisionFlow model={PM} draftName="inversion-1" closeTo="/personal/plan">
+      {(flow) => <PreMortemTool {...flow} />}
+    </DecisionFlow>
+  );
+}
+
+const NOT_YET = 'Not answered yet.';
+
+function PreMortemTool({ answers: a, onAnswers, draftKey, initialStep, onClose, onFinish }) {
+  const set = (patch) => onAnswers((s) => ({ ...s, ...patch }));
+  const options = PM.causeOptions(a);
+  const top = PM.ranked(a);
+  const list = (key, label) => (
+    <ListAnswer list={a[key]} onList={(rows) => set({ [key]: rows })} itemLabel={(n) => `${label} ${n}`} />
+  );
+
+  const steps = [
+    {
+      key: 'plan',
+      name: 'The plan',
+      question: PM.QUESTIONS.plan,
+      example: PM.PLAN_EXAMPLES,
+      render: () => <TextBox lines="many" ariaLabel={PM.QUESTIONS.plan} value={a.plan} onChange={(plan) => set({ plan })} />,
+    },
+    { key: 'going', name: 'What’s going for it', question: PM.QUESTIONS.going, render: () => list('going', 'What’s going for it') },
+    { key: 'gone', name: 'What happened', question: PM.QUESTIONS.gone, render: () => list('gone', 'What happened') },
+    { key: 'wreck', name: 'How you’d wreck it', question: PM.QUESTIONS.wreck, render: () => list('wreck', 'How you’d wreck it') },
+    // Only once there's something to choose from.
+    ...(options.length ? [
+      {
+        key: 'likely',
+        name: 'Most likely',
+        question: PM.QUESTIONS.likely,
+        render: () => (
+          <MultiChoice ariaLabel={PM.QUESTIONS.likely} options={options} values={a.likely} max={PM.PICK_MAX} onChange={(likely) => set({ likely })} />
+        ),
+      },
+      {
+        key: 'hurt',
+        name: 'Would hurt most',
+        question: PM.QUESTIONS.hurt,
+        render: () => (
+          <MultiChoice ariaLabel={PM.QUESTIONS.hurt} options={options} values={a.hurt} max={PM.PICK_MAX} onChange={(hurt) => set({ hurt })} />
+        ),
+      },
+    ] : []),
+    // One screen for each cause picked, most likely and most hurtful first.
+    ...top.flatMap((cause, n) => [
+      {
+        key: `prevent-${cause.id}`,
+        name: `Stop cause ${n + 1}`,
+        question: PM.preventQuestion(cause.text),
+        render: () => (
           <TextBox
             lines="many"
-            placeholder="Type here"
-            ariaLabel="What are you trying to achieve?"
-            value={goal}
-            onChange={setGoal}
+            ariaLabel={PM.preventQuestion(cause.text)}
+            value={a.prevent[cause.id] || ''}
+            onChange={(v) => set({ prevent: { ...a.prevent, [cause.id]: v } })}
           />
-        )}
-      </FormTool>
+        ),
+      },
+      {
+        key: `warn-${cause.id}`,
+        name: `Warning sign ${n + 1}`,
+        question: PM.warnQuestion(cause.text),
+        render: () => (
+          <TextBox
+            lines="many"
+            ariaLabel={PM.warnQuestion(cause.text)}
+            value={a.warn[cause.id] || ''}
+            onChange={(v) => set({ warn: { ...a.warn, [cause.id]: v } })}
+          />
+        ),
+      },
+    ]),
+    {
+      key: 'first',
+      name: 'Your first step',
+      question: PM.QUESTIONS.first,
+      // The commit question: the one that can't be skipped (question rule 34).
+      required: true,
+      check: () => PM.firstProblem(a),
+      render: () => (
+        <BoxAndWhen
+          question={PM.QUESTIONS.first}
+          text={a.first.text}
+          onText={(t) => set({ first: { ...a.first, text: t } })}
+          date={a.first.date}
+          onDate={(date) => set({ first: { ...a.first, date } })}
+        />
+      ),
+    },
+    {
+      key: 'sum',
+      name: 'Your pre-mortem',
+      title: 'Your pre-mortem',
+      noProgress: true,
+      wide: true,
+      nextLabel: 'Save my pre-mortem',
+      render: (tool) => <GuidedSummary stacked rows={summaryRows(a, top)} onChange={(key, opts) => tool.go(tool.steps.findIndex((s) => s.key === key), opts)} />,
+    },
+  ];
 
-      <NameDialog
-        open={nameDialog === 'draft'}
-        title="Name this draft"
-        message="Give it a name so you can find it in My decisions."
-        suggestedName={suggestedName}
-        onConfirm={handleSaveDraftConfirm}
-        onCancel={() => setNameDialog(null)}
-      />
-
-      <DiscardDialog
-        isOpen={discardOpen}
-        title="Discard this entry?"
-        message="Anything you have not saved will be lost."
-        onKeep={() => setDiscardOpen(false)}
-        onDiscard={handleDiscard}
-      />
-    </div>
+  return (
+    <GuidedTool
+      name={PM.TOOL_NAME}
+      steps={steps}
+      draftKey={draftKey}
+      initialStep={initialStep}
+      onClose={onClose}
+      onFinish={onFinish}
+      finishLabel="Save my pre-mortem"
+    />
   );
+}
+
+// The summary (Draft 6): the plan, what's going for it, the ranked causes
+// with what will stop each and its warning sign, and your first step.
+function summaryRows(a, top) {
+  const lines = (rows) => (rows.length ? rows.map((r) => ({ text: r.text })) : [{ text: NOT_YET }]);
+  const causes = PM.causes(a);
+  return [
+    { key: 'plan', step: 'plan', label: 'The plan', lines: [{ text: a.plan.trim() || NOT_YET }] },
+    { key: 'going', step: 'going', label: 'What’s going for it', lines: lines(filled(a.going)) },
+    // The causes picked, ranked; with none picked yet, every cause.
+    ...(top.length ? top.map((c, n) => ({
+      key: `cause-${c.id}`,
+      step: `prevent-${c.id}`,
+      // A short label that stays on one line; the cause itself is the row's words.
+      label: `Cause ${n + 1}`,
+      editName: `what will stop “${quote(c.text)}”`,
+      lines: [{ text: c.text.trim(), sub: causeLine(a, c) }],
+    })) : [{ key: 'causes', step: 'gone', label: 'What could go wrong', lines: lines(causes) }]),
+    {
+      key: 'first',
+      step: 'first',
+      label: 'Your first step',
+      lines: [{ text: a.first.text.trim() || NOT_YET, sub: a.first.date ? dayLabel(a.first.date) : undefined }],
+    },
+  ];
+}
+
+/** "What will stop it: … Early warning sign: …", in one line under the cause. */
+function causeLine(a, c) {
+  const stop = (a.prevent[c.id] || '').trim().replace(/[.]+$/, '');
+  const warn = (a.warn[c.id] || '').trim().replace(/[.]+$/, '');
+  return [`What will stop it: ${stop || 'not answered yet'}.`, warn && `Early warning sign: ${warn}.`].filter(Boolean).join(' ');
 }

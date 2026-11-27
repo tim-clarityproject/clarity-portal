@@ -4,6 +4,8 @@ import { ONE_TAP_MS } from '../../components/design/GuidedTool';
 import { STEP_PREFIX, openStepIndex } from '../../components/design/guideDraft';
 import { pushLayer } from '../../components/design/layers';
 import { readJson, writeJson } from '../../lib/deviceStore';
+import { examplesOf } from '../../components/design/examples.js';
+import { ErrorMessage } from '../../components/design';
 
 // A guided tool in focus mode (Polish 1, rule 21; example-pages-25nov.html "Tool: Plan my day"),
 // built on A1's ToolFrame: × on the left saves and goes back, "Step 2 of 7" on the right, the
@@ -18,7 +20,10 @@ import { readJson, writeJson } from '../../lib/deviceStore';
 // answer moves on by itself after ONE_TAP_MS; a step's onNext runs before moving on; Finish runs
 // onFinish once, and again only when it answered false; Escape closes (× does the same).
 //
-// steps: [{ key, name, question, nudges, example, eye, oneTap, skipLabel, onNext, render(tool) }]
+// steps: [{ key, name, question, nudges, example, eye, oneTap, skipLabel, onNext, required, check, render(tool) }]
+// Stage D (question rules 9, 10 and 34): "See an example" shows two or three examples at once
+// (examplesOf); a `required` step (the commit question) has no Skip, and its `check` says what's
+// missing under the answer when Next is pressed too early, never a greyed-out button.
 
 export default function StepFrame({ name, steps, draftKey, initialStep, saveState, finishLabel = 'Finish', onClose, onFinish }) {
   const saved = draftKey ? readJson(STEP_PREFIX + draftKey, null) : null;
@@ -45,6 +50,7 @@ export default function StepFrame({ name, steps, draftKey, initialStep, saveStat
   const [skipped, setSkipped] = useState(() => new Set(Array.isArray(saved?.skipped) ? saved.skipped : []));
   const [returnTo, setReturnTo] = useState(() => (changeLeft ? changeLeft.from : null));
   const [exampleOpen, setExampleOpen] = useState(false);
+  const [problem, setProblem] = useState(null);
   const finished = useRef(false);
   const oneTapTimer = useRef(null);
   const headingRef = useRef(null);
@@ -71,7 +77,10 @@ export default function StepFrame({ name, steps, draftKey, initialStep, saveStat
 
   // Escape closes the tool once nothing above it is open (× does the same).
   useEffect(() => pushLayer(() => onCloseRef.current?.()), []);
-  useEffect(() => { setExampleOpen(false); }, [i]);
+  useEffect(() => { setExampleOpen(false); setProblem(null); }, [i]);
+  // The message goes once the answer is given.
+  const stillMissing = problem ? step.check?.() : null;
+  useEffect(() => { if (problem && !stillMissing) setProblem(null); }, [problem, stillMissing]);
 
   const go = (to) => {
     const target = Math.max(0, Math.min(steps.length - 1, to));
@@ -93,6 +102,8 @@ export default function StepFrame({ name, steps, draftKey, initialStep, saveStat
     );
   };
   const next = () => {
+    const missing = step.check?.();
+    if (missing) { setProblem(missing); return; }
     step.onNext?.();
     if (skipped.has(step.key)) {
       const rest = new Set(skipped);
@@ -137,6 +148,7 @@ export default function StepFrame({ name, steps, draftKey, initialStep, saveStat
   };
 
   const nudges = (step.nudges || []).filter(Boolean);
+  const examples = examplesOf(step.example);
   const hasNext = !(step.oneTap && !last);
   return (
     <ToolFrame
@@ -151,22 +163,29 @@ export default function StepFrame({ name, steps, draftKey, initialStep, saveStat
       onNext={hasNext ? next : undefined}
       nextLabel={changing ? 'Save my edit' : last ? finishLabel : 'Next'}
       onBack={i > 0 || changing ? back : undefined}
-      onSkip={!last ? skip : undefined}
+      onSkip={!last && !step.required ? skip : undefined}
       skipLabel={step.skipLabel || 'Skip this step'}
       last={last}
       // Saving, Saved and Will sync sit beside "Step 2 of 7", out of the step's own flow.
       stepWords={<span className="sf-steps">{saveState && <SaveStatus state={saveState} />}<span>{last ? 'Done' : `Step ${i + 1} of ${steps.length}`}</span></span>}
       className="sf-tool"
     >
-      {step.example && (
+      {examples.length > 0 && (
         <div className="sf-example">
           <MoreLink bare onClick={() => setExampleOpen((v) => !v)} aria-expanded={exampleOpen} aria-controls={`sf-example-${step.key}`}>
             {exampleOpen ? 'Hide the example' : 'See an example'}
           </MoreLink>
-          {exampleOpen && <p id={`sf-example-${step.key}`} className="sf-example-text">{step.example}</p>}
+          {exampleOpen && (examples.length === 1
+            ? <p id={`sf-example-${step.key}`} className="sf-example-text">{examples[0]}</p>
+            : (
+              <ul id={`sf-example-${step.key}`} className="sf-example-text ds-guide-examples" aria-label="Examples">
+                {examples.map((x) => <li key={x}>{x}</li>)}
+              </ul>
+            ))}
         </div>
       )}
       {step.render(tool)}
+      {problem && <ErrorMessage>{problem}</ErrorMessage>}
     </ToolFrame>
   );
 }

@@ -29,7 +29,12 @@ export const SLEEP_QUALITY_OPTIONS = Object.freeze(
 // UNDEFINED (decisions 23 Oct, 13:16): the suggestions are to be drafted in
 // three role versions for Tim's approval. CHOICE: M5's three for everyone.
 export const WAY_SUGGESTIONS = Object.freeze(['Curious, not defensive', 'Decisive', 'Patient']);
-export const GRATITUDE_EXAMPLE = 'The team stepping up while I was away last week.';
+// "See an example": two or three different ones (Stage D, question rule 10).
+export const GRATITUDE_EXAMPLE = [
+  'The team stepping up while I was away last week.',
+  'A sharp training session from the players in the rain yesterday.',
+  'Breakfast with my kids before school.',
+];
 
 const DAY_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -360,6 +365,25 @@ export function sleepWords(a) {
 }
 
 /** The risk's follow-up line in the summary: "If it happens, block 11:00 …" (no colon, writing rules). */
+/** The Daily plan's risk question (Stage D, Draft 11: one question where there were two). */
+export const RISK_QUESTION = 'What’s most likely to knock today off course?';
+/** The small grey word on the first of the day's to-dos (Draft 11; no stars). */
+export const MOST_IMPORTANT = 'Most important';
+/** Said under the commit box when Next is pressed with it empty: it can't be skipped. */
+export const RESPONSE_NEEDED = 'Type what you’ll do to carry on.';
+
+/**
+ * The Daily plan's commit question, quoting their own answer (Draft 11):
+ * "If “the 10:00 runs over” happens, what will you do?". Its end stop goes,
+ * and a long answer ends in "…"; with nothing typed, "If it happens, …".
+ */
+export function responseQuestion(risk) {
+  let t = String(risk || '').replace(/\s+/g, ' ').trim().replace(/[.!?…]+$/u, '').trim();
+  if (!t) return 'If it happens, what will you do?';
+  if (t.length > 80) t = `${t.slice(0, 79).trimEnd()}…`;
+  return `If “${t}” happens, what will you do?`;
+}
+
 export function ifItHappens(response) {
   const t = (response || '').trim();
   return t ? `If it happens, ${lowerFirst(t)}` : '';

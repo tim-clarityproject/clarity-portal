@@ -66,7 +66,7 @@ function drawMark() {
 
 // The sign-in screens themselves (Home and My Account's pages are the portal).
 const SIGN_IN_PLACES = [...Object.values(SIGN_IN_PATHS), ...Object.values(COACH_AUTH_PATHS)]
-  .filter((p) => typeof p === 'string' && p !== SIGN_IN_PATHS.home && !p.startsWith('/my-account'));
+  .filter((p) => typeof p === 'string' && p !== SIGN_IN_PATHS.home && !p.startsWith('/my-account') && !p.startsWith('/coach/settings'));
 
 function onSignInPage() {
   const here = window.location.pathname.replace(/\/+$/, '') || '/';

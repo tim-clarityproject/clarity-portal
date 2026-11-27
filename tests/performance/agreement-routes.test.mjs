@@ -391,3 +391,19 @@ test('finding 8: a quote is never sent to someone their organisation funds', asy
   await assert.rejects(w.api.send({ agreementId: U(30), versionId: U(31), signatureId: U(20), personalNote: '', sendAs: 'quote', validDays: 30 }), /only to clients who fund their own coaching/);
   assert.equal(w.db.tables.agreement_quotes?.length || 0, 0);
 });
+
+test('Stage D item 16: a pause lists the coaching sessions booked inside it and moves or cancels none of them', async () => {
+  const w = world();
+  Object.assign(w.db.tables.agreement_versions[0], { status: 'signed', client_signed_at: '2026-11-01T10:00:00Z' });
+  w.db.tables.agreements[0].status = 'signed';
+  w.db.tables.coach_sessions = [
+    { id: U(60), coach_id: COACH.id, profile_id: U(10), kind: 'coaching', starts_at: '2027-03-22T10:00:00Z', minutes: 60 },
+    { id: U(61), coach_id: COACH.id, profile_id: U(10), kind: 'coaching', starts_at: '2027-03-08T10:00:00Z', minutes: 60 },
+    { id: U(62), coach_id: COACH.id, profile_id: U(10), kind: 'coaching', starts_at: '2027-04-05T10:00:00Z', minutes: 60 },
+  ];
+  const before = JSON.stringify(w.db.tables.coach_sessions);
+  const p = await w.api.pause({ agreementId: U(30), from: '2027-03-01', to: '2027-03-26' });
+  assert.deepEqual(p.inside, [U(61), U(60)], 'the two inside, earliest first; the one after it is not listed');
+  assert.equal(JSON.stringify(w.db.tables.coach_sessions), before, 'nothing moved or cancelled');
+  assert.equal(p.endsOn, '2027-07-30', 'the end moves on by the pause’s 28 days, to the Friday');
+});

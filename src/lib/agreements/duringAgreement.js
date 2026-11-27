@@ -13,6 +13,7 @@ import { priceReviewDue, priceReviewShows, renewalShows, termEnds, TERM_MONTHS }
 import { addMonths, signedVersionsOf } from './settling.js';
 import { kindOf, selfFunded } from './terms.js';
 import { termMonths } from './standardWording.js';
+import { stageOwed } from '../billing/money.js';
 
 // During an agreement (Phase 6b run 3, Group D; M28 s-today, the Needs you panels, s-agr, s-cal-session, s-h-log,
 // s-org-billing, s-inv-new, s-inv-sent): which facts the coach's rows hold, worked out once, so no page counts sessions,
@@ -167,19 +168,36 @@ export function waitingReminder(invoice, reminders = []) {
   if (mine.some((r) => !r.sent_at && r.sending_at)) return null; // one may have gone: Who needs attention's Send again
   return mine.filter((r) => !r.sent_at && !r.sending_at).sort((a, b) => b.stage - a.stage)[0] || null;
 }
+/**
+ * The reminder an overdue invoice is owed and the nightly round hasn't drafted yet (it drafts once a night, and not at
+ * all on a database it can't reach), as { id: null, stage, owed: true }; null when one is waiting, one may have gone,
+ * or none is due. Stage D, item 15: Needs you and Finances agree from the moment the invoice is 3 days overdue, and
+ * one first seen 9 days overdue owes the 7-day reminder only. Send drafts it on the server (send_reminder's invoiceId).
+ */
+export function owedReminder(invoice, reminders = [], today) {
+  if (!invoice?.due_on || !today) return null;
+  const mine = (reminders || []).filter((r) => r.invoice_id === invoice.id);
+  if (mine.some((r) => !r.sent_at)) return null; // one waits to send, or one may have gone
+  const stage = stageOwed(Math.max(0, daysBetween(invoice.due_on, today)), mine.map((r) => r.stage));
+  return stage ? { id: null, invoice_id: invoice.id, stage, owed: true, drafted_at: null, settle_by: null } : null;
+}
+/** The reminder Needs you offers for an invoice: the one drafted and waiting, else the one owed and not yet drafted. */
+export const reminderToOffer = (invoice, reminders = [], today) => waitingReminder(invoice, reminders) || owedReminder(invoice, reminders, today);
+
 /** Whether a reminder for this payer is paused (061's invoice_reminder_pauses). */
 export const remindersPaused = (invoice, pauses = []) => (pauses || []).some((p) => (invoice.organisation_id && invoice.settles_to === 'organisation'
   ? p.organisation_id === invoice.organisation_id : p.profile_id === invoice.profile_id));
 const left = (inv) => Math.max(0, (Number(inv.total_minor) || 0) - (Number(inv.paid_minor) || 0));
 
 /**
- * Whether an overdue invoice is in Needs you (its reminder drafted and waiting for Send): Who needs attention leaves
+ * Whether an overdue invoice is in Needs you (its reminder drafted and waiting for Send, or owed and not drafted yet:
+ * Stage D, item 15): Who needs attention leaves
  * these out, so one invoice is never listed twice on Today (risk 11). The coach's own invoices only.
  */
 export function overdueInNeedsYou(invoice, { reminders = [], pauses = [], coachId, today }) {
   if (!invoice || invoice.coach_id !== coachId || invoice.status !== 'sent' || invoice.number == null || invoice.voided_at || invoice.waived_at) return false;
   if (!invoice.due_on || !today || invoice.due_on >= today || left(invoice) === 0) return false;
-  return Boolean(waitingReminder(invoice, reminders)) && !remindersPaused(invoice, pauses);
+  return Boolean(reminderToOffer(invoice, reminders, today)) && !remindersPaused(invoice, pauses);
 }
 
 /**
@@ -295,14 +313,14 @@ export function needsYouItems(f) {
     }
   }
 
-  // Overdue invoices with a reminder drafted (the coach's own; an associate's are theirs to send).
+  // Overdue invoices with a reminder drafted, or owed and not drafted yet (the coach's own; an associate's are theirs to send).
   for (const inv of f.invoices || []) {
     if (!overdueInNeedsYou(inv, { reminders: f.invoiceReminders, pauses: f.pauses, coachId, today })) continue;
     const name = payerName(inv, { clients, organisations });
     if (!name) continue;
-    const r = waitingReminder(inv, f.invoiceReminders);
+    const r = reminderToOffer(inv, f.invoiceReminders, today);
     const it = overdueItem({ invoiceId: inv.id, name, number: inv.number, amountMinor: left(inv), currency: inv.currency || 'GBP', daysOverdue: daysBetween(inv.due_on, today), day: dayOfStamp(r.drafted_at) || today, today });
-    out.push({ ...it, key: `${it.key}:${r.stage}`, data: { ...it.data, reminderId: r.id } });
+    out.push({ ...it, key: `${it.key}:${r.stage}`, data: { ...it.data, reminderId: r.id, stage: r.stage } });
   }
 
   // An organisation's invoice held for a purchase order, and one sent that also goes on their supplier portal.

@@ -274,11 +274,7 @@ async function planDay(day, i, { picks, lastNight = [], panel = false }) {
     await until(async () => (await page.getByText(/Added to (today and )?this week’s sprint/).count()) > 0, 10000);
   }
   await next();
-  if ((await heading()) === 'Which one is your highest priority?') {
-    await body().getByRole('radio').first().click();
-    await next();
-  }
-  pass(`${tag}: Strategy`, (await heading()) === 'Which Strategies does today serve most?', await heading());
+  pass(`${tag}: Strategy`, (await heading()) === 'Which of your Strategies does today move forward?', await heading()); // Stage D, Draft 11: no priority screen
   await page.getByRole('button', { name: 'Grow through referrals' }).click();
   await next();
   await body().locator('textarea').nth(0).fill('Calls run over.');
@@ -342,11 +338,11 @@ async function reviewDay(day, i, { ticks, win = false, tomorrow = [] }) {
   await next();
   await body().locator('textarea').first().fill('Leave time between calls.');
   await next();
-  pass(`${tag}: Strategies`, (await heading()) === 'Which Strategies moved today?', await heading());
+  pass(`${tag}: Strategies`, (await heading()) === 'Which of your Strategies moved today?', await heading());
   await page.getByRole('button', { name: 'Grow through referrals' }).click();
   await page.getByRole('radiogroup', { name: 'How much did “Grow through referrals” move?' }).getByRole('radio', { name: 'High' }).click();
   await next();
-  pass(`${tag}: Tomorrow`, (await heading()) === 'What are the most important things to do tomorrow?', await heading());
+  pass(`${tag}: Tomorrow`, (await heading()) === 'What will you do first tomorrow?', await heading());
   for (let n = 0; n < tomorrow.length; n += 1) {
     // Three numbered rows from the start (Tim, 5 Nov); Add another only if a row is missing.
     if (n && !(await page.getByRole('textbox', { name: `Priority ${n + 1} for tomorrow` }).count())) await page.getByRole('button', { name: 'Add another' }).click();

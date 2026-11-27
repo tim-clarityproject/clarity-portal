@@ -1,10 +1,20 @@
 // A SMALL invented practice on the hosted test project, so Tim's walk of a preview has something to look at
-// (Tim, Stage A walk, item 29, 25 Nov 2026). Never large data: about 70 rows, every one removable in one step.
+// (Tim, Stage A walk, item 29, 25 Nov 2026). Never large data: about 95 rows, every one removable in one step.
 // Large seeds stay on the local stand-in (tests/scale/seed, part 6 is the full-size version of this).
 //
 //   HOSTED=1 node tests/smoke/practice-small.mjs --check    reads only: every table and column it would write exists
 //   HOSTED=1 node tests/smoke/practice-small.mjs --add      adds it (run twice: nothing is added twice)
 //   HOSTED=1 node tests/smoke/practice-small.mjs --remove   takes out exactly what --add made, and nothing else
+//
+// LOCAL=1 runs the same three against the local stand-in instead (tests/target.mjs: LOCAL_SUPABASE_URL, the standing
+// accounts and the stand-in's own service key), so --add, --check and --remove can be tried there first (Stage D,
+// item 19). Claude never runs it with HOSTED=1: Tim runs the hosted --add himself.
+//
+// Stage D, item 19 (Tim, 27 Nov), so Claude's walks cover team agreements and hours: one invented organisation,
+// Harbour Rowing, with three of its people and three team programme agreements for them (one signed by the sponsor,
+// one sent, one draft), and one block-of-hours agreement for an invented client, signed, with two times logged.
+// Their terms are made by the app's own builder (newDraft, versionFields), as the local seed's are. On a database
+// without 065's agreement columns those rows are left out, and it says so.
 //
 // For the test owner coach: 5 invented clients (plus the test client, linked through the app's own
 // client_accept_invite, signed in as the client), a week of coaching sessions around today with their calendar
@@ -23,9 +33,13 @@
 import { createHash } from 'node:crypto';
 import { accountsEnv, HOSTED } from '../target.mjs';
 import { upgradeWithCode } from '../signin/aal2.mjs';
+import { signJwt } from '../scale/local-keys.mjs';
+import { newDraft, versionFields } from '../../src/lib/coach/agreementBuilder.js';
 
-if (!HOSTED) {
-  console.log('The small hosted practice runs only with HOSTED=1 (an explicit visit to the hosted test project).');
+const LOCAL = !HOSTED && process.env.LOCAL === '1';
+if (!HOSTED && !LOCAL) {
+  console.log('The small practice runs only with HOSTED=1 (an explicit visit to the hosted test project, Tim\'s to run)');
+  console.log('or LOCAL=1 (the local stand-in at LOCAL_SUPABASE_URL, tests/target.mjs).');
   process.exit(2);
 }
 const MODE = ['--add', '--remove', '--check'].find((m) => process.argv.includes(m));
@@ -36,14 +50,16 @@ if (!MODE) {
 const env = accountsEnv();
 const BASE = env.TEST_SUPABASE_URL.replace(/\/$/, '');
 const ANON = env.TEST_SUPABASE_ANON_KEY;
-const SERVICE = env.TEST_SUPABASE_SERVICE_KEY || '';
+// The local stand-in's own service key is made from its local-only secret (tests/scale/local-keys.mjs), never a real one.
+const SERVICE = LOCAL ? signJwt({ role: 'service_role', iss: 'scale-local', iat: 1763000000, exp: 2079000000 }) : (env.TEST_SUPABASE_SERVICE_KEY || '');
 if (MODE !== '--check' && !SERVICE) {
   console.log('TEST_SUPABASE_SERVICE_KEY is not in the accounts file, so nothing was written.');
   console.log('Invoices and payments are written only by the server (061), and an account is linked only by its invite,');
   console.log('so --add and --remove need the test project\'s service key there (one line, TEST_SUPABASE_SERVICE_KEY=...).');
   process.exit(2);
 }
-const MAX_ROWS = 90; // a few dozen; never large data
+const MAX_ROWS = 110; // a few dozen; never large data (90 until Stage D, item 19 added the organisation, its agreements and the hours)
+const WHERE = LOCAL ? 'the local stand-in' : 'the hosted test project';
 
 // ------------------------------------------------------------------ the one way to the API
 class Stop extends Error {}
@@ -70,7 +86,7 @@ async function signIn(email, password) {
 }
 
 // ------------------------------------------------------------------ ids, days and times
-const KIND = { profile: 1, eng: 2, sess: 3, cal: 4, inv: 5, pay: 6, ag: 7, ver: 8, open: 9, todo: 10 };
+const KIND = { profile: 1, eng: 2, sess: 3, cal: 4, inv: 5, pay: 6, ag: 7, ver: 8, open: 9, todo: 10, org: 11, sig: 12, ssig: 13, time: 14 };
 const id = (kind, n) => `5eed0700-${KIND[kind].toString(16).padStart(4, '0')}-4000-8000-${n.toString(16).padStart(12, '0')}`;
 const ZONE = 'Europe/London';
 const dayKey = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: ZONE }).format(d);
@@ -134,7 +150,26 @@ const INVOICES = [
 const INVOICE_NUMBER_FROM = 9701; // far above the counter's 1201 on, so the app's own numbers never meet these
 const TODO_TEXTS = ['Draft the agenda for the quarterly offsite', 'Book a walking one-to-one with each team lead', 'Read the chapter on delegation before my next session'];
 
-function plan({ coachId, coachUser, client }) {
+// Stage D, item 19: Harbour Rowing (invented) and three of its people, with three team programme agreements, and one
+// invented client on a block of hours. Every name and address is made up (example.com).
+const ORG = { id: id('org', 1), name: 'Harbour Rowing', city: 'Bristol', sector: 'Sport' };
+const TEAM = [
+  { n: 7, name: 'Fern Adeyemi', job: 'Head coach' },
+  { n: 8, name: 'Calum Strachan', job: 'Club captain' },
+  { n: 9, name: 'Priti Lalwani', job: 'Performance lead' },
+];
+const SPONSOR = { name: 'Gareth Lowther', role: 'Club chair', email: 'practice-small-sponsor@example.com' };
+// [agreement n, the programme's name, its state, days ago it was sent (null: a draft), days ago the sponsor signed]
+const PROGRAMMES = [
+  [2, 'Crew leaders programme', 'signed', 40, 35],
+  [3, 'Coaching staff programme', 'sent', 4, null],
+  [4, 'Spring season programme', 'draft', null, null],
+];
+const HOURS = { n: 10, name: 'Elspeth Moray', job: 'Operations director', city: 'Glasgow', agreement: 5, signedDaysAgo: 30, rateMinor: 15000, blockMinor: 200000 };
+// [days ago, start, minutes, note]
+const HOURS_LOGGED = [[-12, '10:00', 180, 'Restructure planning with the operations team'], [-5, '14:00', 120, 'Sounding board before the board meeting']];
+
+function plan({ coachId, coachUser, client, coachName = 'Your coach', with065 = true }) {
   const rows = {};
   const add = (t, r) => { (rows[t] ||= []).push(r); };
   for (const c of CLIENTS) {
@@ -199,18 +234,99 @@ function plan({ coachId, coachUser, client }) {
   if (client.strategyId) {
     TODO_TEXTS.forEach((text, i) => add('todos', { id: id('todo', i + 1), user_id: client.id, strategy_id: client.strategyId, text, impact: 2, sprint_id: null, planned_week: null, source: 'manual' }));
   }
+  if (with065) teamAndHours({ add, coachId, coachUser, coachName });
   return rows;
 }
+
+// Stage D, item 19: Harbour Rowing's three team programme agreements and Elspeth's block of hours (065's columns).
+function teamAndHours({ add, coachId, coachUser, coachName }) {
+  const coach = { id: coachId, full_name: coachName, display_first_name: String(coachName).split(' ')[0] };
+  const sig = id('sig', 1);
+  add('signatures', { id: sig, user_id: coachUser, kind: 'typed', typed_name: coachName, created_at: at(addDays(TODAY, -60), '09:00') });
+  add('organisations', { id: ORG.id, name: ORG.name, currency: 'GBP', city: ORG.city, sector: ORG.sector, country: 'GB', created_by: coachUser, created_at: at(addDays(TODAY, -70), '09:00') });
+  for (const m of [...TEAM, HOURS]) {
+    const team = m !== HOURS;
+    add('client_profiles', {
+      id: id('profile', m.n), coach_id: coachId, name: m.name, email: `practice-small-${m.n}@example.com`, job_title: m.job, city: team ? ORG.city : m.city,
+      organisation_id: team ? ORG.id : null, time_zone: ZONE, status: 'active', getting_started: { first_review: true, welcome_pack: true },
+      last_contact_on: addDays(TODAY, -3), invited_at: null, created_by: coachUser, created_at: at(addDays(TODAY, -65), '09:00'),
+    });
+  }
+  const people = TEAM.map((m) => ({ name: m.name, email: `practice-small-${m.n}@example.com`, profileId: id('profile', m.n) }));
+  for (const [n, name, state, sentAgo, signedAgo] of PROGRAMMES) {
+    const ids = { agreementId: id('ag', n), versionId: id('ver', n) };
+    const draft = newDraft({ kind: 'team', who: { organisation: { id: ORG.id, name: ORG.name } }, coach, ids, todayKey: addDays(TODAY, -(sentAgo ?? 2) - 3) });
+    const t = draft.version.terms;
+    t.coaching = name;
+    t.startsOn = addDays(TODAY, state === 'signed' ? -28 : 14);
+    t.endsOn = addDays(t.startsOn, 7 * 24);
+    t.team = { ...t.team, people, totalMinor: 960000, settle: 'deposit', needsPO: false, invoicesEmail: 'practice-small-treasurer@example.com', sponsor: { ...SPONSOR } };
+    const f = versionFields(t, {});
+    const sentAt = sentAgo == null ? null : at(addDays(TODAY, -sentAgo), '09:30');
+    add('agreements', { id: ids.agreementId, coach_id: coachId, kind: 'sponsor', profile_id: null, organisation_id: ORG.id, status: state, current_version: 1, agreement_kind: 'team',
+      approval: 'not_needed', created_at: at(addDays(TODAY, -(sentAgo ?? 2) - 3), '09:00') });
+    const signedAt = signedAgo == null ? null : at(addDays(TODAY, -signedAgo), '11:20');
+    add('agreement_versions', {
+      id: ids.versionId, agreement_id: ids.agreementId, coach_id: coachId, version: 1, status: state, terms: f.terms, clauses: f.clauses, overrides: f.overrides,
+      currency: 'GBP', total_minor: f.total_minor, funded_by: f.funded_by, send_as: 'agreement',
+      coach_signed_at: sentAt, coach_signature_id: sentAt ? sig : null, sent_at: sentAt, expires_on: state === 'sent' ? addDays(TODAY, 26) : null,
+      ...(signedAt ? { sponsor_signed_at: signedAt, sponsor_name: SPONSOR.name, sponsor_role: SPONSOR.role, sponsor_email: SPONSOR.email,
+        fingerprint: createHash('sha256').update(JSON.stringify({ terms: f.terms, clauses: f.clauses, signedAt })).digest('hex') } : {}),
+    });
+    if (signedAt) add('sponsor_signatures', { id: id('ssig', 1), coach_id: coachId, version_id: ids.versionId, typed_name: SPONSOR.name, created_at: signedAt });
+  }
+  // Elspeth's block of hours: signed a month ago, 13 hours 20 minutes at £150 an hour, 5 hours logged.
+  const h = HOURS;
+  const eid = id('eng', h.n);
+  add('engagements', { id: eid, coach_id: coachId, profile_id: id('profile', h.n), kind: 'pay_as_you_go', name: 'Block of hours', sessions_total: 0, sessions_held: 0,
+    default_minutes: 60, every_weeks: 2, starts_on: addDays(TODAY, -h.signedDaysAgo + 1), status: 'active', time_credit_minutes: Math.floor((h.blockMinor * 60) / h.rateMinor),
+    created_at: at(addDays(TODAY, -h.signedDaysAgo - 3), '09:00') });
+  const ids = { agreementId: id('ag', h.agreement), versionId: id('ver', h.agreement) };
+  const draft = newDraft({ kind: 'hours', who: { profile: { id: id('profile', h.n), name: h.name, organisation_id: null } }, coach, ids, todayKey: addDays(TODAY, -h.signedDaysAgo - 3) });
+  const t = draft.version.terms;
+  t.coaching = 'Block of hours';
+  t.startsOn = addDays(TODAY, -h.signedDaysAgo + 1);
+  t.hours = { ...t.hours, work: 'Coaching and sounding board time for the operations restructure, used as needed.', rateMinor: h.rateMinor, blockMinor: h.blockMinor };
+  t.clientEmail = `practice-small-${h.n}@example.com`;
+  const f = versionFields(t, {});
+  const sentAt = at(addDays(TODAY, -h.signedDaysAgo - 2), '09:30');
+  const signedAt = at(addDays(TODAY, -h.signedDaysAgo), '19:30');
+  add('agreements', { id: ids.agreementId, coach_id: coachId, kind: 'coaching', profile_id: id('profile', h.n), organisation_id: null, engagement_id: eid, status: 'signed',
+    current_version: 1, agreement_kind: 'hours', approval: 'not_needed', created_at: at(addDays(TODAY, -h.signedDaysAgo - 3), '09:00') });
+  add('agreement_versions', {
+    id: ids.versionId, agreement_id: ids.agreementId, coach_id: coachId, version: 1, status: 'signed', terms: f.terms, clauses: f.clauses, overrides: f.overrides,
+    currency: 'GBP', total_minor: f.total_minor, funded_by: null, send_as: 'agreement', coach_signed_at: sentAt, coach_signature_id: sig, sent_at: sentAt,
+    client_signed_at: signedAt, signed_name: h.name, signed_email: t.clientEmail, start_now: true, start_now_at: signedAt,
+    fingerprint: createHash('sha256').update(JSON.stringify({ terms: f.terms, clauses: f.clauses, signedAt })).digest('hex'),
+  });
+  HOURS_LOGGED.forEach(([off, hm, minutes, note], i) => {
+    const start = at(addDays(TODAY, off), hm);
+    add('time_entries', { id: id('time', i + 1), engagement_id: eid, coach_id: coachId, started_at: start, ended_at: plusMinutes(start, minutes), note });
+  });
+}
 // Written in this order, removed in the reverse.
-const ORDER = ['client_profiles', 'engagements', 'coach_sessions', 'coach_cal_items', 'agreements', 'agreement_versions', 'invoices', 'payments', 'coach_open_blocks', 'todos'];
+const ORDER = ['organisations', 'client_profiles', 'engagements', 'coach_sessions', 'coach_cal_items', 'signatures', 'agreements', 'agreement_versions', 'sponsor_signatures',
+  'invoices', 'payments', 'coach_open_blocks', 'time_entries', 'todos'];
 
 // ------------------------------------------------------------------ the people
 async function people() {
   const coach = await signIn(env.TEST_COACH_OWNER_EMAIL, env.TEST_COACH_OWNER_PASSWORD);
   const client = await signIn(env.TEST_CLIENT_EMAIL, env.TEST_CLIENT_PASSWORD);
-  const coachRow = (await api(rest('coaches', `select=id&user_id=eq.${coach.user.id}`), { token: SERVICE || await coachToken(coach) }))?.[0];
+  const coachRow = (await api(rest('coaches', `select=id,full_name,display_first_name&user_id=eq.${coach.user.id}`), { token: SERVICE || await coachToken(coach) }))?.[0];
   if (!coachRow) throw new Error('The test owner coach has no coach row.');
-  return { coach, client, coachId: coachRow.id };
+  return { coach, client, coachId: coachRow.id, coachName: coachRow.full_name || coachRow.display_first_name || 'Your coach' };
+}
+// Whether 065's agreement columns and tables are there (Stage D, item 19's rows need them): read only.
+async function has065(token) {
+  try {
+    await api(rest('agreement_versions', 'select=sponsor_signed_at,overrides,send_as&limit=0'), { token });
+    await api(rest('agreements', 'select=agreement_kind,approval&limit=0'), { token });
+    await api(rest('sponsor_signatures', 'select=id&limit=0'), { token });
+    return true;
+  } catch (e) {
+    if (e instanceof Stop) throw e;
+    return false;
+  }
 }
 let aal2 = null;
 async function coachToken(coach) {
@@ -229,18 +345,19 @@ async function clientFacts(client, token) {
 
 // ------------------------------------------------------------------ --check: every table and column, read only
 async function check() {
-  const { coach, client, coachId } = await people();
+  const { coach, client, coachId, coachName } = await people();
   const coachTok = await coachToken(coach);
   const facts = await clientFacts(client, client.access_token);
-  const rows = plan({ coachId, coachUser: coach.user.id, client: facts });
+  const rows = plan({ coachId, coachUser: coach.user.id, client: facts, coachName });
   let bad = 0;
   for (const t of ORDER) {
     if (!rows[t]) continue;
     const cols = [...new Set(rows[t].flatMap((r) => Object.keys(r)))];
-    const token = t === 'todos' ? client.access_token : coachTok;
+    // Signatures and the sponsor's are the server's (or the person's own) to read: with the service key where there is one.
+    const token = t === 'todos' ? client.access_token : ['signatures', 'sponsor_signatures'].includes(t) && SERVICE ? SERVICE : coachTok;
     try {
       await api(rest(t, `select=${cols.join(',')}&limit=0`), { token });
-      console.log(`  ok   ${t}: ${rows[t].length} rows, ${cols.length} columns all on the hosted database`);
+      console.log(`  ok   ${t}: ${rows[t].length} rows, ${cols.length} columns all on ${WHERE}`);
     } catch (e) {
       if (e instanceof Stop) throw e;
       bad += 1;
@@ -249,7 +366,7 @@ async function check() {
   }
   if (!rows.todos) console.log('  note the test client has no Strategy in their plan, so no to-dos would be added');
   const total = Object.values(rows).reduce((n, r) => n + r.length, 0);
-  console.log(`\n${total} rows planned (limit ${MAX_ROWS}). ${bad ? `${bad} tables don't fit the hosted schema.` : 'Every table and column fits.'}`);
+  console.log(`\n${total} rows planned (limit ${MAX_ROWS}). ${bad ? `${bad} tables don't fit the schema on ${WHERE}.` : 'Every table and column fits.'}`);
   const has = await api(rest('coach_clients', `select=coach_id&client_id=eq.${facts.id}&ended_at=is.null`), { token: client.access_token });
   console.log(has.length ? '  note the test client already has a coach, so --add would leave their link as it is' : '  ok   the test client has no coach yet, so --add can link them through their invite');
   if (bad) process.exitCode = 1;
@@ -257,9 +374,11 @@ async function check() {
 
 // ------------------------------------------------------------------ --add
 async function addAll() {
-  const { coach, client, coachId } = await people();
+  const { coach, client, coachId, coachName } = await people();
   const facts = await clientFacts(client, SERVICE);
-  const rows = plan({ coachId, coachUser: coach.user.id, client: facts });
+  const with065 = await has065(SERVICE);
+  if (!with065) console.log('  note 065\'s agreement columns aren\'t on this database, so Harbour Rowing\'s agreements and the block of hours are left out');
+  const rows = plan({ coachId, coachUser: coach.user.id, client: facts, coachName, with065 });
   const total = Object.values(rows).reduce((n, r) => n + r.length, 0);
   if (total > MAX_ROWS) throw new Error(`${total} rows is more than this small practice allows (${MAX_ROWS}).`);
   const counts = {};
@@ -268,12 +387,16 @@ async function addAll() {
     const ids = rows[t].map((r) => r.id);
     const before = (await api(rest(t, `select=id&id=${inList(ids)}`))).length;
     // Inserted once; a second --add leaves what is there as it is (a signed version never changes).
-    await api(rest(t, 'on_conflict=id'), { method: 'POST', body: rows[t], prefer: 'resolution=ignore-duplicates,return=minimal' });
+    // PostgREST takes rows with the same keys in one request: one request for each shape (the organisation's people
+    // carry organisation_id, the block of hours its time credit).
+    const shapes = new Map();
+    for (const r of rows[t]) { const k = Object.keys(r).sort().join(','); shapes.set(k, [...(shapes.get(k) || []), r]); }
+    for (const group of shapes.values()) await api(rest(t, 'on_conflict=id'), { method: 'POST', body: group, prefer: 'resolution=ignore-duplicates,return=minimal' });
     counts[t] = { added: rows[t].length - before, there: rows[t].length };
     if (t === 'client_profiles') await link(client, facts, coachId);
   }
   for (const [t, c] of Object.entries(counts)) console.log(`  ${t}: ${c.added} added (${c.there} in all)`);
-  console.log(`\nThe small practice is on the hosted test project. Take it out with: HOSTED=1 node tests/smoke/practice-small.mjs --remove`);
+  console.log(`\nThe small practice is on ${WHERE}. Take it out with: ${LOCAL ? 'LOCAL=1' : 'HOSTED=1'} node tests/smoke/practice-small.mjs --remove`);
 }
 // The test client accepts the invite the profile carries, as the app does (client_accept_invite, signed in as the client).
 async function link(client, facts, coachId) {
@@ -294,8 +417,10 @@ async function removeAll() {
   const ids = (kind, n) => Array.from({ length: n }, (_, i) => id(kind, i + 1));
   const sets = {
     todos: ids('todo', TODO_TEXTS.length), coach_open_blocks: ids('open', 30), payments: ids('pay', INVOICES.length), invoices: ids('inv', INVOICES.length),
-    agreement_versions: ids('ver', 1), agreements: ids('ag', 1), coach_cal_items: ids('cal', SESSIONS.length), coach_sessions: ids('sess', SESSIONS.length),
-    engagements: ids('eng', CLIENTS.length), client_profiles: ids('profile', CLIENTS.length),
+    agreement_versions: ids('ver', HOURS.agreement), agreements: ids('ag', HOURS.agreement), coach_cal_items: ids('cal', SESSIONS.length), coach_sessions: ids('sess', SESSIONS.length),
+    engagements: ids('eng', HOURS.n), client_profiles: ids('profile', HOURS.n),
+    // Stage D, item 19.
+    organisations: ids('org', 1), signatures: ids('sig', 1), sponsor_signatures: ids('ssig', 1), time_entries: ids('time', HOURS_LOGGED.length),
   };
   const removed = {};
   const del = async (t, query) => (await api(rest(t, query), { method: 'DELETE', prefer: 'return=representation' }))?.length || 0;
@@ -307,10 +432,11 @@ async function removeAll() {
       removed.coach_notifications = await del('coach_notifications', `item_id=${inList(sets.client_profiles)}`).catch(() => 0);
       removed.coach_clients = linked ? await del('coach_clients', `client_id=eq.${clientId}&coach_id=eq.${coachId}`) : 0;
     }
-    removed[t] = await del(t, `id=${inList(sets[t])}`);
+    // A database without 065's tables has none of these rows to take out.
+    removed[t] = await del(t, `id=${inList(sets[t])}`).catch((e) => { if (e instanceof Stop) throw e; if (t === 'sponsor_signatures') return 0; throw e; });
   }
   for (const [t, n] of Object.entries(removed)) console.log(`  ${t}: ${n} removed`);
-  console.log('\nThe small practice is gone from the hosted test project.');
+  console.log(`\nThe small practice is gone from ${WHERE}.`);
 }
 
 try {

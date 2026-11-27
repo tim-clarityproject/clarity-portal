@@ -2,7 +2,7 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { BoldCrosshair, Card, LoadError, Loading, Row, ToolFrame, useCoach, useToast } from '../../components/design';
-import { savePdf } from '../../components/design/pdfSave';
+import { openPdf } from '../../components/design/pdfSave';
 import { getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
 import { BOOK_FIRST, ENDED_STATUSES, FLOW, WHAT_NEXT, doneLine, endedLine, needsSettleCheck, settledInFull, stepsFor, welcomeRows } from '../../lib/coaching/clientMoney';
 import { TOOL_CLOSED } from '../../content/pageLines/client';
@@ -93,7 +93,8 @@ export default function Welcome() {
     else if (key === 'pack') navigate('/about');
     else {
       setPdfProblem(null);
-      try { await savePdf(() => agreementDocument({ userId, version }), 'light'); } catch { setPdfProblem('Your PDF wasn’t made. Check your connection and try again.'); }
+      // Stage D item 14: opened to read, never quietly saved.
+      try { await openPdf(() => agreementDocument({ userId, version }), 'light'); } catch { setPdfProblem('Your PDF wasn’t made. Check your connection and try again.'); }
     }
   };
 

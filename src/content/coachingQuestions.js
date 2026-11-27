@@ -8,7 +8,8 @@ export const COACHING_QUESTIONS = [
   "What's one behaviour you'd keep, start, or stop?",
   "When have you handled this well before?",
   "What's the simplest next step you could take?",
-  "What strengths could you use here?",
+  // Stage D, Draft 11 ("will", "your"). Saved choices are by place, so an old one reads the new words.
+  "Which of your strengths will help here?",
   "What support would help you the most?",
 ];
 

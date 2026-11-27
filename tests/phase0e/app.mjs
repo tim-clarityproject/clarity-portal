@@ -147,18 +147,22 @@ async function within(ms, fn) {
     await page.waitForTimeout(1500);
   }
 
-  // Meeting planner: the network drops mid-save.
+  // Meeting planner: the network drops mid-save. Since Draft 6 (Stage D item 1) it is a guided
+  // tool: × part-way keeps it as a draft, which says "Will sync" while it waits on the device.
   await page.goto(`${APP}/plan-meeting`);
-  const title = page.getByLabel(/title/i).first();
-  await title.waitFor({ timeout: 20000 });
-  await title.fill(`${stamp} meeting`);
+  const kind = page.locator('.ds-guide-body .ds-answer').first();
+  await kind.waitFor({ timeout: 20000 });
+  await kind.click();
+  const agreed = page.locator('.ds-guide-body textarea').first();
+  await agreed.waitFor({ timeout: 5000 });
+  await agreed.fill(`${stamp} meeting`);
+  await page.waitForTimeout(400);
   await context.setOffline(true);
-  await page.getByRole('button', { name: /^save as draft$/i }).first().click();
-  const mSync = await within(2000, async () => (await page.locator('.ds-status--sync').count()) > 0);
+  await page.getByRole('button', { name: 'Close and save my place' }).click();
+  const mSync = await within(2000, async () => (await page.getByText('Will sync').count()) > 0);
   pass('Offline save, Meeting planner: "Will sync" shows', mSync != null);
   await context.setOffline(false);
-  const mSaved = await within(15000, async () => (await page.locator('.ds-status--saved').count()) > 0);
-  pass('Back online, Meeting planner: "Saved" once it has gone', mSaved != null);
+  await page.waitForTimeout(3000);
   await page.goto(`${APP}/my-plans`);
   const listedMeeting = await within(15000, () => page.getByText(`${stamp} meeting`).first().isVisible().catch(() => false));
   pass('Back online, Meeting planner: the plan is in My Plans', listedMeeting != null);

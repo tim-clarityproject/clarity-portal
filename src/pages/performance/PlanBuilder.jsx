@@ -50,6 +50,7 @@ import {
   draftMission,
   emptyHabit,
   emptyObjective,
+  habitsQuestion,
   habitsWords,
   localToday,
   namedObjectives,
@@ -71,6 +72,8 @@ import {
 } from '../../lib/performance';
 import { keepSprintSetup } from '../../lib/performance/sprintSetup';
 import usePlanSaves from './usePlanSaves';
+import CommitTodo from './CommitTodo';
+import { COMMIT_NEEDED, PLAN_FIRST_QUESTION, commitTodo } from '../../lib/performance/commitQuestions';
 import { MISSION_EXAMPLE, MISSION_PLACEHOLDER, STRATEGY_IDEAS, exampleRole } from '../../content/planBuilder';
 import './performance.css';
 import { TOOL_CLOSED } from '../../content/pageLines/client';
@@ -240,7 +243,9 @@ function PlanTool({ userId, data, mode }) {
           planExistsRef.current = true;
         }
         await keepVersion(true);
-        const setup = sprintSetupFrom(draftRef.current.sprint, fixedStandard);
+        const commit = commitTodo(draftRef.current.firstStep, draftRef.current.firstStepStrategy, savableRows(draftRef.current, today).strategies);
+        // The commit answer rides with the first sprint, as a to-do in its week 1 (Stage D, Draft 11).
+        const setup = { ...sprintSetupFrom(draftRef.current.sprint, fixedStandard), firstTodo: commit ? { ...commit, createdOn: today } : null };
         keepSprintSetup(userId, setup);
         forget();
         navigate('/performance-sprint/start', { replace: true, state: { sprintSetup: setup, toast: 'Saved' } });
@@ -321,7 +326,6 @@ function PlanTool({ userId, data, mode }) {
     key: 'mission',
     name: 'Mission',
     question: 'What’s your Mission?',
-    nudges: ['Write the big aim that drives your daily performance.', 'You can change it any time.'],
     example: MISSION_EXAMPLE,
     nextLabel: 'Save my Mission',
     // The eye beside the question (rule 29d, Tim, 5 Nov).
@@ -361,7 +365,6 @@ function PlanTool({ userId, data, mode }) {
     key: 'objectives',
     name: 'Objectives',
     question: 'What 2 to 4 results would show your Mission is moving?',
-    nudges: ['Pick ones you can track.'],
     tip: { key: 'performance-plan-saves', text: 'Everything saves as you go.' },
     eye: <WhoSees {...progressWho} />,
     render: () => (
@@ -433,8 +436,8 @@ function PlanTool({ userId, data, mode }) {
     return {
       key: o ? `strategies-${o.id}` : 'strategies',
       name: o ? o.name.trim() : 'Strategies',
-      question: o ? `How will you move “${o.name.trim()}”?` : 'What approaches will you use to achieve your objectives?',
-      nudges: [o ? (k === 0 ? 'Add 1 or 2 Strategies.' : '1 or 2 Strategies is usually enough.') : 'Add 2 to 4 Strategies.'],
+      // Stage D, Draft 11: their own objective quoted back.
+      question: o ? `How will you achieve “${o.name.trim()}”?` : 'How will you achieve your objectives?',
       eye: <WhoSees {...progressWho} />,
       render: () => (
         <div>
@@ -450,7 +453,7 @@ function PlanTool({ userId, data, mode }) {
           {strategyRows(mine, o?.id || null)}
           {others.length > 0 && (
             <div className="plan-picks">
-              <FieldLabel label="Do any of your other Strategies help this too?" />
+              <FieldLabel label="Which of your other Strategies help this too?" />
               {others.map((s) => <Button key={s.id} className="plan-pick" onClick={() => serveToo(s.id, o.id)}>{s.name.trim()}</Button>)}
             </div>
           )}
@@ -470,8 +473,8 @@ function PlanTool({ userId, data, mode }) {
   const habitsStep = {
     key: 'habits',
     name: 'Habits',
-    question: 'Which habits will carry out each Strategy?',
-    nudges: ['Add a measure and a target for each.', 'You can change them in any sprint.'],
+    // Stage D, Draft 11: the Strategy chosen below, quoted back.
+    question: habitsQuestion(namedStrategies.find((s) => s.id === habitStrategyId)?.name),
     // The eye beside the question, once (rule 29d), not at the far edge
     // of the drop-down's label row.
     eye: <WhoSees audience="me" />,
@@ -522,7 +525,6 @@ function PlanTool({ userId, data, mode }) {
     question: 'Which days do you work?',
     // The eye inside the heading, with its last word (rule 29d; Tim, 10 Nov), so the answers have none.
     eye: <WhoSees audience="me" />,
-    nudges: ['Pick every day you usually work.', 'Daily targets and logging count these days only.'],
     render: () => (
       <div className="plan-days">
         <MultiChoice
@@ -543,24 +545,44 @@ function PlanTool({ userId, data, mode }) {
       key: 'length',
       name: 'Length',
       question: 'How long is your first Performance Sprint?',
-      nudges: ['Pick 2 to 16 weeks.', '12 is long enough to see results and short enough to stay focused.'],
       render: () => <SprintLengthChoice sprint={sprint} onChange={setSprint} label="How long is your first Performance Sprint?" />,
     },
     {
       key: 'start',
       name: 'Start',
       question: 'When does it start?',
-      nudges: ['Pick any day.', 'You can move it before it starts.'],
       render: () => <SprintStartChoice sprint={sprint} onChange={setSprint} />,
     },
     {
       key: 'standard',
       name: 'Standard',
       question: 'What’s your performance standard?',
-      nudges: fixedStandard != null ? [] : ['Lower it for a heavy period, or raise it for a stretch.'],
       render: () => <StandardChoice sprint={sprint} onChange={setSprint} fixed={fixedStandard} />,
     },
   ];
+
+  // The commit question before Ready (Stage D, Draft 11), for a new plan
+  // with a Strategy to serve: it can't be skipped, and becomes a to-do in
+  // the first sprint's week 1. Editing a plan has no commit question.
+  const firstStrategy = rows.strategies.some((s) => s.id === draft.firstStepStrategy) ? draft.firstStepStrategy : rows.strategies[0]?.id || null;
+  const firstStep = {
+    key: 'first',
+    name: 'First step',
+    question: PLAN_FIRST_QUESTION,
+    required: true,
+    eye: <WhoSees audience="me" />,
+    check: () => ((draft.firstStep || '').trim() ? null : COMMIT_NEEDED),
+    render: () => (
+      <CommitTodo
+        question={PLAN_FIRST_QUESTION}
+        text={draft.firstStep || ''}
+        onText={(text) => set({ firstStep: text })}
+        strategies={rows.strategies}
+        strategyId={firstStrategy}
+        onStrategy={(id) => set({ firstStepStrategy: id })}
+      />
+    ),
+  };
 
   const steps = [
     missionStep,
@@ -568,6 +590,7 @@ function PlanTool({ userId, data, mode }) {
     ...(named.length ? named.map((o, k) => strategyStep(o, k)) : [strategyStep(null, 0)]),
     habitsStep,
     ...(building ? [daysStep, ...sprintSteps] : []),
+    ...(building && rows.strategies.length ? [firstStep] : []),
   ];
   const stepAt = (key) => Math.max(0, steps.findIndex((s) => s.key === key));
   const firstStrategyStep = steps.findIndex((s) => s.key.startsWith('strategies'));
@@ -626,6 +649,7 @@ function PlanTool({ userId, data, mode }) {
         { label: 'Starts', editName: 'the start date', step: stepAt('start'), value: sprint.start === today ? `Today, ${dayLabel(sprint.start)}` : dayLabel(sprint.start) },
         { label: 'Performance standard', step: stepAt('standard'), value: std != null ? `${std}%` : '' },
       );
+      if (rows.strategies.length) out.push({ label: 'First step', editName: 'what you’ll do first', step: stepAt('first'), value: (draft.firstStep || '').trim() });
     }
     return out;
   };

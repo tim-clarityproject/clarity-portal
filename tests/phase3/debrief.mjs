@@ -83,6 +83,7 @@ if (!(today > weekEnd && today <= dayKey(3, weekEnd))) throw new Error(`The fixe
 const SAT = dayKey(5, weekStart);
 const WIN = 'Ran a workshop that led to two referrals';
 const TODO = 'Send the Harbour proposal';
+const MONDAY = 'Call Harbour about the proposal at 09:00';
 const ANSWERS = { well: 'Two referral calls landed and the Harbour proposal is close.', way: 'Late finishes on Tuesday and Thursday.', adjust: 'Stop work by 18:30 on weekdays.' };
 const strategies = (await db.from('plan_strategies').select('id, name').eq('plan_id', sprint.plan_id).is('archived_at', null)).data;
 const sid = (name) => strategies.find((s) => s.name === name).id;
@@ -330,7 +331,8 @@ async function playThrough(page, tag, { deep = false } = {}) {
   // 1. Numbers
   pass(`${tag}: opens on week 3, with no time on the first screen (10 Nov)`, (await heading(page)) === `How did week ${WEEK} go?` && !/~\d+ minutes/.test(await page.locator('.ds-guide').innerText()), await heading(page));
   pass(`${tag}: the % complete bar, never a step count`, await page.locator('.ds-guide-pct').isVisible());
-  pass(`${tag}: rule 5 over M1: no "missed"`, (await page.locator('.ds-guide-nudge').allInnerTexts()).includes('Fill in any day you didn’t log, or leave it empty.'));
+  // Stage D (question rule 9): nothing sits under a question.
+  pass(`${tag}: nothing under the question`, (await page.locator('.ds-guide-nudge').count()) === 0);
   pass(`${tag}: grouped by Strategy`, (await page.locator('.deb-group-name').allInnerTexts()).join('|').startsWith('Maintain my availability to do good work'));
   pass(`${tag}: every day of the finished week is open, a day not logged is dashed`, (await page.locator('.ds-logweek-box input:disabled').count()) === 0 && (await page.locator('.ds-logweek-box--empty').count()) > 0);
   await checkHabitColours(page, tag);
@@ -405,8 +407,8 @@ async function playThrough(page, tag, { deep = false } = {}) {
   }
   await next(page);
 
-  // 6. Adjust
-  pass(`${tag}: Adjust`, (await heading(page)) === 'What will you adjust next week?');
+  // 6. Adjust: one question where there were two (Stage D, Draft 11), saved as adjust.
+  pass(`${tag}: Adjust`, (await heading(page)) === 'What will you change next week?', await heading(page));
   await body(page).locator('textarea').first().fill(ANSWERS.adjust);
   await checkScreen(page, `${tag} adjust`);
   await next(page);
@@ -426,6 +428,16 @@ async function playThrough(page, tag, { deep = false } = {}) {
   pass(`${tag}: the to-do is added to week 4`, Boolean(await until(async () => (await page.getByText('Added to week 4.').count()) > 0, 8000)));
   pass(`${tag}: it shows in next week's list`, (await page.locator('.ds-todo', { hasText: TODO }).count()) === 1);
   await shot(page, `${tag}-7-next`);
+  await next(page);
+
+  // 7b. The commit question (Stage D, Draft 11): never skipped; a to-do in next week.
+  pass(`${tag}: Monday`, (await heading(page)) === 'What will you do first on Monday?', await heading(page));
+  pass(`${tag}: the commit can't be skipped`, (await page.getByRole('button', { name: /^Skip/ }).count()) === 0);
+  await sleep(500); // a tap in the first moment after a move is ignored on purpose (NEXT_GUARD_MS)
+  await page.locator('.ds-guide-next').click();
+  pass(`${tag}: Next with nothing typed says what's missing`, Boolean(await until(async () => (await page.getByText('Type what you’ll do to carry on.').count()) === 1, 4000)) && (await heading(page)) === 'What will you do first on Monday?');
+  await body(page).locator('textarea').first().fill(MONDAY);
+  await checkScreen(page, `${tag} monday`);
   await next(page);
 
   // 8. The summary
@@ -451,6 +463,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
     pass('on, it says what the coach will see', (await page.locator('.ds-switchrow-note').innerText()) === `${COACH} will see this week’s scores, your objective figures and your three answers.`);
     await back(page);
     await back(page);
+    await back(page);
     await checkScreen(page, `${tag} adjust, shared`, { eye: `You and ${COACH}` });
     for (let i = 0; i < 3; i += 1) await back(page);
     await checkScreen(page, `${tag} objectives, shared`, { eye: `You and ${COACH}` });
@@ -459,7 +472,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
     await checkScreen(page, `${tag} stress, shared`, { eye: 'Only you' });
     await back(page);
     await checkScreen(page, `${tag} numbers, shared`, { eye: `You and ${COACH}` });
-    for (let i = 0; i < 7; i += 1) await next(page);
+    for (let i = 0; i < 8; i += 1) await next(page);
     await sw.click();
     pass('switched off: saved at once', Boolean(await sharedNow(false)));
     await sw.click();
@@ -516,6 +529,8 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
       const reached = (await db.from('outcome_objectives').select('reached_on').eq('id', oid('Publish my coaching book'))).data?.[0]?.reached_on;
       pass('the milestone is reached on the week\'s last day', reached === weekEnd, reached);
       const todo = (await db.from('todos').select('sprint_id, planned_week, source, source_id, strategy_id, created_on').eq('user_id', me).eq('text', TODO)).data;
+      const monday = (await db.from('todos').select('sprint_id, planned_week, source, source_id').eq('user_id', me).eq('text', MONDAY)).data;
+      pass('the Monday commit is one to-do in week 4, from the debrief (Stage D, Draft 11)', monday.length === 1 && monday[0].sprint_id === sprint.id && monday[0].planned_week === 4 && monday[0].source === 'debrief' && monday[0].source_id === row.id, JSON.stringify(monday));
       pass('next week\'s to-do is in the sprint, week 4, from the debrief', todo.length === 1 && todo[0].sprint_id === sprint.id && todo[0].planned_week === 4 && todo[0].source === 'debrief' && todo[0].source_id === row.id && todo[0].strategy_id === sid('Grow through referrals'), JSON.stringify(todo));
       // The score finalised in week_scores, matching src/lib/scores.
       const ws = await until(async () => (await db.from('week_scores').select('score, final, frozen_at').eq('sprint_id', sprint.id).eq('sprint_week', WEEK)).data?.[0], 10000);

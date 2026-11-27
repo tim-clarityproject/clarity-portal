@@ -89,9 +89,9 @@ declare
   j jsonb;
 begin
   begin
-    owner_u := pg_temp.t36_user('owner'); coach2 := pg_temp.t36_user('adie'); other_u := pg_temp.t36_user('other');
+    owner_u := pg_temp.t36_user('owner'); coach2 := pg_temp.t36_user('rhys'); other_u := pg_temp.t36_user('other');
     if has_coaches then
-      execute 'insert into public.coaches (user_id, role, display_first_name) values ($1, ''owner'', ''Tim''), ($2, ''coach'', ''Adie'')'
+      execute 'insert into public.coaches (user_id, role, display_first_name) values ($1, ''owner'', ''Tim''), ($2, ''coach'', ''Rhys'')'
         using owner_u, coach2;
     end if;
 
@@ -105,12 +105,12 @@ begin
     l_old := public.create_alignment_session('036 test organisation', '036-test-guest-three@example.invalid');
     t_coach := pg_temp.t_tok(l_coach); t_owner := pg_temp.t_tok(l_owner); t_old := pg_temp.t_tok(l_old);
     -- an older link that has a first name from 034 but no coach recorded
-    update public.alignment_sessions set coach_name = 'Adie' where token = t_old;
+    update public.alignment_sessions set coach_name = 'Rhys' where token = t_old;
 
     f := f || pg_temp.t_eq('1a the second coach''s link records them',
       pg_temp.t_n(format('select (coach_user_id = %L)::text from public.alignment_sessions where token = %L', coach2, t_coach)), 'true');
     f := f || pg_temp.t_eq('1b ... and their first name',
-      l_coach ->> 'coach_name', 'Adie');
+      l_coach ->> 'coach_name', 'Rhys');
     f := f || pg_temp.t_eq('1c a link made by the signed-in owner records them',
       pg_temp.t_n(format('select (coach_user_id = %L)::text from public.alignment_sessions where token = %L', owner_u, t_owner)), 'true');
     f := f || pg_temp.t_eq('1d a link made with no coach records nobody',
@@ -131,7 +131,7 @@ begin
     -- the guest
     j := public.alignment_open(t_coach, '036-test-guest-one@example.invalid', l_coach ->> 'access_code');
     f := f || pg_temp.t_eq('3a the guest reads their answers', (j -> 'data' = answers)::text, 'true');
-    f := f || pg_temp.t_eq('3b ... and is told the coach''s name', j ->> 'coach_name', 'Adie');
+    f := f || pg_temp.t_eq('3b ... and is told the coach''s name', j ->> 'coach_name', 'Rhys');
     -- signed out, without the code
     j := public.alignment_open(t_coach, '036-test-guest-one@example.invalid', 'AAAAAA');
     f := f || pg_temp.t_eq('3c signed out with a wrong code reads nothing', ((j ->> 'ok')::boolean or j ? 'data')::text, 'false');

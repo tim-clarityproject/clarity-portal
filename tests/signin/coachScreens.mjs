@@ -29,7 +29,7 @@ export const COACH_SCREENS = [
       await page.getByText('That recovery code is now used.').waitFor({ timeout: 10000 });
     },
   },
-  { key: 'acct-security', name: 'My Account, sign-in security', acct: true, open: (page, { ctx }) => at(page, ctx, { factor: 'verified', aal: 'aal2', codesLeft: 9 }, '/my-account/sign-in-security', '.si-srow') },
+  { key: 'acct-security', name: 'My Account, sign-in security', acct: true, open: (page, { ctx }) => at(page, ctx, { factor: 'verified', aal: 'aal2', codesLeft: 9 }, '/coach/settings/sign-in-security', '.si-srow') },
 ];
 
 export { codeBox };

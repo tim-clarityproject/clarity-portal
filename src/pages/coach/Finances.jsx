@@ -471,7 +471,7 @@ function BankPaymentPanel({ open, onClose, sectors }) {
   if (!form) return null;
   const add = async () => {
     const amount = poundsFromTyped(form.amount);
-    if (!form.who) { setProblem({ at: 'who', words: 'Type who paid to carry on.' }); return; }
+    if (!form.who) { setProblem({ at: 'who', words: 'Type who it’s from to carry on.' }); return; }
     if (amount == null) { setProblem({ at: 'amount', words: amountProblem(form.amount, '1,200') }); return; }
     if (busy.current) return;
     busy.current = true;
@@ -492,7 +492,7 @@ function BankPaymentPanel({ open, onClose, sectors }) {
   return (
     <SlidePanel open={open} onClose={onClose} title="Add bank payment" draftKey="fin-bank-payment"
       footer={<div className="cc-panel-foot"><TextLink onClick={onClose}>Cancel</TextLink><Button variant="primary" onClick={add}>Add payment</Button></div>}>
-      <div className="cc-field"><WhoPicker label="Who paid?" value={form.who} anyName onChange={(who) => { setForm((f) => ({ ...f, who })); setProblem(null); }} />{at('who')}</div>
+      <div className="cc-field"><WhoPicker label="Who’s it from?" value={form.who} anyName onChange={(who) => { setForm((f) => ({ ...f, who })); setProblem(null); }} />{at('who')}</div>
       <div className="cc-field cc-two">
         <TextField label="Amount" inputMode="decimal" value={form.amount} placeholder="£" autoComplete="off" onChange={(e) => { setForm({ ...form, amount: e.target.value }); setProblem(null); }} />
         <DatePicker label="When did it arrive?" value={form.day} min="2000-01-01" max={todayKey} onChange={(day) => setForm({ ...form, day })} />

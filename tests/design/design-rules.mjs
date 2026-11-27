@@ -845,7 +845,8 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
   const actions = new Map();
   const scopes = new Map();
   for (const el of top.querySelectorAll('a[href], button, [role=button]')) {
-    if (!vis(el) || el.closest(`${ROWS}, li, tr, [role=row], [role=listitem], .ds-rows-list, [role=menu]`) || el.matches(ANSWER)) continue;
+    // A pick row's own "Move to top" (.ds-pick-wrap, the Daily plan's Do list; Stage D, Draft 11) is that row's, as a list row's is.
+    if (!vis(el) || el.closest(`${ROWS}, li, tr, [role=row], [role=listitem], .ds-rows-list, [role=menu], .ds-pick-wrap`) || el.matches(ANSWER)) continue;
     const w = (el.innerText || '').replace(/\s+/g, ' ').trim();
     if (w.split(' ').length < 3) continue;
     const scope = el.closest('.ds-card, .ds-objective, .ds-objed, .ds-carry-row, section[class*="card"]');

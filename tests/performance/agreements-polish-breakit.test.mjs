@@ -285,8 +285,8 @@ test('F6: the route handler refuses a second pause, a pause in the past and an e
 // ---------------------------------------------------------------- P5, the seed, and the year
 
 test('P5: an overdrawn block of hours says by how much and what happens next', () => {
-  assert.equal(balanceNote(1710, 800, 'Adie'), '15 hours 10 minutes over the block. The top-up invoice in Needs you adds another block, and the time over comes out of it. Nothing goes to Adie by itself.');
-  assert.match(balanceNote(700, 800, 'Adie'), /^1 hour 40 minutes left\. At 80% a top-up invoice was drafted/);
+  assert.equal(balanceNote(1710, 800, 'Rhys'), '15 hours 10 minutes over the block. The top-up invoice in Needs you adds another block, and the time over comes out of it. Nothing goes to Rhys by itself.');
+  assert.match(balanceNote(700, 800, 'Rhys'), /^1 hour 40 minutes left\. At 80% a top-up invoice was drafted/);
   assert.match(balanceNote(100, 800), /^11 hours 40 minutes left\. At 80% a top-up invoice is drafted/);
 });
 

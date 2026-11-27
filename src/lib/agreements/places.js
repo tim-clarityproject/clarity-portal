@@ -2,7 +2,7 @@ import { clockWords, isZone, offsetMinutes, zonePlace } from '../time/index.js';
 import { CURRENCY, CURRENCY_LIST } from './currency.js';
 
 // Where the client is based and the currency they settle in, typed as words (Polish 1, Stage C; M28 version 6's "Where
-// is Sam based?" and "Which currency will Sam pay in?"). A city or country gives a place-name time zone and the time
+// is Sam based?" and "Which currency will Sam settle in?"). A city or country gives a place-name time zone and the time
 // there now, through src/lib/time (nothing here works out an offset or a clock for itself); a currency or a country
 // gives one of the 15 currencies an agreement can be in (currency.js; 065's currency_ok()). Plain rules with no window,
 // checked by tests/performance/agreements-questions.test.mjs.

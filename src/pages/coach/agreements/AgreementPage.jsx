@@ -3,10 +3,10 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { Chevron, Loading, useToast } from '../../../components/design';
 import { Card, Empty, Figure, PageOpening, Row } from '../../../components/design/Blocks';
 import { calendarLink } from '../../../components/agreements/SessionCheckRow';
-import { AGREEMENT_LINES, agreementLine } from '../../../content/pageLines/coach';
+import { AGREEMENT_LINES, agreementLine, insideNote } from '../../../content/pageLines/coach';
 import { hoursPoints, mainPoints, teamPoints } from '../../../lib/agreements/clauses';
 import { offered } from '../../../lib/agreements/coolingOff';
-import { pauseMove } from '../../../lib/agreements/endDate';
+import { pauseMove, sessionsInPause } from '../../../lib/agreements/endDate';
 import { balanceLine } from '../../../lib/agreements/hours';
 import { hoursWords } from '../../../lib/agreements/currency';
 import { outcomeLabel, rowAction, usedLine } from '../../../lib/agreements/sessionOutcome';
@@ -19,9 +19,10 @@ import { coachZoneOf } from '../../../lib/coach/calendar';
 import { rowsOf } from '../../../lib/coach/store';
 import { dayIn, dayKeyWords, deviceZone } from '../../../lib/time/index.js';
 import { Back, useCoachPortal } from '../parts';
-import { AgreementChange } from './agreementPanels';
+import { AgreementChange, pauseZone } from './agreementPanels';
 import MistakeLine from '../../../components/agreements/MistakeLine';
 import { signedPdfProblem } from '../../../lib/agreements/askClient';
+import { formatClockTime } from '../../../lib/dateFormatter';
 import './agreementPage.css';
 
 // An agreement's own page (Phase 6b run 3, Group D; Polish 1, Stage C, C4: M28 v6 draws no such page, so it follows
@@ -82,6 +83,11 @@ export default function AgreementPage() {
   const canCancel14 = live && offered({ terms: t, signedDay: signDay, today, cancelled: a.status === 'cancelled' });
   const canRefund = settledInvoices(p.invoices, a.id, p.creditNotes).length > 0;
   const total = sessionsIn(t);
+  // Stage D item 16 (Tim, 27 Nov): the coaching sessions still booked inside its pause, each opening the calendar's own
+  // pop-up to move it (its day and times) or cancel it (Delete), as the calendar does: nothing moves by itself, and the
+  // client hears only about those the coach changes (the calendar's own session emails).
+  const pZone = pauseZone(p, a);
+  const inside = paused && live ? sessionsInPause(p.sessions, { from: paused.from, to: paused.to, profileId: a.profile_id, zone: pZone, now: p.now }) : [];
   const hours = k === 'hours' ? hoursState({ agreement: a, terms: t, entries: rowsOf(p.state, 'time_entries'), invoices: p.invoices }) : null;
   const back = client ? () => navigate(`/coach/clients/${client.id}`) : org ? () => navigate(`/coach/organisations/${org.id}`) : () => navigate('/coach/clients');
   // This year's dates without their year (writing rule 28); the Main points are the agreement's terms and keep theirs.
@@ -168,6 +174,25 @@ export default function AgreementPage() {
             )}
           </div>
           <div>
+            {inside.length > 0 && (
+              <Card label={AGREEMENT_LINES.insideLabel} className="ap-inside">
+                <p className="ap-used">{insideNote(first)}</p>
+                {inside.map((s) => {
+                  const day = words(dayIn(pZone, new Date(s.starts_at)));
+                  const at = formatClockTime(new Date(s.starts_at));
+                  return (
+                    <Row
+                      key={s.id}
+                      name={day}
+                      sub={at}
+                      value={<Chevron direction="right" />}
+                      label={`Move or cancel the coaching session on ${day}, ${at}`}
+                      onClick={() => navigate(calendarLink(s.id))}
+                    />
+                  );
+                })}
+              </Card>
+            )}
             {actions.length > 0 && (
               <Card label="Changes">
                 {actions.map((x) => <Row key={x.key} name={x.title} sub={x.line} onClick={() => act(x.key)} label={x.title} />)}

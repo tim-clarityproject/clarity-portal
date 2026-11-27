@@ -31,16 +31,16 @@ test('the count line reads right at 10, 2, 1 and 0', () => {
   assert.equal(usedCodeLine(0), 'That recovery code is now used. You have none left.');
   assert.equal(youHaveLeft(-3), 'You have none left.');
   assert.equal(makeNewCodesLine(9), null);
-  assert.equal(makeNewCodesLine(2), 'Then make new codes in My Account, under Sign-in security.');
-  assert.equal(makeNewCodesLine(0), 'Then make new codes in My Account, under Sign-in security.');
+  assert.equal(makeNewCodesLine(2), 'Then make new codes in Settings, under Sign-in security.');
+  assert.equal(makeNewCodesLine(0), 'Then make new codes in Settings, under Sign-in security.');
 });
 
 test('the 2-or-fewer line after a sign-in, and My Account’s count', () => {
   assert.equal(lowCodesLine(10), null);
   assert.equal(lowCodesLine(3), null);
-  assert.equal(lowCodesLine(2), 'You have 2 recovery codes left. Make new codes in My Account, under Sign-in security.');
-  assert.equal(lowCodesLine(1), 'You have 1 recovery code left. Make new codes in My Account, under Sign-in security.');
-  assert.equal(lowCodesLine(0), 'You have no recovery codes left. Make new codes in My Account, under Sign-in security.');
+  assert.equal(lowCodesLine(2), 'You have 2 recovery codes left. Make new codes in Settings, under Sign-in security.');
+  assert.equal(lowCodesLine(1), 'You have 1 recovery code left. Make new codes in Settings, under Sign-in security.');
+  assert.equal(lowCodesLine(0), 'You have no recovery codes left. Make new codes in Settings, under Sign-in security.');
   assert.deepEqual([10, 9, 2, 1, 0].map((n) => codesLeftSummary(n)), ['10 of 10 left', '9 of 10 left', '2 of 10 left', '1 of 10 left', 'None left']);
 });
 

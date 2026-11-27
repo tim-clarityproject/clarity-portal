@@ -1,4 +1,4 @@
-import { addDays, daysBetween, weekdayOf, dayKeyWords } from '../time/index.js';
+import { addDays, dayIn, daysBetween, weekdayOf, dayKeyWords } from '../time/index.js';
 
 // An agreement's end date (brief item 6; M28's builder and s-extend, s-pause). Day keys only ("2027-07-02"), through
 // src/lib/time: no clock is read. Checked by tests/performance/agreements-end-date.test.mjs.
@@ -130,14 +130,32 @@ export function extendOptions(end, today = null) {
   });
 }
 
+/** The day coaching starts again after a pause that runs to `to`: the next weekday (a pause to a Friday resumes on Monday). */
+export function resumeDay(to) {
+  const next = addDays(to, 1);
+  const w = weekdayOf(next); // Monday 1 … Sunday 7
+  return w === 6 ? addDays(next, 2) : w === 7 ? addDays(next, 1) : next;
+}
+
 /**
- * Pausing from one day to another moves the end date on by the days paused plus 3 (a Monday to a Friday is 4 whole
- * weeks), to the Friday on or after it (M28's pause). Returns { ok, days, weeks, end, line } or { ok: false, line }.
+ * A pause's length in days: from its first day to the day coaching starts again (resumeDay), so a Monday to a Friday
+ * is whole weeks (Mon 1 Mar to Fri 26 Mar: 28 days). The one length the end date (pauseMove) and every invoice due from
+ * the pause's start (settling.js's agreementSchedule) move on by, on the device and the server alike (Stage D item 16:
+ * before, the end moved by the days plus 3 and the invoices by the days plus 1, two days apart, landing on a Saturday).
+ */
+export function pauseDays(from, to) {
+  if (!from || !to || to <= from) return 0;
+  return daysBetween(from, resumeDay(to));
+}
+
+/**
+ * Pausing from one day to another moves the end date on by the pause's length (pauseDays: a Monday to a Friday is 4
+ * whole weeks), to the Friday on or after it (M28's pause). Returns { ok, days, weeks, end, line } or { ok: false, line }.
  * `today` (on screen): the line's date shows its year only when it isn't today's; the server leaves it out (the year kept).
  */
 export function pauseMove(end, from, to, today = null) {
   if (!from || !to || to <= from) return { ok: false, line: 'Choose an Until date after From.' };
-  const days = daysBetween(from, to) + 3;
+  const days = pauseDays(from, to);
   const weeks = Math.round(days / 7);
   const newEnd = fridayOnOrAfter(addDays(end, days));
   return {
@@ -174,4 +192,22 @@ export function endEarlyProblem({ on, today, end = null, earlyEnd = null }) {
   const until = [end, earlyEnd].filter(Boolean).sort()[0] || null;
   if (until && on >= until) return `It already ends on ${dayKeyWords(until, { year: true, today })}. Choose a last day before then.`;
   return null;
+}
+
+/**
+ * The coaching sessions already booked inside a pause (Stage D item 16, Tim, 27 Nov): the client's coaching sessions
+ * still to come whose day (on `zone`'s clock) is from `from` to `to`, earliest first. A pause moves and cancels none of
+ * them: the coach moves or cancels each one with the calendar's own Move and Delete, and the client hears only about
+ * those (the calendar's own session emails). The device (the pause's check and the agreement's page) and the server
+ * (the pause's answer) ask the same.
+ * @param {object[]} sessions coach_sessions rows
+ * @param {{ from: string, to: string, profileId?: string|null, zone?: string, now?: number }} pause
+ */
+export function sessionsInPause(sessions, { from, to, profileId = null, zone = 'Europe/London', now = Date.now() } = {}) {
+  if (!from || !to || to < from) return [];
+  return (sessions || [])
+    .filter((s) => s && s.starts_at && (!profileId || s.profile_id === profileId) && (s.kind || 'coaching') === 'coaching' && !s.outcome)
+    .filter((s) => Date.parse(s.starts_at) > now)
+    .filter((s) => { const d = dayIn(zone, new Date(s.starts_at)); return d >= from && d <= to; })
+    .sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at));
 }

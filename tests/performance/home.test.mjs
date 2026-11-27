@@ -51,7 +51,7 @@ test('morning: Daily plan until it is done or noon', () => {
   const c = homeSuggestion(base());
   assert.equal(c.key, 'plan');
   assert.equal(c.question, 'Ready to plan your day?');
-  assert.equal(c.time, '~4 minutes');
+  assert.equal(c.time, '~3 minutes'); // Draft 5 (Stage D item 5)
   assert.equal(c.action.to, '/daily-plan');
   assert.equal(homeSuggestion(base({ dayPlanned: true })).key, 'today');
 });
@@ -67,7 +67,7 @@ test('afternoon: how today is going, with no to-do count (UNDEFINED)', () => {
 test('evening: Daily review from 17:00, then the day is done', () => {
   const c = homeSuggestion(base({ hour: 17 }));
   assert.equal(c.key, 'review');
-  assert.equal(c.time, '~5 minutes');
+  assert.equal(c.time, '~3 minutes'); // Draft 5 (Stage D item 5)
   assert.equal(homeSuggestion(base({ hour: 20, reviewed: true })).key, 'done');
 });
 

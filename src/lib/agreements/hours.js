@@ -45,7 +45,7 @@ export function balanceNote(usedMinutes, block, first = '') {
 
 /** Whether the block is 80% used or more (the Needs you line). */
 export const at80 = (usedMinutes, block) => block > 0 && usedMinutes / block >= TELL_AT;
-/** The share used, as a whole percentage (M28's "Adie's block is 80% used"). */
+/** The share used, as a whole percentage (M28's "Rhys's block is 80% used"; Draft 10 renames M28's example). */
 export const percentUsed = (usedMinutes, block) => (block > 0 ? Math.round((usedMinutes / block) * 100) : 0);
 
 /** "2 hours", "3 hours 10 minutes": a length in full words (26 Oct rule 8: never "h"; P9, Polish 1, over M28's "2 h 00"). */

@@ -224,8 +224,9 @@ const PLAIN = [
   ['/grow-step-3', '/get-unstuck'],
   ['/grow-step-3b-prioritize', '/get-unstuck'],
   ['/grow-step-4', '/get-unstuck'],
-  ['/inversion-step-2', '/pre-mortem/risks'],
-  ['/inversion-step-3', '/pre-mortem/plan'],
+  // The Pre-mortem is one guided tool at /pre-mortem since Draft 6 (Stage D item 1): its older step addresses go there.
+  ['/inversion-step-2', '/pre-mortem', 'Pre-mortem'],
+  ['/inversion-step-3', '/pre-mortem', 'Pre-mortem'],
   ['/if-then-planning', '/pressure-plan', 'Pressure plan'],
   ['/stop-doing-audit', '/time-audit', 'Time audit'],
   ['/tough-conversation-step-1', '/give-difficult-feedback', 'Give difficult feedback'],

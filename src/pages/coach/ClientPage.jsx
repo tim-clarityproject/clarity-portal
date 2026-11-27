@@ -38,6 +38,7 @@ import NameNote from './NameNote';
 import ClientCards from './money/ClientCards';
 import { agreementRows, somethingWaiting } from '../../lib/coach/money';
 import { signedPdfProblem } from '../../lib/agreements/askClient';
+import { closePdfTab, openPdfFile, pdfTab } from '../../lib/pdf/saveFile';
 import { countFigure, countWords } from '../../lib/coach/numbers';
 
 // A client's page (M11: Sam, Leo, Marcus, Priya and Jordan). Overview is
@@ -728,12 +729,15 @@ let openingAgreement = false; // one PDF at a time
 async function openSignedAgreement(version, setProblem, beforeMigration) {
   if (openingAgreement || !version?.id) return;
   openingAgreement = true;
+  // Stage D item 14: it opens, never quietly saves. The tab opens inside the tap, before anything is awaited.
+  const tab = pdfTab();
   const words = import('../../lib/friendlyError');
   try {
-    const [{ loadSignedPdf }, { savePdfFile }] = await Promise.all([import('../../lib/coaching/agreements'), import('../../lib/pdf/saveFile')]);
+    const { loadSignedPdf } = await import('../../lib/coaching/agreements');
     const { bytes, fileName } = await loadSignedPdf(version);
-    savePdfFile(bytes, fileName);
+    openPdfFile(bytes, fileName, tab);
   } catch (e) {
+    closePdfTab(tab);
     // Only until 064 has run on the database: its text in the panel, as before.
     if (e?.code === 'PGRST202' || e?.code === '42883') { beforeMigration(); return; }
     const { isOffline, needsConnection } = await words.catch(() => ({ isOffline: () => false, needsConnection: null }));

@@ -823,7 +823,7 @@ try {
   await calm(page);
   pass('start: opens on the steps for Sprint 2', (await page.locator('.ds-guide').textContent()).includes('Performance Sprint') && /How long is this sprint\?/.test(await heading(page)), await heading(page));
   await page.getByRole('radio', { name: '4 weeks', exact: true }).click();
-  await page.getByLabel('What would you like to call it?').fill('Workshop month');
+  await page.getByLabel('What do you want to call it?').fill('Workshop month');
   await next(page);
   at = 'start day';
   pass('start: Today isn’t offered, as Sprint 1 holds today', (await page.getByRole('radio', { name: /^Today/ }).count()) === 0);

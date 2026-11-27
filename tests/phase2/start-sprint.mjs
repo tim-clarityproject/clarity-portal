@@ -148,7 +148,16 @@ const next = async (page) => {
     await page.locator('.ds-guide-next').click();
     await page.waitForTimeout(650);
   }
+  // Stage D, Draft 11: the commit question ends the steps. It can't be skipped, so it is answered here.
+  if (/What will you do on day one\?/.test(await page.locator('.ds-guide-question, .ds-guide-title').first().textContent().catch(() => ''))) {
+    pass('day one: no Skip on the commit question', (await page.locator('.ds-guide-skip').count()) === 0);
+    const box = page.locator('.ds-guide-body textarea').first();
+    if (!(await box.inputValue())) await box.fill(DAY_ONE);
+    await page.locator('.ds-guide-next').click();
+    await page.waitForTimeout(650);
+  }
 };
+const DAY_ONE = 'Book the team off-site on Monday morning';
 const heading = (page) => page.locator('.ds-guide-question, .ds-guide-title').first().textContent();
 
 async function pageChecks(page, tag) {
@@ -277,7 +286,7 @@ try {
   pass('steps: the label above is the new sprint', (await page.locator('.ds-guide').textContent()).includes('Performance Sprint'));
   pass('steps: How long is this sprint?', /How long is this sprint\?/.test(await heading(page)));
   await page.getByRole('radio', { name: '6 weeks', exact: true }).click();
-  await page.getByLabel('What would you like to call it?').fill('Autumn push');
+  await page.getByLabel('What do you want to call it?').fill('Autumn push'); // Stage D, Draft 11
   await next(page);
   pass('steps: When does it start?', /When does it start\?/.test(await heading(page)));
   await page.getByRole('radio', { name: /^Today/ }).click();
@@ -327,6 +336,9 @@ try {
   const st = await settingsOf(sh.map((h) => h.id));
   const changed = st.find((s) => s.sprint_habit_id === sh.find((h) => h.habit_id === planHabits[0].id)?.id);
   pass('start: the change is in this sprint’s settings', Number(changed?.target) === 3, JSON.stringify(changed));
+  const dayOne = (await db.from('todos').select('sprint_id, planned_week, source').eq('user_id', me).eq('text', DAY_ONE).eq('sprint_id', sprint2.id)).data;
+  pass('start: the day-one answer is a to-do in week 1 (Stage D, Draft 11)', dayOne.length === 1 && dayOne[0].planned_week === 1 && dayOne[0].source === 'other_tool', JSON.stringify(dayOne));
+  pass('Ready: the day-one row', ready.includes(DAY_ONE));
   const planAfter = (await db.from('habits').select('id, target').eq('id', planHabits[0].id)).data[0];
   pass('start: the plan itself is unchanged', Number(planAfter.target) === Number(planHabits[0].target));
   await context.close();

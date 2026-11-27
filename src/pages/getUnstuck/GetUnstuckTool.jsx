@@ -27,7 +27,6 @@ import {
   TODO_SOURCE,
   TOOL_NAME,
   WHERE,
-  nudge,
   optionChoices,
   pickedOptions,
   question,
@@ -140,7 +139,6 @@ export default function GetUnstuckTool({
     name: STAGE[key],
     label: STAGE[key],
     question: question(key, plan),
-    nudges: [nudge(key)],
     render: () => (
       <>
         {key === 'opts' && <Timer className="gu-timer" />}
@@ -180,7 +178,6 @@ export default function GetUnstuckTool({
       name: STAGE.goal,
       label: STAGE.goal,
       question: question('goal', plan),
-      nudges: [nudge('goal')],
       example: GOAL_EXAMPLE,
       required: true,
       check: () => requiredMessage('goal', plan),
@@ -197,15 +194,14 @@ export default function GetUnstuckTool({
       ),
       after: actionsFirst ? actions : null,
     },
-    rowsStep('cons'),
     rowsStep('opps'),
+    rowsStep('cons'),
     rowsStep('opts'),
     {
       key: 'will',
       name: STAGE.will,
       label: STAGE.will,
       question: question('will', plan),
-      nudges: [nudge('will')],
       required: true,
       check: () => requiredMessage('will', plan),
       render: () => (
@@ -250,7 +246,9 @@ export default function GetUnstuckTool({
       name: STAGE.steps,
       label: STAGE.steps,
       question: question('steps', plan),
-      nudges: [nudge('steps', { guest })],
+      // The commit question (Stage D, Draft 11): it can't be skipped.
+      required: true,
+      check: () => requiredMessage('steps', plan),
       render: () => (
         <NextSteps>
           {plan.acts.map((a, j) => {

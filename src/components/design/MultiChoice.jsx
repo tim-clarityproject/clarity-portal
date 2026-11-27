@@ -26,7 +26,11 @@ import './design.css';
 // count: (n) => the line under the list ("You’ve chosen 2 of 3.").
 // columns: short answers side by side, as many columns as fit (two in the
 //      calm frame, one on a phone; M10's "Which words fit the feeling?").
-export default function MultiChoice({ label, ariaLabel, hint, options, values, onChange, who, coachName, max, variant, groups, count, columns = false }) {
+// side: (option, on) => what a 'pick' row shows at its right end (Stage D,
+//      Draft 11, the Daily plan's first to-do): { text } a small grey word
+//      inside the row ("Most important"), or { action, onClick } a quiet
+//      link beside it ("Move to top"), a button of its own, never inside the row's.
+export default function MultiChoice({ label, ariaLabel, hint, options, values, onChange, who, coachName, max, variant, groups, count, columns = false, side }) {
   const labelId = useId();
   const hintId = useId();
   const full = max != null && values.length >= max;
@@ -38,11 +42,12 @@ export default function MultiChoice({ label, ariaLabel, hint, options, values, o
   const row = (option) => {
     const on = values.includes(option.value);
     const off = full && !on;
-    return (
+    const aside = pick && side ? side(option, on) : null;
+    const button = (
       <button
         key={option.value}
         type="button"
-        className={`ds-answer ${pick ? 'ds-answer--pick' : 'ds-answer--multi'}${off ? ' ds-answer--full' : ''}`}
+        className={`ds-answer ${pick ? 'ds-answer--pick' : 'ds-answer--multi'}${off ? ' ds-answer--full' : ''}${aside?.action ? ' ds-answer--pick-act' : ''}`}
         aria-pressed={on}
         disabled={off}
         onClick={() => toggle(option.value)}
@@ -59,11 +64,25 @@ export default function MultiChoice({ label, ariaLabel, hint, options, values, o
                 </span>
               )}
             </span>
+            {aside?.text && <small className="ds-pick-side">{aside.text}</small>}
           </>
+        ) : option.hint ? (
+          // A line of meaning under the word (the Emotional wash's words, Draft 7), as Choice's rows have.
+          <span className="ds-answer-words">
+            {option.label}
+            <small className="ds-answer-hint">{option.hint}</small>
+          </span>
         ) : (
           <span>{option.label}</span>
         )}
       </button>
+    );
+    if (!aside?.action) return button;
+    return (
+      <div key={option.value} className="ds-pick-wrap">
+        {button}
+        <button type="button" className="ds-pick-act" aria-label={aside.ariaLabel || aside.action} onClick={aside.onClick}>{aside.action}</button>
+      </div>
     );
   };
   if (groups) {

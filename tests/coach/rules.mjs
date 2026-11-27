@@ -468,14 +468,14 @@ export async function hiddenHelp(page, { app, phone }) {
   const ends = await page.evaluate(() => { const p = [...document.querySelectorAll('.ds-explain-panel')].pop(); const b = p ? [...p.querySelectorAll('button')].filter((x) => x.getBoundingClientRect().width > 0) : []; return b.length ? b[b.length - 1].textContent.trim() : ''; });
   say('its explanation panel ends with “Don’t show me this again”', ends === 'Don’t show me this again', ends);
   await page.locator('.ds-explain-panel').getByRole('button', { name: 'Don’t show me this again' }).click(); await settle(page, 700);
-  say('hiding it says so, with Undo', (await toast()) === 'Hidden. Settings, Look shows it again.' && (await page.locator('.ds-toast').getByRole('button', { name: 'Undo' }).count()) === 1, await toast());
+  say('hiding it says so, with Undo', (await toast()) === 'Hidden. Settings, Appearance shows it again.' && (await page.locator('.ds-toast').getByRole('button', { name: 'Undo' }).count()) === 1, await toast());
   say('hiding it removes its link and closes the explanation', (await link().count()) === 0 && (await page.locator('.ds-explain-panel:visible').count()) === 0, `${await link().count()} links`);
   await page.locator('.ds-toast').getByRole('button', { name: 'Undo' }).click(); await settle(page, 700);
   say('Undo brings the link back', (await link().count()) === 1, `${await link().count()} links`);
   await hide();
-  await page.goto(`${app}/coach/settings/look`); await page.waitForSelector('.cc-app'); await settle(page, 1100);
+  await page.goto(`${app}/coach/settings/appearance`); await page.waitForSelector('.cc-app'); await settle(page, 1100);
   const row = page.locator('.cc-line', { hasText: 'Hidden help' });
-  say('Settings, Look counts what is hidden', /1 explanation is hidden\./.test(await row.innerText().catch(() => '')), (await row.innerText().catch(() => 'no row')).replace(/\s+/g, ' '));
+  say('Settings, Appearance counts what is hidden', /1 explanation is hidden\./.test(await row.innerText().catch(() => '')), (await row.innerText().catch(() => 'no row')).replace(/\s+/g, ' '));
   await row.getByRole('button', { name: 'Show it again' }).click().catch(() => {}); await settle(page, 700);
   say('“Show it again” says so, with Undo, and the row reads “Nothing is hidden.”', (await toast()) === 'Help shows again' && /Nothing is hidden\./.test(await row.innerText().catch(() => '')) && (await row.getByRole('button', { name: 'Show it again' }).count()) === 0, `${await toast()} | ${(await row.innerText().catch(() => '')).replace(/\s+/g, ' ')}`);
   await toTodos();

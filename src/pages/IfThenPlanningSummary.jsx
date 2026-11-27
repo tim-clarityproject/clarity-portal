@@ -1,4 +1,5 @@
 import './toolFocus/formTool.css';
+import './toolFocus/draft6.css';
 import { useState, useContext, useEffect } from 'react';
 import { B3_LINES } from '../content/pageLines/client';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -10,6 +11,10 @@ import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import { Loading, PageOpening, Button, useToast } from '../components/design';
 import SavedItemActions from '../components/SavedItemActions';
+import { dayLabel } from '../components/design/dates';
+import { formatClockTime } from '../lib/dateFormatter';
+import { MoreLink } from '../components/design';
+import { NO_DATE, ROUTINE, VERSION, controlled, fromForm, ifThens } from '../lib/draft6Tools/pressurePlan';
 
 export default function IfThenPlanningSummary() {
   const navigate = useNavigate();
@@ -111,32 +116,34 @@ export default function IfThenPlanningSummary() {
           <PageOpening label="Pressure plan" title={planning.title || 'Pressure plan'} line={B3_LINES.pressurePlanSummary} />
         </div>
 
-        <div className="plan-sum">
-          {data.situation && data.situation.trim() && (
-            <div className="plan-sum-row">
-              <div className="plan-sum-label">Which situation are you concerned about?</div>
-              <p className="plan-sum-value">{data.situation}</p>
-            </div>
-          )}
+        {data.v >= VERSION ? <Draft6Summary data={data} /> : (
+          <div className="plan-sum">
+            {data.situation && data.situation.trim() && (
+              <div className="plan-sum-row">
+                <div className="plan-sum-label">The moment</div>
+                <p className="plan-sum-value">{data.situation}</p>
+              </div>
+            )}
 
-          <div className="plan-sum-row">
-            <div className="plan-sum-label">Scenarios</div>
-            <div className="plan-sum-value">
-              {items.length > 0 ? (
-                items.map((item, index) => (
-                  <div className="plan-pair2" key={index}>
-                    <small>If...</small>
-                    <p>{item.ifCondition}</p>
-                    <small>Then I will</small>
-                    <p>{item.thenAction}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="plan-none">No scenarios planned yet.</p>
-              )}
+            <div className="plan-sum-row">
+              <div className="plan-sum-label">Scenarios</div>
+              <div className="plan-sum-value">
+                {items.length > 0 ? (
+                  items.map((item, index) => (
+                    <div className="plan-pair2" key={index}>
+                      <small>If...</small>
+                      <p>{item.ifCondition}</p>
+                      <small>Then I will</small>
+                      <p>{item.thenAction}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="plan-none">No scenarios planned yet.</p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="plan-actions">
           <Button
@@ -159,5 +166,81 @@ export default function IfThenPlanningSummary() {
         <SavedItemActions />
       </div>
     </div>
+  );
+}
+
+/** "Mon 30 Nov, 07:30" (times only through formatClockTime, rule 19). */
+function whenWords(date, time) {
+  if (!date) return '';
+  const [y, m, d] = date.split('-').map(Number);
+  const [h, min] = (time || '').split(':').map(Number);
+  return time ? `${dayLabel(date)}, ${formatClockTime(new Date(y, m - 1, d, h, min))}` : dayLabel(date);
+}
+
+const after = (word, text) => `${text || ''}`.trim().replace(new RegExp(`^${word}\\b[,\\s]*`, 'i'), '');
+
+// A Pressure plan made to Draft 6 (Polish 1, Stage D item 1): the moment and
+// its date, what you control, your if-then plans and your routine, with
+// Breathe one tap away.
+function Draft6Summary({ data }) {
+  const navigate = useNavigate();
+  const a = fromForm(data, () => '');
+  const mine = controlled(a);
+  const plans = ifThens(a);
+  const routine = ROUTINE.filter((r) => a.routine[r.key].trim());
+  const rehearse = whenWords(a.rehearse.date, a.rehearse.time);
+  return (
+    <>
+      <div className="plan-sum">
+        <div className="plan-sum-row">
+          <div className="plan-sum-label">The moment</div>
+          <div className="plan-sum-value">
+            <p>{a.moment || <span className="plan-none">Not answered yet.</span>}</p>
+            <p className="plan-none">{a.noDate ? NO_DATE : a.date ? dayLabel(a.date) : ''}</p>
+          </div>
+        </div>
+        {mine.length > 0 && (
+          <div className="plan-sum-row">
+            <div className="plan-sum-label">What you control</div>
+            <div className="plan-sum-value">
+              {mine.map((m) => (
+                <div key={m.id}>
+                  <p>{m.text}</p>
+                  {a.acts[m.id] && <p className="plan-none">{`What you’ll do: ${a.acts[m.id]}`}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="plan-sum-row">
+          <div className="plan-sum-label">If it happens</div>
+          <div className="plan-sum-value">
+            {plans.length > 0 ? plans.map((item) => (
+              <div key={item.id}>
+                <p>{`If ${after('if', item.ifCondition)}`}</p>
+                {after('then', item.thenAction) && <p className="plan-none">{`Then ${after('then', item.thenAction)}`}</p>}
+              </div>
+            )) : <p className="plan-none">No plans yet.</p>}
+          </div>
+        </div>
+        {routine.length > 0 && (
+          <div className="plan-sum-row">
+            <div className="plan-sum-label">Your routine</div>
+            <div className="plan-sum-value">
+              {routine.map((r) => <p key={r.key}>{`${r.label}: ${a.routine[r.key]}`}</p>)}
+            </div>
+          </div>
+        )}
+        {rehearse && (
+          <div className="plan-sum-row">
+            <div className="plan-sum-label">When you’ll rehearse</div>
+            <p className="plan-sum-value">{rehearse}</p>
+          </div>
+        )}
+      </div>
+      <div className="d6-sum-links">
+        <MoreLink onClick={() => navigate('/breathe')}>Breathe</MoreLink>
+      </div>
+    </>
   );
 }

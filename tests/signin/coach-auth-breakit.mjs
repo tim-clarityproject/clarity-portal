@@ -326,7 +326,7 @@ if (PARTS.includes('skip')) {
       pass('You’re in typed before the code: straight to Enter your code', /\/code$/.test(await waitPath(d.page, /\/code$/)), path(d.page));
     }
     // Sign-in security (not a coach portal address).
-    await d.page.goto(`${APP}/my-account/sign-in-security`);
+    await d.page.goto(`${APP}/coach/settings/sign-in-security`);
     await sleep(2500);
     const madeBefore = world.madeSets;
     if (await d.page.getByRole('button', { name: 'Make new codes' }).isVisible().catch(() => false)) {
@@ -559,7 +559,7 @@ if (PARTS.includes('offline')) {
   {
     const world = makeWorld({ factor: 'verified', codesLeft: 9, live: true, firstMake: 'random' });
     const d = await device(world, { signedIn: true, aal: 'aal2' });
-    await d.page.goto(`${APP}/my-account/sign-in-security`);
+    await d.page.goto(`${APP}/coach/settings/sign-in-security`);
     await d.page.waitForSelector('.si-srow', { timeout: 20000 });
     await d.page.getByRole('button', { name: 'Make new codes' }).click();
     await goOff(d, world);
@@ -770,13 +770,15 @@ if (PARTS.includes('newcodes')) {
   const world = makeWorld({ factor: 'verified', codesLeft: 9, firstMake: 'random', live: true });
   const d = await device(world, { signedIn: true, aal: 'aal2' });
   const t2 = await newTab(d.ctx);
+  // Stage D, item 13: Sign-in security is a coach portal page now, and the coach portal holds every one of its pages at
+  // the recovery codes while a new set isn't ticked; so both tabs open it and ask first, then both codes go in at once
+  // (each by itself on the sixth digit, polish 1 rule 23).
   for (const p of [d.page, t2.page]) {
-    await p.goto(`${APP}/my-account/sign-in-security`);
+    await p.goto(`${APP}/coach/settings/sign-in-security`);
     await p.waitForSelector('.si-srow', { timeout: 20000 });
     await p.getByRole('button', { name: 'Make new codes' }).click();
-    await codeBox(p).fill(totp(M26_KEY));
   }
-  await Promise.all([press(d.page, 'Carry on'), press(t2.page, 'Carry on')]);
+  await Promise.all([codeBox(d.page).fill(totp(M26_KEY)), codeBox(t2.page).fill(totp(M26_KEY))]);
   await Promise.all([waitPath(d.page, /recovery-codes$/), waitPath(t2.page, /recovery-codes$/)]);
   const a = await codesOnPage(d.page);
   const b = await codesOnPage(t2.page);
@@ -796,7 +798,7 @@ if (PARTS.includes('newcodes')) {
   pass(`${tag}: the replaced set's tick is refused, saying so: "${flat(CODES_REPLACED)}"`, said === flat(CODES_REPLACED) && !world.codesSaved && path(stalePage) === '/coach/sign-in/recovery-codes', `"${said}"`);
   await livePage.getByRole('checkbox', { name: 'I’ve saved them somewhere safe' }).click();
   await press(livePage, 'Open the coach portal');
-  pass(`${tag}: the set in force is ticked, and Sign-in security says so`, (await waitPath(livePage, /sign-in-security$/)) === '/my-account/sign-in-security' && world.codesSaved, path(livePage));
+  pass(`${tag}: the set in force is ticked, and Sign-in security says so`, (await waitPath(livePage, /sign-in-security$/)) === '/coach/settings/sign-in-security' && world.codesSaved, path(livePage));
   // A replaced code, tried on another device.
   const other = await device(world, { width: 400, mode: 'light' });
   await signIn(other.page, world);
@@ -971,7 +973,7 @@ if (PARTS.includes('text')) {
       await d.page.getByRole('checkbox', { name: 'I’ve saved them somewhere safe' }).click();
       await press(d.page, 'Open the coach portal');
       await waitPath(d.page, /^\/coach$/);
-      await d.page.goto(`${APP}/my-account/sign-in-security`);
+      await d.page.goto(`${APP}/coach/settings/sign-in-security`);
       await d.page.waitForSelector('.si-srow', { timeout: 20000 });
       await check(d.page, `Sign-in security, ${at}`);
       await d.page.getByRole('button', { name: 'Make new codes' }).click();

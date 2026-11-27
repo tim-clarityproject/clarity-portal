@@ -107,3 +107,74 @@ test('no client-facing word says pay or unpaid, in any kind (Apple Pay is a prod
   for (const w of words) assert.ok(!/\b(pay|pays|paid|paying|unpaid|payment)\b/i.test(w.replace(/Apple Pay/g, '')), w);
   assert.ok(Object.keys(STANDARD).length >= 11);
 });
+
+// Stage D item 10 (Tim, 27 Nov 2026, 13:31; team-agreement-clauses.md): a team programme's sponsor signs for the
+// organisation, so "you" is the sponsor and the people coached are "each person". Word for word.
+const team = { ...blankTerms('team'), orgName: 'Harbour Rowing', noticeHours: 48, coachName: 'Dr. Tim Dutton',
+  team: { ...blankTerms('team').team, people: [{ name: 'Rhys Evans' }, { name: 'Jo Lake' }], sponsor: { name: 'Ana Ruiz', role: 'Head of rowing', email: '' } } };
+const texts = (c) => c.paragraphs.map((p) => p.text);
+const whys = (c) => c.paragraphs.map((p) => p.why);
+
+test('team: Rearranging and cancelling for each person, the reasons reworded the same way', () => {
+  const re = cl.buildClauses(team).find((c) => c.key === 'rearranging');
+  assert.equal(re.title, 'Rearranging and cancelling');
+  assert.deepEqual(texts(re), [
+    'Each person can rearrange or cancel a coaching session at no charge up to 48 hours before it starts, from the portal or by letting their coach know.',
+    'A coaching session cancelled with less than 48 hours’ notice, or missed without notice, counts as used.',
+    'If someone is late, the coaching session still ends at its usual time. If the coach is late, they get the full time.',
+    'The coach can waive any of this when something serious happens, such as illness or a family emergency.',
+    'If the coach needs to move a coaching session, they offer a new time, and it’s never counted as used.']);
+  assert.deepEqual(whys(re), [
+    'Each coaching session is time held only for that person, and 48 hours lets the coach offer it to someone else.',
+    'The time can rarely be filled at short notice, so it’s treated the same as a coaching session that happened.',
+    'It keeps the next person’s time safe, and the coach holds themselves to the same standard.',
+    'Life happens. The rule is for planning, not for hard moments.',
+    null]);
+});
+
+test('team: Confidentiality and records names the organisation; the sponsor hears only the facts', () => {
+  const c = cl.buildClauses(team).find((x) => x.key === 'confidentiality');
+  assert.deepEqual(texts(c), [
+    'What each person shares in coaching stays between them and their coach.',
+    'It isn’t shared with anyone else, including Harbour Rowing, without that person’s agreement.',
+    'You hear when coaching starts and ends, and how many coaching sessions are used, never what is said.',
+    'The only exceptions are where there’s a serious risk of harm to the person or someone else, or where the law requires it. The coach would talk to the person first wherever they can.',
+    'The coach keeps private notes and session summaries for this coaching. Recordings are kept until this agreement ends, then deleted.',
+    'The coach may discuss their practice in professional supervision, without naming anyone.']);
+  assert.ok(whys(c).every((w) => w === null));
+});
+
+test('team: Their data, Responsibilities and the last line of Ending and changes', () => {
+  const list = cl.buildClauses(team);
+  const data = list.find((x) => x.key === 'data');
+  assert.equal(data.title, 'Their data');
+  assert.deepEqual(texts(data), [
+    'The Clarity Portal keeps each person’s data securely, as the privacy notice explains.',
+    'Each person chooses what their coach sees in the portal. Nothing in it is shared with Harbour Rowing.',
+    'Each person can download or delete their data at any time. Coaching records such as this agreement and invoices are kept for 6 years after it ends, because UK law requires it.']);
+  assert.deepEqual(texts(list.find((x) => x.key === 'responsibilities')), [
+    'The coach turns up prepared, keeps to this agreement, and is honest with each person, including when coaching isn’t the right support for something.',
+    'Each person owns their decisions and the actions they take between coaching sessions.',
+    'Harbour Rowing gives each person the time for their coaching sessions, and tells the coach early if something changes, such as someone leaving the programme.',
+    'Coaching isn’t therapy, counselling or medical advice. If something would be better helped by another professional, the coach will say so and can suggest someone.']);
+  const ending = texts(list.find((x) => x.key === 'ending'));
+  assert.equal(ending.at(-1), 'Each person’s portal account stays open after the agreement ends, so their plans and records stay theirs.');
+  assert.equal(ending.at(-2), 'Any change to this agreement is made as a new version that you both sign. Every version is kept.', 'only the last line changes');
+  assert.equal(list.length, 10, 'a team keeps its 10 clauses, numbered 1 to 10');
+  // With no organisation named yet, the sponsor's own words.
+  const noOrg = cl.buildClauses({ ...team, orgName: null });
+  assert.equal(texts(noOrg.find((x) => x.key === 'responsibilities'))[2].slice(0, 35), 'Your organisation gives each person');
+});
+
+test('team: individual agreements keep their wording, and a stored version keeps the text it was sent with', () => {
+  const ind = cl.buildClauses(sam);
+  assert.equal(ind.find((x) => x.key === 'data').title, 'Your data');
+  assert.equal(texts(ind.find((x) => x.key === 'rearranging'))[0], 'You can rearrange or cancel a coaching session at no charge up to 24 hours before it starts, from the portal or by letting your coach know.');
+  assert.equal(texts(ind.find((x) => x.key === 'ending')).at(-1), 'Your portal account stays open after the agreement ends, so your plans and records stay yours.');
+  // A team version stored before 27 Nov reads as it was stored: the reader shows version.clauses, never the code's.
+  const stored = [{ key: 'data', number: 6, title: 'Your data', paragraphs: [{ text: 'The Clarity Portal keeps your data securely, as the privacy notice explains.', why: null }] }];
+  assert.deepEqual(cl.resolveChoice(stored, 'upfront'), stored);
+  // A coach's own team standard still wins over the code's, as for every kind.
+  const own = { rearranging: { version: 2, title: 'Rearranging', paragraphs: [{ text: 'Up to {noticeHours} hours before.' }] } };
+  assert.equal(texts(cl.buildClauses(team, { standards: own }).find((x) => x.key === 'rearranging'))[0], 'Up to 48 hours before.');
+});

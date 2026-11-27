@@ -21,7 +21,7 @@ export function CalmFrameDemo() {
       render: () => <RowList rows={rows} onChange={setRows} max={Infinity} removeAlways undo itemLabel={(n) => `Constraint ${n}`} addLabel="Add another constraint" />,
     },
     {
-      key: 'steps', name: 'Will', label: 'Will', question: 'What exactly will you do?', nudges: ['Make each one something you can start this week.'],
+      key: 'steps', name: 'Will', label: 'Will', question: 'What will you do, and when?', nudges: ['Make each one something you can start this week.'],
       render: () => (
         <NextSteps>
           <NextStepRow

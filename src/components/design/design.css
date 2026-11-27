@@ -11326,3 +11326,69 @@
    (rule 4a: no line directly under a heading when rows with their own dividers follow; UI tester P16). */
 .ui-root .ds-guide-body > .ds-todos:first-child,
 .ui-root .ds-guide-body > :first-child > .ds-todos:first-child { border-top: 0; }
+
+/* Two or three examples behind "See an example", one to a line, never one by role (Stage D, question rule 10). */
+.ui-root .ds-guide-examples {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.ui-root .ds-guide-examples > li { margin: 0; }
+
+/* The Daily plan's first to-do (Stage D, Draft 11): "Most important" small and grey at the
+   right of its row (the example's .pick small), and "Move to top" a quiet link at the same
+   place on the others, a button of its own beside the row's, with a 44px tap area. On a
+   phone both sit under the words, as the example's .pick small does (margin-left 38px). */
+.ui-root .ds-pick-side {
+  flex: none;
+  margin-left: auto;
+  font-size: var(--fs-meta);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.ui-root .ds-pick-wrap { position: relative; display: grid; }
+.ui-root .ds-answer.ds-answer--pick-act { padding-right: calc(var(--space-7) + var(--space-5)) !important; }
+.ui-root .ds-pick-act {
+  all: unset;
+  position: absolute;
+  right: var(--row-pad-x);
+  top: 50%;
+  transform: translateY(-50%);
+  min-height: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--fs-meta);
+  color: var(--text-2);
+  text-decoration: underline;
+  text-decoration-thickness: var(--line-w);
+  text-underline-offset: var(--space-1);
+  white-space: nowrap;
+}
+.ui-root .ds-pick-act:hover { color: var(--text); }
+@media (max-width: 600px) {
+  .ui-root .ds-answer--pick:has(.ds-pick-side) { flex-wrap: wrap; row-gap: var(--space-px2); }
+  .ui-root .ds-pick-side {
+    margin-left: calc(var(--checkbox-box) + var(--space-px14));
+    width: 100%;
+  }
+  .ui-root .ds-answer.ds-answer--pick-act {
+    padding-right: var(--row-pad-x) !important;
+    padding-bottom: calc(var(--space-px12) + var(--fs-meta) + var(--space-px6)) !important;
+  }
+  .ui-root .ds-pick-act {
+    top: auto;
+    right: auto;
+    transform: none;
+    left: calc(var(--row-pad-x) + var(--checkbox-box) + var(--space-px14));
+    bottom: 0;
+    min-height: calc(var(--space-px12) + var(--fs-meta) + var(--space-px6));
+    padding-top: var(--space-1);
+    box-sizing: border-box;
+    align-items: flex-start;
+  }
+  .ui-root .ds-pick-act::after { content: ''; position: absolute; inset: calc(-1 * var(--space-px10)) calc(-1 * var(--space-2)); }
+}
+.ui-root .ds-pick-act:focus-visible { outline: var(--focus-w) solid var(--text); border-radius: var(--space-1); }

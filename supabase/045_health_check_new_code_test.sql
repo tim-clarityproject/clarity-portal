@@ -83,7 +83,7 @@ begin
   begin
     coach := pg_temp.t45_user('coach'); other_u := pg_temp.t45_user('other');
     if has_coaches then
-      execute 'insert into public.coaches (user_id, role, display_first_name) values ($1, ''coach'', ''Adie'')' using coach;
+      execute 'insert into public.coaches (user_id, role, display_first_name) values ($1, ''coach'', ''Rhys'')' using coach;
     end if;
 
     -- ------------------------------------------------ N1. a link; the coach is given its code

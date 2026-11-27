@@ -1,7 +1,7 @@
 import { formatDocDate } from '../../dateFormatter';
 import {
-  ALIGNMENT, AUTONOMY, AREA_NAME, TOOL_NAME, TRUST,
-  areaOf, before, dotTip, headline, lastWords, ratedPeople, startQuestions,
+  ALIGNMENT, AUTONOMY, AREA_NAME, DECIDE_COLOURS, DECIDE_TITLE, TOOL_NAME, TRUST,
+  areaOf, before, commitPerson, commitText, dotTip, headline, lastWords, question, ratedPeople, startQuestions,
 } from '../../teamCheck/model';
 
 // A Team performance check as a document for the shared PDF template
@@ -105,9 +105,26 @@ export function teamCheckPdf({ check, person = '', createdAt = null }) {
         ] : [],
       },
       { title: 'Trust', blocks: people.length ? [trust] : [] },
+      // What's working well with each person (Stage D, Draft 11); a blank answer is left out.
+      {
+        title: 'What’s working well',
+        blocks: (check.people || []).filter((p) => String(p.w || '').trim()).map((p) => ({ type: 'field', label: p.name, text: String(p.w).trim() })),
+      },
       {
         title: 'Questions to start with',
         blocks: [{ type: 'list', items: startQuestions(check).map((q) => q.text) }],
+      },
+      // Decide who decides (Stage D, item 4): what the autonomy question's colours mean, in words only.
+      {
+        title: DECIDE_TITLE,
+        blocks: startQuestions(check).some((q) => q.kind === 'autonomy')
+          ? DECIDE_COLOURS.map((c) => ({ type: 'field', label: c.name, text: c.meaning })) : [],
+      },
+      // The commit answer, last: the page's own next step (summary order, rule 29ar).
+      {
+        title: 'Your next step',
+        blocks: commitText(check).trim() && commitPerson(check)
+          ? [{ type: 'field', label: question('c', commitPerson(check)), text: commitText(check).trim() }] : [],
       },
     ],
   };

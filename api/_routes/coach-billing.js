@@ -136,9 +136,12 @@ export function askedFor(body, now = new Date()) {
     return { kind: b.kind, agreementId: String(b.agreementId).toLowerCase(), newFeeMinor: fee, fromDay: String(b.fromDay),
       note: typeof b.note === 'string' ? b.note.replace(/\r\n?/g, '\n').trim().slice(0, 1000) : '' };
   }
-  const idKey = b.kind === 'draft' ? 'agreementId' : b.kind === 'send_reminder' ? 'reminderId' : 'invoiceId';
+  // send_reminder takes the reminder drafted, or the invoice whose owed reminder isn't drafted yet (Stage D, item 15).
+  const owedBy = b.kind === 'send_reminder' && b.reminderId == null && b.invoiceId != null;
+  const idKey = b.kind === 'draft' ? 'agreementId' : b.kind === 'send_reminder' && !owedBy ? 'reminderId' : 'invoiceId';
   if (!UUID.test(String(b[idKey] || ''))) return null;
   const out = { kind: b.kind, id: String(b[idKey]).toLowerCase() };
+  if (owedBy) out.owedBy = true;
   if (b.kind === 'send_reminder' && b.again === true) out.again = true;
   // Phase 6b run 3 (Group D): the coach's edited reminder words, and a purchase order added on Send.
   if (b.kind === 'send_reminder' && typeof b.text === 'string' && b.text.trim()) out.text = b.text.replace(/\r\n?/g, '\n').trim().slice(0, 4000);
@@ -878,6 +881,29 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
       return { versionId: v.id, sentAt, emailed: outcome === 'sent' };
     },
 
+    /**
+     * The reminder owed on one of the coach's invoices, drafted now if the nightly round hasn't (Stage D, item 15): the
+     * one waiting if there is one, else the latest stage reached that is later than any drafted (reminderDue). The
+     * coach pressed Send, so a pause (which only stops the nightly drafting) doesn't stop it. Sends nothing.
+     * @returns {Promise<{ reminderId?: string, settled?: boolean, none?: boolean }>}
+     */
+    async draftOwedReminder(invoiceId) {
+      const inv = await mine('invoices', invoiceId);
+      if (inv.status !== 'sent') return { settled: true };
+      const read = async () => (await server.from('invoice_reminders').select('id, stage, sent_at, sending_at').eq('invoice_id', inv.id)).data || [];
+      const done = await read();
+      const waiting = done.filter((r) => !r.sent_at && !r.sending_at).sort((a, b) => b.stage - a.stage)[0];
+      if (waiting) return { reminderId: waiting.id };
+      if (done.some((r) => !r.sent_at && r.sending_at)) return { none: true }; // one may have gone: Send again, after a check
+      const stage = reminderDue({ dueKey: inv.due_on, now: now(), zone: inv.payer_zone, drafted: done.map((d) => d.stage) });
+      if (!stage) return { none: true };
+      const { data } = await server.from('invoice_reminders').insert({ invoice_id: inv.id, coach_id: coach.id, stage }).select('id');
+      if (data?.[0]?.id) return { reminderId: data[0].id };
+      // Another tab or the nightly round drafted it a moment ago (one per stage: 061's unique key).
+      const again = (await read()).find((r) => r.stage === stage && !r.sent_at && !r.sending_at);
+      return again ? { reminderId: again.id } : { none: true };
+    },
+
     /** The nightly round's part for this coach: reminders due at 3, 7 and 14 days, drafted once each, never sent. */
     async draftReminders() {
       const { data: invs } = await server.from('invoices').select('*').eq('coach_id', coach.id).eq('status', 'sent');
@@ -999,7 +1025,14 @@ export default async function handler(req, res, env = process.env) {
     if (asked.kind === 'refund' || asked.kind === 'credit') return reply(res, 200, { ok: true, ...(await b.refundOrCredit(asked.id, asked.kind, asked.amount, asked.reason)) });
     // Only the live site ever sends: a preview claims nothing, so a reminder pressed there is still waiting on the live site.
     if (!maySend(env) || !canSend(env)) return reply(res, 200, { ok: false, reason: 'preview' });
-    const r = await b.reminderToSend(asked.id, { again: asked.again === true });
+    let reminderId = asked.id;
+    if (asked.owedBy) {
+      const owed = await b.draftOwedReminder(asked.id);
+      if (owed.settled) return reply(res, 200, { ok: true, sent: false, settled: true });
+      if (!owed.reminderId) return reply(res, 409, { ok: false, message: 'No reminder is due on this invoice yet.' });
+      reminderId = owed.reminderId;
+    }
+    const r = await b.reminderToSend(reminderId, { again: asked.again === true });
     if (r.noAddress) return reply(res, 409, { ok: false, message: 'This invoice has no email address to send a reminder to, so add one and try again.' });
     if (r.unsure) return reply(res, 409, { ok: false, unsure: true, message: REMINDER_UNSURE });
     if (!r.reminder) return reply(res, 200, { ok: true, sent: false, already: Boolean(r.already), settled: Boolean(r.settled) });
