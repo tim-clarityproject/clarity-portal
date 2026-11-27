@@ -1,32 +1,43 @@
 import { useEffect, useRef } from 'react';
-import { BreathOrb } from './BreathOrb';
-import { useOrbStyle } from './useOrbStyle';
 import { useFocusModeOn } from './Frame';
+import { useBreatheButton } from './useBreatheButton';
+import { usePortalPreparing } from '../../lib/portalPreparing';
 import './design.css';
 
-// The one floating button (Tim, 23 Oct: Breathe only; breathe-orb.html,
-// 29 Oct). On every screen, phones too since Polish 1 (walk item 5), bottom right, stepping aside in a tool's focus mode: a 60px pill with the small
-// breathing orb in the person's chosen style (Rings, the starting choice,
-// or Level) and the word "Breathe"; one click opens Breathe. At rest the
-// orb breathes slowly, 4 seconds in and 4 out; the 8px crosshair inside
-// Rings is the one exception to the 14px minimum (decorative, aria-hidden,
-// part of the approved orb). Still with reduced motion. Never on phone
-// (hidden by design.css wherever there is no mouse), where Breathe is in
-// the menu. Chat to the coach is in the header (ChatButton).
+// The floating Breathe button (Tim, 26 Nov, decisions part 12; NEXT-BREATHE.md, mock-up option D). On a phone (under
+// 1024px, where the menu is closed) a 48px round button bottom right: the card colour, a 1px line, no word (its name,
+// "Breathe", is read out), and the fine two-circle ring breathing from 0.7 to 1.15 over 8 seconds, still under Reduce
+// motion. No coral. On a laptop the menu is always open and Breathe is its plain item above My Account, so nothing
+// floats over the page (design.css hides it there). It steps aside inside a tool (focus mode), on the Breathe page
+// (App.jsx), while a client's portal is being prepared, and when the person switches "Show the Breathe button" off in My Account › Settings (useBreatheButton).
+//
+// The ring (.ds-breathe-ring) is the same fine two circles as the Breathe tools' centre ring.
 //
 // placement 'fixed': bottom right of the screen (real pages).
-// placement 'inline': in the flow (the design gallery).
-// style: the gallery shows both; real pages use the person's choice.
+// placement 'inline': in the flow (the design gallery), always shown.
 // pageKey: the page it sits on. A click in the first moment after it
 // appears, after the page changes or after a click on anything else is
 // ignored, as the guided tool ignores one after a move: it is the second
 // half of a double tap on a button that was in the same corner (Start
 // Performance Sprint 2 closes the guided tool over it, then Breathe).
 const ARRIVE_GUARD_MS = 400;
-export default function FloatingOrb({ onBreathe, placement = 'fixed', style, pageKey }) {
-  const [chosen] = useOrbStyle();
+
+export function BreatheRing({ className = '' }) {
+  return (
+    <svg className={`ds-breathe-ring ${className}`.trim()} viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+      <circle cx="10" cy="10" r="8" />
+      <circle cx="10" cy="10" r="3" />
+    </svg>
+  );
+}
+
+export default function FloatingOrb({ onBreathe, placement = 'fixed', pageKey }) {
+  const fixed = placement === 'fixed';
   // Inside a tool (focus mode, rule 21) it steps aside with the menu, so it never sits over a tool's foot.
   const focus = useFocusModeOn();
+  const [shown] = useBreatheButton();
+  // A client still being prepared sees the preparing page at Breathe's address, so the button would open nothing.
+  const preparing = usePortalPreparing();
   const arrivedAt = useRef(0);
   const buttonRef = useRef(null);
   useEffect(() => {
@@ -43,12 +54,11 @@ export default function FloatingOrb({ onBreathe, placement = 'fixed', style, pag
     if (Date.now() - arrivedAt.current < ARRIVE_GUARD_MS) return;
     onBreathe?.(e);
   };
-  if (focus && placement === 'fixed') return null;
+  if (fixed && (focus || !shown || preparing)) return null;
   return (
-    <div className={`ds-orb${placement === 'fixed' ? ' ds-orb--fixed' : ''}`}>
-      <button ref={buttonRef} type="button" className="ds-breathe" onClick={breathe}>
-        <BreathOrb style={style || chosen} pattern="rest" />
-        Breathe
+    <div className={`ds-orb${fixed ? ' ds-orb--fixed' : ''}`}>
+      <button ref={buttonRef} type="button" className="ds-breathe" aria-label="Breathe" onClick={breathe}>
+        <BreatheRing />
       </button>
     </div>
   );

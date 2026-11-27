@@ -78,6 +78,8 @@ export { default as KeepChangeRow, InPlan } from './KeepChangeRow';
 export { default as PerformanceSystem, PerformanceSystemBody } from './PerformanceSystem';
 export { default as EmptyState } from './EmptyState';
 export { default as FloatingOrb } from './FloatingOrb';
+export { BreatheRing } from './FloatingOrb';
+export { useBreatheButton, breatheButtonShown, BREATHE_BUTTON_PREFERENCE } from './useBreatheButton';
 export { BreathOrb, BreathWords, OrbStyleChoice } from './BreathOrb';
 export { EndScreen, NightScope, InfoWords } from './EndScreen';
 export { useOrbStyle } from './useOrbStyle';

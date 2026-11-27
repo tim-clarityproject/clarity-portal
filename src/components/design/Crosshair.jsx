@@ -3,9 +3,8 @@ import './design.css';
 // The brand crosshair (public/brand/crosshair_white.png, used as a CSS
 // mask): add (a plus) and, turned 45°, close. Nothing else: anything that
 // opens a list or a fold uses DisclosureArrow (Tim, 23 Oct). Never a typed + or ×,
-// never a redrawn icon, never smaller than 14px (the one exception is the
-// decorative 8px crosshair inside the Breathe orb, see --breathe-cross in
-// tokens.css). Always decorative: the
+// never a redrawn icon, never smaller than 14px (the Breathe orb has had no
+// crosshair since the Breathe round, 27 Nov). Always decorative: the
 // button around it carries the words (aria-label).
 //
 // variant: 'plus' (coral by default) or 'close' (grey, turned 45°).

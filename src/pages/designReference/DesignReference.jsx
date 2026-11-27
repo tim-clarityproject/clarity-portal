@@ -1883,12 +1883,11 @@ function Gallery() {
         <GallerySection id="c17" title="Breathe button" demo={OrbDemo} rules={(
           <>
             <p><New /><b>Breathe only, with its name</b> (Tim, 23 Oct).</p>
-            <p>A 60px pill, bottom right, desktop only: the small breathing orb in the person’s chosen style and the word “Breathe” (breathe-orb.html, 29 Oct).</p>
-            <p>The edge and the crosshair turn coral on hover or keyboard focus. One click opens Breathe.</p>
+            <p>On a laptop Breathe is a plain menu item above My Account, and nothing floats (the Breathe round, 27 Nov, option D).</p>
+            <p>Under 1024px it is a 48px round button bottom right: the card colour, a 1px hairline, no word, the fine two-circle ring breathing over 8s. No coral. “Show the Breathe button” in My Account’s Settings turns it off.</p>
             <p><b>Chat to [coach’s first name] sits in the desktop header</b>, top right, as a quiet labelled button, e.g. “Chat to Tim”.</p>
             <p>Always the client’s own coach from their coach link, never “Dr.”. Someone without a coach, or whose coach has no way stored that the portal can open, sees nothing.</p>
             <p>One way opens at once; two show a small list. Offline, it says calmly that a chat needs a connection.</p>
-            <p>Phone has no floating button.</p>
           </>
         )} />
 

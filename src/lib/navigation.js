@@ -333,8 +333,8 @@ export function menuAreas(coachName) {
  * The desktop menu (menu-options.html, option A, the slim panel; Tim, 9
  * Nov, 14:41): Home at the top, the hubs under two quiet group labels,
  * and My Account at the bottom, with Sign out below it. Pinned tools sit
- * above Home, as before. No Log today or Breathe in the menu: Log today
- * is on Home and Breathe has its own button.
+ * above Home, as before. No Log today in the menu: Log today is on Home.
+ * The frame's menu (FRAME_MENU) adds Breathe above My Account (NEXT-BREATHE.md).
  */
 export const DESKTOP_MENU = {
   top: [{ key: 'home', name: 'Home', to: '/welcome' }],
@@ -363,12 +363,16 @@ export const DESKTOP_MENU = {
  * The menu in the frame (25 Nov design reference "Frame and menu"; polish 1,
  * rule 19): the same rows as DESKTOP_MENU, in groups separated by gaps, not
  * names (Home; Dashboard, Plan, Reset, Review; Interpersonal, Strategic), and
- * the foot's My Account. Sign out (a button) and Privacy are the frame's own.
+ * the foot's Breathe and My Account. Sign out (a button) and Privacy are the frame's own.
  * A client whose portal is still being prepared sees Home and My Account only.
  */
+// Breathe is the foot's plain item above My Account, with no icon (Tim, 26 Nov, decisions part 12; NEXT-BREATHE.md,
+// option D): on a laptop the menu is always open, so nothing floats over the page; on a phone it is in the menu too,
+// beside the floating round button (FloatingOrb). A client still being prepared has no Breathe (it opens nothing yet).
+export const BREATHE_MENU_ITEM = { key: 'breathe', name: 'Breathe', to: '/breathe' };
 export const FRAME_MENU = {
   groups: [DESKTOP_MENU.top, ...DESKTOP_MENU.groups.map((g) => g.items)],
-  foot: DESKTOP_MENU.foot,
+  foot: [BREATHE_MENU_ITEM, ...DESKTOP_MENU.foot],
 };
 export const PREPARING_MENU = {
   groups: [DESKTOP_MENU.top],

@@ -11,7 +11,7 @@ import PersonalGoalModal from '../components/PersonalGoalModal';
 import { useSignOut } from '../components/SignOut';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import OwnQuestionsSection from '../components/ownQuestions/OwnQuestionsSection';
-import { useCoachName, Button, Chevron, ColourModeChoice, MoreLink, PageOpening, Row, Rows, SectionTabs, SwitchRow, useToast, SleepTargetEditor, useSleepTarget, keepWords, useHiddenHelp } from '../components/design';
+import { useCoachName, Button, Chevron, ColourModeChoice, MoreLink, PageOpening, Row, Rows, SectionTabs, SwitchRow, useToast, SleepTargetEditor, useSleepTarget, keepWords, useHiddenHelp, useBreatheButton } from '../components/design';
 import { ACCOUNT_LINE } from '../content/pageLines/client';
 import { useClientPreparing } from '../lib/clientPreparing';
 import AccountCoaching from './account/AccountCoaching';
@@ -63,6 +63,11 @@ export default function MyAccount() {
   // The sleep target range (Tim, 3 Nov 2026): the same control as Recovery's Home.
   const [sleepTarget, changeSleepTarget] = useSleepTarget();
   const hiddenHelp = useHiddenHelp();
+  // "Show the Breathe button" (NEXT-BREATHE.md): on by default, saved to the account; off hides the floating button.
+  const [breatheButton, setBreatheButton] = useBreatheButton();
+  const changeBreatheButton = (on) => {
+    setBreatheButton(on).catch(() => toast.error('That didn’t save. Check your connection and try again.'));
+  };
   const [sleepEditing, setSleepEditing] = useState(false);
   const [customising, setCustomising] = useState(false);
   const [archivedMissionsCount, setArchivedMissionsCount] = useState(0);
@@ -306,6 +311,12 @@ export default function MyAccount() {
             <SleepTargetEditor id="account-sleep-target" target={sleepTarget} onChange={changeSleepTarget} />
           </div>
         )}
+        <SwitchRow
+          label="Show the Breathe button"
+          note="On a phone, it sits at the bottom right of every page."
+          checked={breatheButton}
+          onChange={changeBreatheButton}
+        />
         <Rows>
           <Row name="Customise my dashboard" value={<Chevron direction="right" />} onClick={() => setCustomising(true)} />
           {/* Only when there is one: a section with nothing in it stays hidden. */}

@@ -1,235 +1,296 @@
 import './toolFocus/breathe.css';
-import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
 import {
-  TECHNIQUES, TECHNIQUE_ORDER, GUIDANCE, MIN_SESSION_SECONDS,
-  loadBreathingPreference, saveBreathingPreference, saveBreathingSession,
-  loadLatestBreathingSession, formatSessionLength,
+  BREATHE_EXERCISES, BREATHE_LENGTHS, DEFAULT_BREATHE_LENGTH, MIN_SESSION_SECONDS,
+  aboutMinutes, breathedFor, loadBreathingPreference, offeredSounds, saveBreathingSession, soundSrc,
 } from '../lib/breathing';
-import DesignHeader from '../components/DesignHeader';
-import { Loading, PageOpening, Button, PillChoice, useToast } from '../components/design';
-import { B3_LINES } from '../content/pageLines/client';
-import BreathingVisual, { useBreathingPhase, useDialSize } from '../components/ui/BreathingVisual';
+import { refreshPins, setPreference, usePreferences } from '../lib/menuPins';
+import { BreathOrb, BreathWords, Button, Dropdown, SegmentedControl, useOrbStyle, useToast } from '../components/design';
+import { ORB_LABEL } from '../lib/breathOrb';
+import { useFocusMode } from '../components/design/Frame';
 
-function pad2(n) {
-  return n < 10 ? `0${n}` : `${n}`;
-}
+// Breathe in the 25 Nov style (Tim, 26 Nov, decisions part 12; NEXT-BREATHE-TOOLS.md points 1 to 9; the approved tools
+// mock-up). A tool in focus mode, like every tool: the thin × at the top left closes it (a session is kept first), no
+// menu, one 640px column. Three screens:
+//   choose    "Which breathing do you want?": the three exercises as answer boxes, then How long? (1, 3 or 5 min),
+//             Orb (Rings or Level) and Sound (shown once a sound has a file; breathing.js), and Start breathing.
+//   breathe   the orb (280px, 240px on a phone) with its words beside it on a laptop and under it on a phone, and
+//             Finish breathing. It ends by itself after the chosen length.
+//   done      "That's 3 minutes of breathing." with where it counts, Done and Breathe again.
+// Each choice is remembered on the account (person_settings.page_preferences, through the offline queue, this device's
+// copy first: menuPins.js), as the orb's style already was (orb_style, useOrbStyle). The exercise was kept in
+// profiles.breathing_settings before; that is read once when the account has no choice here yet.
+// The session is saved exactly as before (saveBreathingSession, at least 10 seconds), so it counts towards the week.
 
-// Clear space below Done, patch 3E area A - var(--space-4).
-const BOTTOM_CLEARANCE = 24;
+const TECHNIQUE_KEY = 'breathe_technique';
+const LENGTH_KEY = 'breathe_length';
+const SOUND_KEY = 'breathe_sound';
+const isTechnique = (v) => BREATHE_EXERCISES.some((e) => e.value === v);
 
-// Resting preview size - breathe-redesign.html's .prev (120px desktop)
-// / .p .prev (130px phone), not the session dial, which grows to fill
-// the screen once Start is pressed (useDialSize, area D/C).
-function useShapeSize() {
-  const [size, setSize] = useState(() => (typeof window !== 'undefined' && window.innerWidth <= 768 ? 130 : 120));
+// The person's choices: the account's copy on this device first, a tap shown at once.
+function useBreatheChoices(userId) {
+  const prefs = usePreferences(userId);
+  const [tapped, setTapped] = useState({});
+  const [legacy, setLegacy] = useState(null);
+  useEffect(() => { if (userId) refreshPins(userId); }, [userId]);
+  const saved = prefs?.[TECHNIQUE_KEY];
+  // The exercise chosen before this round (profiles.breathing_settings), only while nothing is saved here.
   useEffect(() => {
-    const onResize = () => setSize(window.innerWidth <= 768 ? 130 : 120);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  return size;
+    if (!userId || isTechnique(saved)) return undefined;
+    let live = true;
+    loadBreathingPreference(userId).then((t) => { if (live && isTechnique(t)) setLegacy(t); });
+    return () => { live = false; };
+  }, [userId, saved]);
+  const pick = (key, ok, fallback) => {
+    if (key in tapped && ok(tapped[key])) return tapped[key];
+    if (ok(prefs?.[key])) return prefs[key];
+    return fallback;
+  };
+  const technique = pick(TECHNIQUE_KEY, isTechnique, isTechnique(legacy) ? legacy : 'sigh');
+  const length = pick(LENGTH_KEY, (v) => BREATHE_LENGTHS.includes(v), DEFAULT_BREATHE_LENGTH);
+  const sound = pick(SOUND_KEY, (v) => offeredSounds().some((s) => s.value === v), 'off');
+  const choose = useCallback((key, value) => {
+    setTapped((t) => ({ ...t, [key]: value }));
+    if (userId) setPreference(userId, key, value).catch(() => null); // kept on this device either way
+  }, [userId]);
+  return {
+    technique, length, sound,
+    setTechnique: (v) => choose(TECHNIQUE_KEY, v),
+    setLength: (v) => choose(LENGTH_KEY, v),
+    setSound: (v) => choose(SOUND_KEY, v),
+  };
 }
 
-// Fixed bottom bar on BOTH desktop and phone (unlike PhoneActionBar,
-// which is phone-only) - spec section 9: Start breathing must always
-// be visible, including on a ~700px-tall desktop window. Hidden
-// entirely during a session (patch 3B area C) - Done lives inside the
-// full-screen session view instead.
-function StartBar({ children }) {
-  const barRef = useRef(null);
+// The page fills the frame's height, so a session's orb sits in the middle and its button at the foot.
+function useFillHeight(ref, key) {
   useLayoutEffect(() => {
-    const el = barRef.current;
+    const el = ref.current;
     if (!el) return undefined;
-    const measure = () => {
-      document.documentElement.style.setProperty('--breathe-bar-height', `${el.getBoundingClientRect().height}px`);
-      // Toasts rise above the bar while it is showing (it may sit above
-      // the phone tab bar, so clear from its top edge to the bottom).
-      const box = el.getBoundingClientRect();
-      const clear = box.height > 0 ? Math.max(0, window.innerHeight - box.top) : 0;
-      document.documentElement.style.setProperty('--ds-toast-offset', `${clear}px`);
+    const fit = () => {
+      const main = el.closest('.ds-frame-main');
+      const frame = el.closest('.ds-frame');
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      const pad = main ? parseFloat(getComputedStyle(main).paddingBottom) || 0 : 0;
+      const fs = frame ? getComputedStyle(frame) : null;
+      const below = fs ? (parseFloat(fs.marginBottom) || 0) + (parseFloat(fs.borderBottomWidth) || 0) : 0;
+      el.style.setProperty('--bt-fill', `${Math.max(0, window.innerHeight - top - pad - below)}px`);
     };
-    measure();
-    window.addEventListener('resize', measure);
-    document.fonts?.ready?.then(measure);
-    let observer;
-    if (typeof ResizeObserver !== 'undefined') {
-      observer = new ResizeObserver(measure);
-      observer.observe(el);
-    }
-    return () => {
-      window.removeEventListener('resize', measure);
-      observer?.disconnect();
-      document.documentElement.style.removeProperty('--ds-toast-offset');
-    };
-  }, []);
+    fit();
+    window.addEventListener('resize', fit);
+    // The frame's foot changes once focus mode and the Breathe button settle: measured again then.
+    const main = el.closest('.ds-frame-main');
+    const watch = typeof ResizeObserver === 'function' && main ? new ResizeObserver(fit) : null;
+    watch?.observe(main, { box: 'border-box' });
+    return () => { window.removeEventListener('resize', fit); watch?.disconnect(); };
+  }, [ref, key]);
+}
 
+// A sound under the breathing, looped, only while a session runs and only when it has a file.
+function useSound(src, on) {
+  useEffect(() => {
+    if (!on || !src || typeof Audio === 'undefined') return undefined;
+    const audio = new Audio(src);
+    audio.loop = true;
+    audio.play().catch(() => null);
+    return () => { audio.pause(); };
+  }, [src, on]);
+}
+
+function TopBar({ onClose, right = null }) {
   return (
-    <div ref={barRef} className="breathe-start-bar">
-      {children}
+    <div className="bt-top">
+      <button type="button" className="ds-tool-x" aria-label="Close and save my place" title="Close" onClick={onClose}>
+        <span className="ds-x" aria-hidden="true" />
+      </button>
+      {right}
+    </div>
+  );
+}
+
+// The three exercises as answer boxes (one answer, arrow keys move it).
+function Exercises({ value, onChange, labelledBy }) {
+  const refs = useRef([]);
+  const at = Math.max(0, BREATHE_EXERCISES.findIndex((e) => e.value === value));
+  const move = (i) => {
+    const n = (i + BREATHE_EXERCISES.length) % BREATHE_EXERCISES.length;
+    onChange(BREATHE_EXERCISES[n].value);
+    refs.current[n]?.focus();
+  };
+  return (
+    <div className="bt-ans" role="radiogroup" aria-labelledby={labelledBy}>
+      {BREATHE_EXERCISES.map((e, i) => (
+        <button
+          key={e.value}
+          ref={(el) => { refs.current[i] = el; }}
+          type="button"
+          role="radio"
+          aria-checked={e.value === value}
+          tabIndex={i === at ? 0 : -1}
+          className="ds-bt-ans"
+          onClick={() => onChange(e.value)}
+          onKeyDown={(ev) => {
+            if (ev.key === 'ArrowDown' || ev.key === 'ArrowRight') { ev.preventDefault(); move(i + 1); }
+            if (ev.key === 'ArrowUp' || ev.key === 'ArrowLeft') { ev.preventDefault(); move(i - 1); }
+          }}
+        >
+          <span className="bt-ans-name">{e.label}</span>
+          <span className="bt-ans-line">{e.line}</span>
+        </button>
+      ))}
     </div>
   );
 }
 
 export default function BreathingPage() {
+  useFocusMode(true);
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
-  const [technique, setTechnique] = useState('sigh');
-  const [isLoading, setIsLoading] = useState(true);
-  const [sessionActive, setSessionActive] = useState(false);
-  const [lastSession, setLastSession] = useState(null);
-  const [sessionCount, setSessionCount] = useState(null);
-  const sessionStartRef = useRef(null);
-  const shapeSize = useShapeSize();
   const toast = useToast();
-  const { phaseLabel, countdown, elapsedSeconds, color: phaseColor } = useBreathingPhase(technique, sessionActive);
+  const { user } = useContext(AuthContext);
+  const userId = user?.id || null;
+  const { technique, length, sound, setTechnique, setLength, setSound } = useBreatheChoices(userId);
+  const [orbStyle, setOrbStyle] = useOrbStyle();
+  const [screen, setScreen] = useState('choose');
+  const [session, setSession] = useState(null); // { startedAt (performance.now), wall (Date.now), technique }
+  const [breathed, setBreathed] = useState(0);
+  const [saveState, setSaveState] = useState('idle');
+  const pageRef = useRef(null);
+  const headingRef = useRef(null);
+  const ending = useRef(false);
+  useFillHeight(pageRef, screen);
+  useSound(soundSrc(sound), screen === 'breathe');
 
-  const sessionHostRef = useRef(null);
-  const sessionStackRef = useRef(null);
-  const dialSize = useDialSize(sessionHostRef, sessionStackRef, 0, BOTTOM_CLEARANCE, sessionActive);
+  // Each new screen puts focus on its heading, as a tool's steps do.
+  useEffect(() => { headingRef.current?.focus({ preventScroll: true }); window.scrollTo?.(0, 0); }, [screen]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!user) { setIsLoading(false); return; }
-      const pref = await loadBreathingPreference(user.id);
-      if (!cancelled) setTechnique(pref);
-      try {
-        const latest = await loadLatestBreathingSession(user.id);
-        if (!cancelled) setLastSession(latest);
-      } catch (error) {
-        console.error('[BreathingPage] latest session lookup failed:', error);
-      }
-      try {
-        const { count } = await supabase
-          .from('breathing_sessions')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-        if (!cancelled) setSessionCount(count || 0);
-      } catch (error) {
-        console.error('[BreathingPage] session count failed:', error);
-      }
-      if (!cancelled) setIsLoading(false);
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  const leave = useCallback(() => {
+    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+    else navigate('/welcome');
+  }, [navigate]);
 
-  const handleSwitchTechnique = (key) => {
-    setTechnique(key);
-    if (user) saveBreathingPreference(user.id, key);
+  const start = () => {
+    ending.current = false;
+    setSession({ startedAt: performance.now(), wall: Date.now(), technique });
+    setSaveState('idle');
+    setScreen('breathe');
   };
 
-  const handleStart = () => {
-    sessionStartRef.current = Date.now();
-    setSessionActive(true);
-  };
-
-  const handleDone = async () => {
-    setSessionActive(false);
-    const durationSeconds = Math.round((Date.now() - sessionStartRef.current) / 1000);
-    if (!user) return;
-    if (durationSeconds < MIN_SESSION_SECONDS) {
+  // Ends the session and saves it as before (10 seconds or more counts). `andLeave`: × during a session.
+  const finish = useCallback(async (andLeave = false) => {
+    if (!session || ending.current) return;
+    ending.current = true;
+    const seconds = Math.round((Date.now() - session.wall) / 1000);
+    if (seconds < MIN_SESSION_SECONDS) {
       toast.show('Session ended. Sessions under 10 seconds are not saved.');
+      setSession(null);
+      if (andLeave) leave(); else setScreen('choose');
       return;
     }
+    setBreathed(seconds);
+    setSaveState('saving');
+    if (andLeave) leave(); else setScreen('done');
+    if (!userId) return;
     try {
-      await saveBreathingSession(user.id, technique, durationSeconds);
-      setLastSession({ breathing_mode: technique, duration: durationSeconds });
-      setSessionCount((c) => (c === null ? null : c + 1));
-      toast.show('Session saved.');
+      await saveBreathingSession(userId, session.technique, seconds);
+      setSaveState('saved');
+      if (andLeave) toast.show('Session saved.');
     } catch (error) {
       console.error('[BreathingPage] session save failed:', error);
+      setSaveState('failed');
       toast.error('This session didn’t save. Check your connection and try again.');
     }
-  };
+  }, [session, toast, leave, userId]);
 
-  // Escape ends a session, same as the mock-up's el._esc.
+  // It ends by itself after the chosen length; Escape ends it early, as Finish breathing does.
   useEffect(() => {
-    if (!sessionActive) return undefined;
-    const handleKey = (e) => {
-      if (e.key === 'Escape') handleDone();
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionActive]);
+    if (screen !== 'breathe' || !session) return undefined;
+    const t = setTimeout(() => finish(false), length * 60 * 1000 - (Date.now() - session.wall));
+    const onKey = (e) => { if (e.key === 'Escape') finish(false); };
+    window.addEventListener('keydown', onKey);
+    return () => { clearTimeout(t); window.removeEventListener('keydown', onKey); };
+  }, [screen, session, length, finish]);
 
-  if (isLoading) {
+  const sounds = offeredSounds();
+  const exercise = BREATHE_EXERCISES.find((e) => e.value === (session?.technique || technique)) || BREATHE_EXERCISES[0];
+
+  if (screen === 'breathe' && session) {
     return (
-      <div className="ui-root">
-        <DesignHeader />
-        <div className="plan-page"><Loading label="Loading your breathing practice" className="ds-loading--page" /></div>
+      <div className="ui-root bt-page bt-page--breathe" ref={pageRef} data-breathe="breathe">
+        <TopBar onClose={() => finish(true)} />
+        <div className="bt-body ds-bsession">
+          <h1 className="ds-sr" ref={headingRef} tabIndex={-1}>{exercise.label}</h1>
+          <div className="ds-bsession-stage">
+            <div className="ds-bstage">
+              <BreathOrb style={orbStyle} pattern={session.technique} startedAt={session.startedAt} size="tool" label={ORB_LABEL} />
+              <BreathWords pattern={session.technique} startedAt={session.startedAt} name={exercise.label} />
+            </div>
+          </div>
+          <div className="ds-bsession-foot">
+            <Button variant="outline" onClick={() => finish(false)}>Finish breathing</Button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const guidance = GUIDANCE[technique];
-
-  return (
-    <div className="ui-root">
-      <DesignHeader />
-
-      <div className="plan-page breathe-page">
-        <div className={`breathe-resting${sessionActive ? ' hidden' : ''}`} aria-hidden={sessionActive}>
-          <div className="plan-header">
-            <PageOpening
-              label={lastSession ? `Last session: ${TECHNIQUES[lastSession.breathing_mode]?.label || lastSession.breathing_mode}, ${formatSessionLength(lastSession.duration) || 'length not recorded'}` : 'No sessions yet'}
-              title="Breathe"
-              line={B3_LINES.breathe}
-            />
+  if (screen === 'done') {
+    return (
+      <div className="ui-root bt-page bt-page--done" ref={pageRef} data-breathe="done">
+        <TopBar onClose={leave} />
+        <div className="bt-body">
+          <div className="bt-done">
+            <h1 className="ds-bt-done-title" ref={headingRef} tabIndex={-1}>{`That’s ${breathedFor(breathed)} of breathing.`}</h1>
+            <p className="bt-done-line">
+              {saveState === 'failed' ? 'It didn’t save, so it won’t count this week.' : 'It counts towards your breathing this week.'}
+            </p>
           </div>
-
-          <div className="breathe-shape-wrap">
-            <BreathingVisual technique={technique} active={false} size={shapeSize} />
-          </div>
-
-          <div style={{ width: '100%', maxWidth: '760px', margin: '0 auto var(--space-6)' }}>
-            <PillChoice
-              ariaLabel="Breathing technique"
-              options={TECHNIQUE_ORDER.map((key) => ({ value: key, label: TECHNIQUES[key].label }))}
-              value={technique}
-              onChange={handleSwitchTechnique}
-            />
-          </div>
-
-          <div className="breathe-guidance">
-            {guidance.map((g, i) => (
-              <div className="breathe-guidance-col" key={`${technique}-${i}`}>
-                <span className="breathe-guidance-label">{g.label}</span>
-                <span className="breathe-guidance-rule" aria-hidden="true" />
-                <p className="breathe-guidance-text">{g.text}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="breathe-meta-row">
-            <button type="button" className="breathe-meta-item breathe-meta-link" onClick={() => navigate('/breathing-sessions-summary')}>
-              Breathing Sessions{sessionCount !== null ? ` · ${sessionCount}` : ''}
-            </button>
+          <div className="bt-foot">
+            <Button variant="primary" onClick={leave}>Done</Button>
+            <button type="button" className="ds-bt-link" onClick={start}>Breathe again</button>
           </div>
         </div>
       </div>
+    );
+  }
 
-      {!sessionActive && (
-        <StartBar>
-          <Button variant="primary" onClick={handleStart}>Start breathing</Button>
-        </StartBar>
-      )}
-
-      <div ref={sessionHostRef} className={`breathe-session${sessionActive ? ' on' : ''}`} aria-hidden={!sessionActive}>
-        <div className="breathe-session-fg" style={{ paddingBottom: BOTTOM_CLEARANCE }}>
-          <div className="breathe-session-field" style={{ width: dialSize, height: dialSize }}>
-            <BreathingVisual technique={technique} active={sessionActive} size={dialSize} />
+  return (
+    <div className="ui-root bt-page bt-page--choose" ref={pageRef} data-breathe="choose">
+      <TopBar onClose={leave} />
+      <div className="bt-body">
+        <div className="bt-label">Breathe</div>
+        <h1 className="ds-q bt-q" id="bt-q" ref={headingRef} tabIndex={-1}>Which breathing do you want?</h1>
+        <Exercises value={technique} onChange={setTechnique} labelledBy="bt-q" />
+        <div className="bt-rows">
+          <div className="bt-row">
+            <span className="bt-row-name" id="bt-len">How long?</span>
+            <SegmentedControl
+              label="How long?"
+              options={BREATHE_LENGTHS.map((m) => ({ value: m, label: `${m} min` }))}
+              value={length}
+              onChange={setLength}
+            />
           </div>
-          <div ref={sessionStackRef} className="breathe-session-info">
-            <div className="breathe-phase" aria-live="polite" style={{ color: phaseColor }}>{phaseLabel}</div>
-            <div className="breathe-count">{countdown}</div>
-            <div className="breathe-timer">{Math.floor(elapsedSeconds / 60)}:{pad2(elapsedSeconds % 60)}</div>
-            <Button variant="outline" className="breathe-session-done" onClick={handleDone}>Done</Button>
+          <div className="bt-row">
+            <span className="bt-row-name">Orb</span>
+            <SegmentedControl
+              label="Orb"
+              options={[{ value: 'rings', label: 'Rings' }, { value: 'level', label: 'Level' }]}
+              value={orbStyle}
+              onChange={setOrbStyle}
+            />
           </div>
+          {/* Sound: shown once a sound has a file (none has yet; breathing.js BREATHE_SOUNDS). */}
+          {sounds.length > 1 && (
+            <div className="bt-row">
+              <span className="bt-row-name">Sound</span>
+              <Dropdown label="Sound" options={sounds.map((s) => ({ value: s.value, label: s.label }))} value={sound} onChange={setSound} className="ds-dd--row bt-sound" />
+            </div>
+          )}
+        </div>
+        <div className="bt-foot bt-foot--start">
+          <Button variant="primary" onClick={start}>Start breathing</Button>
+          <span className="bt-foot-note">{aboutMinutes(length)}</span>
         </div>
       </div>
     </div>

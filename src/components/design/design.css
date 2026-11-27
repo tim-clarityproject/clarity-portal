@@ -114,7 +114,6 @@
 @media (forced-colors: active) {
   .ui-root .ds-cross,
   .ui-root .ds-chevron,
-  .ui-root .ds-borb-cross,
   .ui-root .ds-answer--multi[aria-pressed='true']::after,
   .ui-root .ds-option[aria-selected='true']::after {
     forced-color-adjust: none;
@@ -2645,7 +2644,7 @@
   align-items: center;
 }
 
-/* ---------- Floating breathing orb ---------- */
+/* ---------- The floating Breathe button (FloatingOrb) ---------- */
 
 .ui-root .ds-orb {
   position: relative;
@@ -2653,117 +2652,112 @@
   letter-spacing: normal;
 }
 
+/* Under 1024px only, bottom right (Tim, 26 Nov, decisions part 12; NEXT-BREATHE.md, mock-up option D: .ph .vC,
+   20px in from the edges). On a laptop the menu is always open and Breathe is its plain item above My Account, so
+   nothing floats over the page. The frame keeps the page's foot clear of it while it shows (frame.css,
+   --breathe-room). */
 .ui-root .ds-orb--fixed {
   position: fixed;
-  right: max(var(--space-4), env(safe-area-inset-right, 0px));
-  bottom: max(var(--space-4), env(safe-area-inset-bottom, 0px));
+  right: max(var(--breathe-inset), env(safe-area-inset-right, 0px));
+  bottom: max(var(--breathe-inset), env(safe-area-inset-bottom, 0px));
   z-index: var(--z-orb);
 }
 
-/* On every screen, phones included (Tim's walk of Stage A, item 5, 25 Nov:
-   the phone bar that held Breathe is gone): bottom right, above the page.
-   The frame keeps the page's foot clear of it (frame.css, --breathe-room),
-   so nothing it covers is left out of reach. Its look is unchanged. */
+@media (min-width: 1024px) {
+  .ui-root .ds-orb--fixed {
+    display: none;
+  }
+}
 
-/* The Breathe pill (breathe-orb.html, 29 Oct): a 60px pill with the
-   small orb (the person's choice, BreathOrb) and the word in Nekst
-   capitals. The edge and the crosshair turn coral on hover or focus. */
+/* The round button (option D's .vC): 48px, the card colour, a 1px line, no word (aria-label "Breathe"), the fine
+   two-circle ring in the text colour. No coral: hover and keyboard focus turn the line the text colour. */
 .ui-root .ds-breathe {
   all: unset;
   cursor: pointer;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-px10);
+  justify-content: center;
+  width: var(--breathe-h);
   height: var(--breathe-h);
   min-height: var(--breathe-h) !important;
-  padding: 0 var(--space-px22) 0 var(--breathe-pad-l) !important;
-  border: var(--line-w) solid var(--field-line);
-  border-radius: var(--radius-pill);
-  background: var(--bg);
-  /* Its word as every button's (Tim, 18 Nov); the pill keeps its size for the orb. */
-  font-family: var(--font-body);
-  font-weight: var(--fw-medium);
-  font-size: var(--fs-btn) !important;
-  line-height: 1;
-  letter-spacing: var(--ls-btn);
+  padding: 0 !important;
+  /* Its 1px line drawn as an inset shadow, as every button's hairline (rule 4a; the reference's --line for buttons,
+     the lead's call of Stage A), so it reads as a button's line, not the edge of a box to type into (rule 8a). */
+  border: 0;
+  box-shadow: inset 0 0 0 var(--line-w) var(--line);
+  border-radius: 50%;
+  background: var(--card);
   color: var(--text);
-  transition: border-color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow var(--dur) var(--ease);
 }
 
 .ui-root .ds-breathe:hover,
 .ui-root .ds-breathe:focus-visible {
-  /* The deeper coral in light: the brand coral is fainter there than the edge at rest (break-it, 12 Nov). */
-  border-color: var(--coral-text);
-  --o-cross: var(--coral);
+  box-shadow: inset 0 0 0 var(--line-w) var(--text);
 }
 
 .ui-root .ds-breathe:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
+  outline: var(--focus-w) solid var(--text);
   outline-offset: var(--space-px3);
 }
 
-.ui-root .ds-breathe .ds-borb {
-  width: var(--breathe-orb);
-  height: var(--breathe-orb);
+/* The fine two-circle ring (option D's .ring; the same ring as the Breathe tools' centre ring): two circles in
+   1.5px lines on a 20-unit drawing, breathing from 0.7 to 1.15 and back over 8 seconds; still under Reduce motion. */
+.ui-root .ds-breathe-ring {
+  display: block;
+  flex: none;
+  width: var(--breathe-ring);
+  height: var(--breathe-ring);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--breathe-ring-line);
+  transform-origin: 50% 50%;
+  animation: ds-breathe-ring var(--breathe-ring-cycle) var(--breathe-ring-ease) infinite;
 }
 
-/* The one exception to the 14px crosshair minimum: 8px inside the
-   Breathe button's orb (decorative, aria-hidden, part of the approved
-   orb). Nowhere else goes below 14px. */
-.ui-root .ds-breathe .ds-borb-cross {
-  width: var(--breathe-cross);
-  height: var(--breathe-cross);
+@keyframes ds-breathe-ring {
+  0%, 100% { transform: scale(var(--breathe-ring-low)); }
+  50% { transform: scale(var(--breathe-ring-high)); }
 }
 
-/* ---------- The Breathe orb (BreathOrb: Rings or Level) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-breathe-ring {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  /* Forced colours drop shadows: a real 1px edge in the system's text colour there. */
+  .ui-root .ds-breathe {
+    border: var(--line-w) solid CanvasText;
+  }
+  .ui-root .ds-breathe-ring {
+    stroke: CanvasText;
+  }
+}
+
+/* ---------- The Breathe orb (BreathOrb: Rings or Level; round, or square for Box breathing) ----------
+   The 25 Nov style (Tim, 26 Nov, decisions part 12; the approved tools mock-up): thin lines in the text colour, the
+   track in the line colour, Level's fill the soft surface grey; no coral or mint. BreathOrb draws the lines; these
+   rules only size it. Sleep wind down's quieter colours come from the page's .ds-night tokens. */
 
 .ui-root .ds-borb {
-  --o-in: var(--orb-in);
-  --o-out: var(--good);
-  --o-ring: var(--quiet-line);
-  --o-tint: var(--mint-tint);
-  --o-cross: var(--text);
   position: relative;
   display: block;
   flex: none;
-  width: var(--orb-size);
-  height: var(--orb-size);
-  letter-spacing: normal;
-}
-
-.ui-root .ds-borb--rings {
-  --o-out: var(--orb-out);
-}
-
-/* Sleep wind down (M19): the mode's own colours, one step quieter (the
-   night tokens), coral and mint both stepping down to the quiet grey. */
-.ui-root .ds-borb--night {
-  --o-in: var(--night-text);
-  --o-out: var(--night-text);
-  --o-ring: var(--night-text-2);
-  --o-tint: transparent;
-  --o-cross: var(--night-text);
-}
-
-.ui-root .ds-borb--tool {
   width: var(--orb-tool);
   height: var(--orb-tool);
+  letter-spacing: normal;
+  color: var(--text);
 }
 
-.ui-root .ds-borb--night {
-  width: var(--orb-night);
-  height: var(--orb-night);
-}
-
-@media (max-width: 768px) {
-  .ui-root .ds-borb--tool {
+@media (max-width: 600px) {
+  .ui-root .ds-borb--tool,
+  .ui-root .ds-borb--night {
     width: var(--orb-tool-phone);
     height: var(--orb-tool-phone);
-  }
-  .ui-root .ds-borb--night {
-    width: var(--orb-night-phone);
-    height: var(--orb-night-phone);
   }
 }
 
@@ -2775,94 +2769,87 @@
   overflow: visible;
 }
 
-.ui-root .ds-borb-cross {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 21%;
-  height: 21%;
-  background-color: var(--o-cross);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 185 185'%3E%3Cg fill='none' stroke='%23000' stroke-width='15' stroke-linejoin='round'%3E%3Cpath d='M89.5 4V68A14 14 0 0 0 103.5 82H169' transform='translate(2.65 -2.65)'/%3E%3Cpath d='M82 169V103.5A14 14 0 0 0 68 89.5H4' transform='translate(-2.65 2.65)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 185 185'%3E%3Cg fill='none' stroke='%23000' stroke-width='15' stroke-linejoin='round'%3E%3Cpath d='M89.5 4V68A14 14 0 0 0 103.5 82H169' transform='translate(2.65 -2.65)'/%3E%3Cpath d='M82 169V103.5A14 14 0 0 0 68 89.5H4' transform='translate(-2.65 2.65)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
-  transform: translate(-50%, -50%);
-  transition: background-color var(--dur) var(--ease);
-}
-
-.ui-root .ds-borb-probe {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-}
-.ui-root .ds-borb-probe--in { color: var(--o-in); }
-.ui-root .ds-borb-probe--out { color: var(--o-out); }
-
-/* The phase word with how to breathe under it, and the seconds left,
-   beside the orb, never on it (breathe-orb.html .bw2). */
-.ui-root .ds-bstage {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-6);
-}
-
-@media (max-width: 768px) {
-  .ui-root .ds-bstage {
-    gap: var(--space-px18);
+/* Windows high-contrast mode (rule 8b): the lines keep the system's text colour. */
+@media (forced-colors: active) {
+  .ui-root .ds-borb-art svg * {
+    forced-color-adjust: none;
+    stroke: CanvasText !important;
+  }
+  .ui-root .ds-borb-art svg rect {
+    fill: Canvas !important;
   }
 }
 
+/* The orb and its words side by side on a laptop (56px apart), the words under it on a phone; never on top. */
+.ui-root .ds-bstage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--orb-words-gap);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-bstage {
+    flex-direction: column;
+    gap: var(--orb-words-gap-phone);
+  }
+}
+
+/* The words (the mock-up's .words): the phase 20px, how to breathe 13px grey (its height kept during a hold), the
+   seconds left 24px light with "seconds" 16px grey, the exercise's name 13px grey. */
 .ui-root .ds-bwords {
   display: flex;
   flex-direction: column;
-  gap: var(--space-px6);
-  width: var(--bwords-w);
+  gap: var(--space-1);
+  min-width: var(--bwords-w);
   max-width: 100%;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .ui-root .ds-bwords {
-    width: var(--bwords-w-phone);
+    align-items: center;
+    text-align: center;
   }
 }
 
-.ui-root .ds-bwords-phase {
-  display: flex;
-  flex-direction: column;
-}
-
 .ui-root .ds-bwords-word {
+  min-height: calc(var(--fs-bwords-word) * var(--lh-question));
   font-size: var(--fs-bwords-word);
   line-height: var(--lh-question);
   white-space: nowrap;
 }
 
 .ui-root .ds-bwords-how {
-  min-height: calc(var(--fs-secondary) * var(--lh-text));
-  margin-top: var(--space-px2);
-  font-size: var(--fs-secondary);
-  line-height: var(--lh-text);
+  min-height: calc(var(--fs-meta) * var(--lh-question) + var(--space-px2));
+  font-size: var(--fs-meta);
+  line-height: var(--lh-question);
   color: var(--text-2);
 }
 
 .ui-root .ds-bwords-count {
   display: flex;
   align-items: baseline;
-  gap: var(--space-2);
+  gap: var(--space-px6);
+  margin-top: var(--space-px12);
 }
 
 .ui-root .ds-bwords-count strong {
-  min-width: 0.7em;
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: var(--fw-light);
   font-size: var(--fs-bwords-count);
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-question);
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 .ui-root .ds-bwords-count span {
-  font-size: var(--fs-note);
+  font-size: var(--fs-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-bwords-name {
+  margin-top: var(--space-px12);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-question);
   color: var(--text-2);
 }
 
@@ -8840,15 +8827,62 @@
   flex-direction: column;
 }
 
-/* The breathing screen (M19 .orbw): the orb in the middle, End early under it. */
+/* A breathing screen (Breathe's session and Sleep wind down's breathing; the tools mock-up's .sess and .sfoot): the
+   orb and its words in the middle of the space, the outlined buttons at the foot, side by side and centred on a
+   laptop, one per line at the column's width on a phone. */
+.ui-root .ds-bsession,
 .ui-root .ds-night-breathe {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+.ui-root .ds-bsession-stage {
+  flex: 1;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--night-orb-gap);
-  padding: var(--space-px20) 0;
+  padding: var(--space-4) 0;
+}
+
+.ui-root .ds-bsession-foot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) 0 var(--space-2);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-bsession-foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ui-root .ds-bsession-foot > .ds-btn {
+    width: 100%;
+  }
+}
+
+/* Sleep wind down's breathing fills the guided tool's height, so the orb sits in the middle and its buttons at the
+   foot, as Breathe's session does. */
+.ui-root .ds-guide-frame:has(.ds-night-breathe),
+.ui-root .ds-guide-frame:has(.ds-night-breathe) > .ds-guide-col,
+.ui-root .ds-guide-col:has(.ds-night-breathe) > .ds-tool {
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-root .ds-guide-frame:has(.ds-night-breathe) > .ds-guide-col,
+.ui-root .ds-guide-col:has(.ds-night-breathe) > .ds-tool,
+.ui-root .ds-tool:has(> .ds-guide-page .ds-night-breathe) > .ds-guide-page {
+  flex: 1;
+}
+
+/* The time left at the top right of Sleep wind down's breathing (13px grey, "4:54 left"). */
+.ui-root .ds-bleft {
+  font-size: var(--fs-meta);
+  color: var(--text-2);
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 /* The centred end screen (M19 .gn and .wd). */
@@ -10667,9 +10701,9 @@
   }
 }
 
-/* The Breathe pill rises above a page's bottom bar (M7 .gft~.fabp). */
+/* The Breathe button rises above a page's bottom bar (M7 .gft~.fabp). */
 .ui-root .ds-orb--fixed {
-  bottom: calc(max(var(--space-4), env(safe-area-inset-bottom, 0px)) + var(--bottom-bar-h, 0px));
+  bottom: calc(max(var(--breathe-inset), env(safe-area-inset-bottom, 0px)) + var(--bottom-bar-h, 0px));
 }
 
 /* ---------- A one-off tip (OneOffTip; M7's team list) ---------- */

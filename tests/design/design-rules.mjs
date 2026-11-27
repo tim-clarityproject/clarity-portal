@@ -40,7 +40,9 @@
 //                 (items 6 and 8; rule 29g); a link inside a sentence is left out, as WCAG leaves it out
 //   bare-zero     also a row's value reading a bare 0, 0%, £0 or £0/month (item 9)
 //   breathe       Breathe drawn over something to press in a fixed bar at the foot (item 2); a panel drawn over
-//                 Breathe hides it, so it isn't drawn over that panel's foot (read from the stacking, as overlap)
+//                 Breathe hides it, so it isn't drawn over that panel's foot (read from the stacking, as overlap);
+//                 the floating button not a 48px circle, with words or coral, on a laptop (1024px and wider: Breathe
+//                 is the menu's item) or on the Breathe page (NEXT-BREATHE.md, option D)
 //   year          a date this year shown with its year (item 4; writing rule 28)
 //   focus         a tool's address (TOOL_ROUTES) showing the menu, the phone header, My Mission or Breathe: a tool runs
 //                 in focus mode (item 1; rule 21). Give `route` (the runner passes the address it landed on).
@@ -65,6 +67,16 @@
 //                 with "…", a hairline, 24px to what follows; never under 1024px (item 5)
 //   squeeze       two columns with the main one under 560px; a row's name, a figure's label, a section label or a card
 //                 narrower than its longest word (item 17)
+//
+// The Breathe tools (Tim, 26 Nov, decisions part 12; NEXT-BREATHE-TOOLS.md "Checks"), on any screen with the orb
+// (Breathe and Sleep wind down):
+//   breathe-colour   coral or mint anywhere on a Breathe screen: the orb's lines, fills, words, buttons and edges are
+//                    the text, line and surface colours only
+//   breathe-words    the words beside the orb drawn over it (they sit beside it on a laptop and under it on a phone)
+//   breathe-square   Box breathing drawn with a circle (every part of its orb is a rounded square), or another
+//                    exercise drawn square
+//   breathe-height   a button, joined switch or drop-down on a Breathe screen not 40px high (44px on a phone); the
+//                    exercises' answer boxes are 56px (52px), and the × and quiet links keep their 44px tap height
 //
 // Starting points: client-audit-25nov.md's measuring script (Claude, 25 Nov) and the example pages' own checks.
 // Only the standard text size is held to the sizes (scale 1): larger device text grows them.
@@ -183,7 +195,8 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
   // wrap: words on more than one line inside a control (at the standard size).
   if (scale === 1) {
     for (const el of controls) {
-      if (el.matches('textarea, input, select, .ds-answer:not(.ds-answer--box), [role=radio].ds-answer') || el.closest(`.ds-rows, .ds-row, ${ROWS}, ${CAL_TILES}`)) continue; // a saved-items row (ListRow, .ds-row) is a row: its type line may wrap
+      // Breathe's answer boxes (.ds-bt-ans) hold the name and its grey line, one under the other on a phone, each on one line.
+      if (el.matches('textarea, input, select, .ds-answer:not(.ds-answer--box), [role=radio].ds-answer, [role=radio].ds-bt-ans') || el.closest(`.ds-rows, .ds-row, ${ROWS}, ${CAL_TILES}`)) continue; // a saved-items row (ListRow, .ds-row) is a row: its type line may wrap
       const w = words(el);
       if (!w || w.length > 60) continue;
       const fs = parseFloat(getComputedStyle(el).fontSize);
@@ -655,6 +668,21 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
     }
   }
 
+  // breathe, the button itself (Tim, 26 Nov, decisions part 12; NEXT-BREATHE.md, option D): a 48px round button with no
+  // word and no coral, under 1024px only (on a laptop Breathe is the menu's plain item and nothing floats over the
+  // page), and never on the Breathe page.
+  const breathePath = (route || location.pathname || '').split(/[?#]/)[0].replace(/\/$/, '');
+  for (const fb of [...document.querySelectorAll('.ds-orb--fixed .ds-breathe')].filter(seen)) {
+    const r = fb.getBoundingClientRect();
+    const s = getComputedStyle(fb);
+    if (W >= 1024) say('breathe', 'the Breathe button floats over the page on a laptop (Breathe is the menu’s item there)');
+    if (breathePath === '/breathe') say('breathe', 'the Breathe button shows on the Breathe page');
+    if (Math.abs(r.width - 48) > 0.5 || Math.abs(r.height - 48) > 0.5 || parseFloat(s.borderTopLeftRadius) < 23.5) say('breathe', `the Breathe button is ${Math.round(r.width)} by ${Math.round(r.height)}px and not round (a 48px circle)`);
+    if ((fb.innerText || '').trim()) say('breathe', `the Breathe button has words ("${fb.innerText.trim().slice(0, 20)}"; its name is read out, never shown)`);
+    const marks = [s.borderTopColor, s.backgroundColor, s.color, ...(s.boxShadow.match(/rgba?\([^)]*\)/g) || []), ...[...fb.querySelectorAll('svg, svg *')].flatMap((k) => { const ks = getComputedStyle(k); return [ks.stroke, ks.fill]; })];
+    if (marks.some((c) => /^rgb/.test(c) && isCoral(c))) say('breathe', 'the Breathe button uses coral (coral is for mistakes only)');
+  }
+
   // year: a date this year never shows its year (writing rule 28).
   const yearNow = new Date().getFullYear();
   const MONTHS = '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)';
@@ -670,7 +698,7 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
   // focus: a tool runs in focus mode, with no menu, header, My Mission or Breathe.
   const path = (route || '').split(/[?#]/)[0].replace(/\/$/, '') || null;
   // The tools' addresses (inside the function: the page receives it as text, so nothing outside travels with it).
-  const TOOL_ROUTES = tools || ['/daily-journal', '/daily-plan', '/plan-meeting', '/pressure-plan', '/time-audit', '/pre-mortem', '/pre-mortem/risks', '/pre-mortem/plan', '/give-difficult-feedback', '/give-difficult-feedback/questions'];
+  const TOOL_ROUTES = tools || ['/daily-journal', '/daily-plan', '/plan-meeting', '/pressure-plan', '/time-audit', '/pre-mortem', '/pre-mortem/risks', '/pre-mortem/plan', '/give-difficult-feedback', '/give-difficult-feedback/questions', '/breathe', '/sleep-wind-down'];
   // A client still being prepared sees the preparing page at a tool's address (walk item 15): no tool, so no focus mode.
   if (path && TOOL_ROUTES.includes(path) && !document.querySelector('[data-preparing]')) {
     const shown = ['.ds-frame-side .ds-mi', '.ds-mbtn', '.hdr-mbox', '.ds-orb--fixed .ds-breathe'].filter((sel) => [...document.querySelectorAll(sel)].some(seen));
@@ -826,6 +854,58 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
     actions.set(key, (actions.get(key) || 0) + 1);
   }
   for (const [key, n] of actions) if (n > 1) say('duplicate', `"${key.slice(key.indexOf('|') + 1).slice(0, 40)}" is offered ${n} times`);
+
+  // The Breathe tools (NEXT-BREATHE-TOOLS.md "Checks"): a screen with the orb, or Breathe's own page.
+  const orbs = [...document.querySelectorAll('[data-breathe-orb]')].filter(seen);
+  const breatheScreen = document.querySelector('[data-breathe]') || orbs[0]?.closest('.ds-night-breathe, .ds-guide, .ui-root');
+  if (breatheScreen && seen(breatheScreen)) {
+    // breathe-colour: no coral and no mint, in any colour, edge, line or fill (the orb's SVG included).
+    const isMint = (c) => {
+      if (clear(c) || !/rgb/.test(c)) return false;
+      const [r, g, b, a = 1] = rgb(c);
+      return a >= 0.3 && g > 100 && g - r > 60 && g - b > 15;
+    };
+    const tinted = new Set();
+    for (const el of [breatheScreen, ...breatheScreen.querySelectorAll('*')]) {
+      if (!seen(el) && !(el instanceof SVGElement && el.closest('svg') && seen(el.closest('svg')))) continue;
+      const st = getComputedStyle(el);
+      const paints = [st.color, st.backgroundColor];
+      if (parseFloat(st.borderTopWidth) > 0 && st.borderTopStyle !== 'none') paints.push(st.borderTopColor);
+      if (el instanceof SVGElement) paints.push(st.stroke, st.fill);
+      const bad = paints.find((c) => c && (isCoral(c) || isMint(c)));
+      if (bad) tinted.add(`${isCoral(bad) ? 'coral' : 'mint'} on ${el instanceof SVGElement ? `the orb's ${el.tagName}` : name(el)}`);
+    }
+    if (tinted.size) say('breathe-colour', `coral or mint on a Breathe screen: ${[...tinted].slice(0, 5).join(', ')}`);
+
+    // breathe-words: the words never on the orb.
+    for (const words of document.querySelectorAll('[data-breathe-words]')) {
+      if (!seen(words)) continue;
+      const wb = words.getBoundingClientRect();
+      for (const orb of orbs) {
+        const ob = orb.getBoundingClientRect();
+        const x = Math.min(wb.right, ob.right) - Math.max(wb.left, ob.left);
+        const y = Math.min(wb.bottom, ob.bottom) - Math.max(wb.top, ob.top);
+        if (x > 0.5 && y > 0.5) say('breathe-words', `the words ${name(words)} are drawn over the orb (${Math.round(x)} by ${Math.round(y)}px)`);
+      }
+    }
+
+    // breathe-square: Box breathing is squares only, the others round.
+    for (const orb of orbs) {
+      const words = orb.closest('.ds-bstage, [data-breathe], .ds-night-breathe')?.querySelector('[data-breathe-words]');
+      const box = /Box breathing/.test(words?.innerText || '') || orb.dataset.orbShape === 'square';
+      const circles = orb.querySelectorAll('circle').length;
+      if (box && circles) say('breathe-square', `Box breathing's orb draws ${circles} circle${circles === 1 ? '' : 's'} (every part a rounded square)`);
+      if (box && words && !/Box breathing/.test(words.innerText)) say('breathe-square', `${name(words)} is drawn square (only Box breathing is)`);
+    }
+
+    // breathe-height: the tools' controls are 40px (44px on a phone).
+    const want = phone || W <= 600 ? 44 : 40; // the phone sizes start at 600px and under (tokens.css)
+    for (const el of breatheScreen.querySelectorAll('.ds-btn, .ds-seg, button.ds-dd, select')) {
+      if (!vis(el)) continue;
+      const h = el.getBoundingClientRect().height;
+      if (Math.abs(h - want) > 0.5 && scale === 1) say('breathe-height', `${name(el)} is ${Math.round(h)}px high on a Breathe screen (${want}px)`);
+    }
+  }
 
   return { problems: [...new Set(out)], counts: { controls: controls.length, cards: top.querySelectorAll('.ds-card').length } };
 }

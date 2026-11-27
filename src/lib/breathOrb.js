@@ -1,8 +1,6 @@
-// The Breathe orb's clock and the person's orb choice (breathe-orb.html,
-// approved 29 Oct): two styles, Rings (the approved orb with fine lines)
-// and Level (a round gauge that fills from the bottom). Rings is the
-// starting choice. Used by the floating Breathe button now, and by
-// Breathe and Sleep wind down when they are rebuilt.
+// The Breathe orb's clock and the person's orb choice: two styles, Rings and Level (Rings is the starting choice), drawn
+// in the 25 Nov style by BreathOrb (Tim, 26 Nov, decisions part 12: thin lines in the text colour, no coral or mint).
+// Used by Breathe and Sleep wind down.
 
 // Each pattern is a list of phases: kind 'in', 'out' or 'hold', the
 // phase word, its seconds, and the breath's size at its start and end
@@ -45,6 +43,9 @@ export function howToBreathe(kind) {
 
 const ease = (p) => (1 - Math.cos(Math.PI * p)) / 2;
 
+// Reduced motion: the orb holds at half a breath (the approved mock-up's .55) and fades with the breath instead.
+export const ORB_STILL_SIZE = 0.55;
+
 /**
  * Where the breath is, `seconds` after the pattern started: the phase
  * (index, kind, word), the breath's size (0 to 1, eased on a cosine
@@ -70,6 +71,64 @@ export function breathAt(phases, seconds) {
     start += p.seconds;
   }
   return null;
+}
+
+// ---------------------------------------------------------------- the drawing (BreathOrb)
+// The orb's name for screen readers (point 9).
+export const ORB_LABEL = 'Breathe in as it grows, and out as it shrinks.';
+
+const NS = ' vector-effect="non-scaling-stroke"';
+// The lines (the mock-up's: 1.25 for the drawn lines, 1 for the faint track), in screen pixels at any size.
+const LINE = 1.25;
+const TRACK = 1;
+
+// A rounded square centred on 0,0: half its side `h`, corner radius `r` (the mock-up's rr()).
+export function roundedSquare(h, r) {
+  return `M${-h} ${h - r}V${-h + r}A${r} ${r} 0 0 1 ${-h + r} ${-h}H${h - r}A${r} ${r} 0 0 1 ${h} ${-h + r}V${h - r}`
+    + `A${r} ${r} 0 0 1 ${h - r} ${h}H${-h + r}A${r} ${r} 0 0 1 ${-h} ${h - r}Z`;
+}
+
+const f2 = (n) => n.toFixed(2);
+const op = (n) => n.toFixed(3);
+
+/**
+ * The orb's drawing at breath size `s` (0 empty, 1 full) and line strength `fade` (1, or the reduced-motion fade), as
+ * SVG markup in a -100..100 frame. style 'rings' or 'level'; shape 'round' or 'square'; id: a clip path's unique name.
+ */
+export function orbSvg({ style = 'rings', shape = 'round', s = 0, fade = 1, id = 'ds-borb-clip' }) {
+  const ink = 'style="stroke:var(--text)"';
+  const track = 'style="stroke:var(--line)"';
+  let body;
+  if (shape === 'square') {
+    if (style === 'level') {
+      const H = 88;
+      const y = H - 2 * H * (0.06 + 0.88 * s);
+      // The level line keeps clear of the rounded corners at the very top and bottom.
+      const inset = y < -H + 22 || y > H - 22 ? 14 : 0;
+      body = `<defs><clipPath id="${id}"><path d="${roundedSquare(H, 22)}"/></clipPath></defs>`
+        + `<rect x="-100" y="${f2(y)}" width="200" height="${f2(100 - y)}" clip-path="url(#${id})" style="fill:var(--raised)" fill-opacity="${op(fade)}"/>`
+        + `<path d="${roundedSquare(H, 22)}" fill="none" ${ink} stroke-width="${LINE}"${NS}/>`
+        + `<path d="M${-H + inset} ${f2(y)}H${H - inset}" ${ink} stroke-opacity="${op(fade)}" stroke-width="${LINE}" stroke-linecap="round"${NS}/>`;
+    } else {
+      const h = 30 + 48 * s;
+      body = `<path d="${roundedSquare(88, 22)}" fill="none" ${track} stroke-width="${TRACK}"${NS}/>`
+        + `<path d="${roundedSquare(h, Math.max(6, h * 0.25))}" fill="none" ${ink} stroke-opacity="${op(fade)}" stroke-width="${LINE}"${NS}/>`
+        + `<path d="${roundedSquare(13, 4)}" fill="none" ${ink} stroke-width="${LINE}"${NS}/>`;
+    }
+  } else if (style === 'level') {
+    const R = 90;
+    const y = R - 2 * R * (0.06 + 0.88 * s);
+    const xw = Math.sqrt(Math.max(0, R * R - y * y));
+    body = `<defs><clipPath id="${id}"><circle r="${R}"/></clipPath></defs>`
+      + `<rect x="-100" y="${f2(y)}" width="200" height="${f2(100 - y)}" clip-path="url(#${id})" style="fill:var(--raised)" fill-opacity="${op(fade)}"/>`
+      + `<circle r="${R}" fill="none" ${ink} stroke-width="${LINE}"${NS}/>`
+      + `<path d="M${f2(-xw)} ${f2(y)}H${f2(xw)}" ${ink} stroke-opacity="${op(fade)}" stroke-width="${LINE}" stroke-linecap="round"${NS}/>`;
+  } else {
+    body = `<circle r="92" fill="none" ${track} stroke-width="${TRACK}"${NS}/>`
+      + `<circle r="${f2(34 + 52 * s)}" fill="none" ${ink} stroke-opacity="${op(fade)}" stroke-width="${LINE}"${NS}/>`
+      + `<circle r="14" fill="none" ${ink} stroke-width="${LINE}"${NS}/>`;
+  }
+  return `<svg viewBox="-100 -100 200 200" aria-hidden="true" focusable="false">${body}</svg>`;
 }
 
 // ---------------------------------------------------------------- the choice

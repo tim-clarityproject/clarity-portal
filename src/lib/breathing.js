@@ -157,6 +157,55 @@ export const GUIDANCE = {
 
 export const MIN_SESSION_SECONDS = 10;
 
+// Breathe in the 25 Nov style (Tim, 26 Nov, decisions part 12; NEXT-BREATHE-TOOLS.md point 2): the three exercises in
+// the choose screen's order, each with its one grey line (the timings are TECHNIQUES' and breathOrb.js's, unchanged).
+export const BREATHE_EXERCISES = [
+  { value: 'sigh', label: 'Physiological sigh', line: 'Two breaths in, one long breath out' },
+  { value: 'box', label: 'Box breathing', line: 'In, hold, out, hold, 4 seconds each' },
+  { value: 'vagal', label: 'Vagal breathing', line: '4 seconds in, 6 seconds out' },
+];
+
+// How long, in minutes ("1 min", "3 min", "5 min"; 3 is the starting choice).
+export const BREATHE_LENGTHS = [1, 3, 5];
+export const DEFAULT_BREATHE_LENGTH = 3;
+
+// The sounds (Off, Waterfall, Stream, Rain, Ambient pad). No audio file exists for any of them yet (Tim to supply):
+// a sound is offered only once its `src` is set (a file in public/), so until then the Sound row and Sleep wind
+// down's "Play the ambient pad" stay hidden. Nothing ever plays by itself.
+export const BREATHE_SOUNDS = [
+  { value: 'off', label: 'Off', src: null },
+  { value: 'waterfall', label: 'Waterfall', src: null },
+  { value: 'stream', label: 'Stream', src: null },
+  { value: 'rain', label: 'Rain', src: null },
+  { value: 'ambient', label: 'Ambient pad', src: null },
+];
+
+/** The sounds that can be offered: Off and every sound with a file. */
+export function offeredSounds() {
+  return BREATHE_SOUNDS.filter((s) => s.value === 'off' || s.src);
+}
+
+/** A sound's file, or null (Off, unknown, or no file yet). */
+export function soundSrc(value) {
+  return BREATHE_SOUNDS.find((s) => s.value === value)?.src || null;
+}
+
+/** "~3 minutes" beside Start breathing (writing rule 27). */
+export function aboutMinutes(minutes) {
+  return `~${minutes} minute${minutes === 1 ? '' : 's'}`;
+}
+
+/**
+ * The finished screen's length, from the seconds actually breathed: "3 minutes", "1 minute", or under a minute
+ * "40 seconds". Whole minutes are rounded to the nearest.
+ */
+export function breathedFor(seconds) {
+  const s = Math.max(0, Math.round(seconds));
+  if (s < 60) return `${s} second${s === 1 ? '' : 's'}`;
+  const m = Math.round(s / 60);
+  return `${m} minute${m === 1 ? '' : 's'}`;
+}
+
 export function cycleDuration(technique) {
   return TECHNIQUES[technique].phases.reduce((sum, p) => sum + p.seconds, 0);
 }

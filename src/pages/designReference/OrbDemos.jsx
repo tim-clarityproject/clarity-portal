@@ -16,10 +16,9 @@ export function BreathOrbDemo() {
     <div className="dr-stack">
       <span className="dr-small">The person’s choice, kept on this device for now:</span>
       <OrbStyleChoice />
-      <span className="dr-small">The floating Breathe button, both styles:</span>
+      <span className="dr-small">The floating Breathe button, under 1024px (one look, whichever orb is chosen):</span>
       <div className="dr-row">
-        <FloatingOrb placement="inline" style="rings" onBreathe={() => toast.show('Breathe opens here.')} />
-        <FloatingOrb placement="inline" style="level" onBreathe={() => toast.show('Breathe opens here.')} />
+        <FloatingOrb placement="inline" onBreathe={() => toast.show('Breathe opens here.')} />
       </div>
       <span className="dr-small">Breathe, with the words beside the orb:</span>
       <SegmentedControl
@@ -39,11 +38,11 @@ export function BreathOrbDemo() {
           pattern={pattern}
           startedAt={startedAt}
           size="tool"
-          label={style === 'level' ? 'Breathe in as the level rises, and out as it falls.' : 'Breathe in as the circle grows, and out as it shrinks.'}
+          label="Breathe in as it grows, and out as it shrinks."
         />
-        <BreathWords key={`${pattern}-${startedAt}`} pattern={pattern} startedAt={startedAt} />
+        <BreathWords key={`${pattern}-${startedAt}`} pattern={pattern} startedAt={startedAt} name={{ sigh: 'Physiological sigh', box: 'Box breathing', vagal: 'Vagal breathing' }[pattern]} />
       </div>
-      <span className="dr-small">Sleep wind down: no words, the quieter colours, 4 in and 6 out:</span>
+      <span className="dr-small">Sleep wind down: the same orb in the quieter colours, 4 in and 6 out (the page dims it):</span>
       <BreathOrb style={style} pattern="wind" night size="night" />
     </div>
   );

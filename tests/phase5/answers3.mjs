@@ -186,7 +186,9 @@ try {
         };
         const home = await page.evaluate(outlinedEdges, true);
         await hairlines('Home');
-        if (!phone) edgeCheck(`Home ${tag}, the Breathe button`, home, 'ds-breathe', 1);
+        // Tim, 26 Nov (NEXT-BREATHE.md, option D): no floating Breathe on a laptop (it's the menu's item); on a phone its round
+        // button's 1px line is the reference's --line, as every button's (the lead's call, Stage A), so it isn't an edge here.
+        if (!phone) pass(`Home ${tag}: no floating Breathe button on a laptop`, (await page.locator('.ds-orb--fixed .ds-breathe:visible').count()) === 0);
         pass(`Home ${tag}: no outlined edge under 3 to 1`, (await page.evaluate(outlinedEdges)).length === 0, (await page.evaluate(outlinedEdges)).join('; '));
         await shot('home');
 

@@ -587,6 +587,8 @@ function AppContent() {
     '/life-balance-review/check-in',
     '/life-balance-review/targets'
   ].includes(location.pathname)
+    // The floating Breathe button hides on the Breathe page and Sleep wind down, both breathing already (NEXT-BREATHE.md).
+    || location.pathname.startsWith('/breathe/') || location.pathname === '/sleep-wind-down'
     || location.pathname.startsWith('/legal/')
     || location.pathname.startsWith('/health-check/')
     || location.pathname.startsWith('/guest/')
@@ -813,8 +815,8 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ErrorBoundary>
-      {/* The one floating button (desktop only): Breathe. Chat to the
-          coach is in the header on desktop and in My Account on phone. */}
+      {/* The one floating button, Breathe: round, bottom right, under 1024px only (on a laptop Breathe is the menu's
+          item; NEXT-BREATHE.md). Chat to the coach is in the header. */}
       {!hideButtons && user && (
         <div className="ui-root ds-portal no-print">
           <FloatingOrb pageKey={location.pathname} onBreathe={() => navigate('/breathe')} />

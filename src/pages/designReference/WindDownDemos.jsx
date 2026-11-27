@@ -21,7 +21,7 @@ export function NightDemo() {
       <span className="dr-small">At night: the mode’s own colours, one step quieter, the orb alone:</span>
       <NightScope className="dr-night">
         <div className="ds-night-breathe">
-          <BreathOrb style={style} pattern="wind" night size="night" label="Breathe in for 4 seconds as the circle grows, and out for 6 seconds as it shrinks." />
+          <BreathOrb style={style} pattern="wind" night size="night" label="Breathe in as it grows, and out as it shrinks." />
           <Button variant="text" onClick={() => toast.show('Sleep well shows next.')}>End early</Button>
         </div>
         <EndScreen

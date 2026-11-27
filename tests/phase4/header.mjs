@@ -23,11 +23,11 @@
 //    nothing near the top sits under the insets. Chromium can't emulate
 //    display-mode, so for the Home Screen app the app's own code is served
 //    with "(display-mode: standalone)" read as always true.
-// 4. The floating Breathe button: desktop only, 60px with the 44px orb
-//    (breathe-orb.html), opens Breathe; on a phone too since Polish 1 Stage B,
-//    at the bottom right, upright or turned.
-// 5. The orb choice: Rings to start with, Level when chosen, still at half
-//    a breath with reduced motion.
+// 4. Breathe (Tim, 26 Nov; NEXT-BREATHE.md, option D): on a laptop the menu's
+//    plain item above My Account, nothing floating; on a phone a 48px round
+//    button bottom right with no word, upright or turned; both open Breathe.
+// 5. The button's fine ring: breathing over 8 seconds, no coral, still with
+//    reduced motion.
 // 6. Chat to [coach]: with one way (opens it), two ways (a small list),
 //    no coach, a coach with no way the portal can open, and offline.
 // 7. Measured against the 25 Nov reference (.mission, .phonehead; Polish 1
@@ -158,7 +158,8 @@ async function shot(page, name) {
 }
 async function open(page, route = '/welcome') {
   await page.goto(`${APP}${route}`);
-  await page.waitForSelector('.hdr', { timeout: 30000 });
+  // The header is hidden on a laptop since Polish 1 (the frame's menu column instead): wait for it to be drawn.
+  await page.waitForSelector('.hdr', { state: 'attached', timeout: 30000 });
   await until(async () => (await page.locator('.ds-loading').count()) === 0, 20000);
   await sleep(400);
 }
@@ -345,35 +346,21 @@ if (part(3)) {
 }
 
 // ---------------------------------------------------------------- 4: the floating Breathe button
+// Tim, 26 Nov (decisions part 12; NEXT-BREATHE.md, option D): on a laptop Breathe is the menu's plain item above My
+// Account and nothing floats; under 1024px a 48px round button bottom right (the card colour, a 1px line, no word,
+// aria-label "Breathe", the fine two-circle ring breathing 0.7 to 1.15 over 8 seconds), no coral.
 if (part(4)) {
   {
     const { context, page } = await newContext({ width: 1280 });
     try {
       await open(page);
-      const b = page.locator('.ds-orb--fixed .ds-breathe');
-      pass('Breathe button: on desktop', await b.isVisible());
-      pass('Breathe button: the word "Breathe"', (await b.innerText()).trim().toLowerCase() === 'breathe');
-      const m = await page.evaluate(() => {
-        const btn = document.querySelector('.ds-orb--fixed .ds-breathe').getBoundingClientRect();
-        const orb = document.querySelector('.ds-orb--fixed .ds-borb').getBoundingClientRect();
-        return { h: btn.height, orb: orb.width, right: window.innerWidth - btn.right, bottom: window.innerHeight - btn.bottom, family: getComputedStyle(document.querySelector('.ds-orb--fixed .ds-breathe')).fontFamily };
-      });
-      pass('Breathe button: 60px pill (breathe-orb.html)', Math.abs(m.h - 60) < 0.6, `${m.h}`);
-      pass('Breathe button: 44px orb (breathe-orb.html)', Math.abs(m.orb - 44) < 0.6, `${m.orb}`);
-      pass('Breathe button: 24px from the right and bottom', Math.abs(m.right - 24) < 1 && Math.abs(m.bottom - 24) < 1, JSON.stringify(m));
-      // Its word as every button's since 18 Nov (Tim: no Nekst capitals on buttons); the pill keeps its 60px for the orb.
-      pass('Breathe button: its word in DM Sans', /^"?DM Sans/.test(m.family), m.family);
-      note('Breathe button: 60px with a 44px orb, as breathe-orb.html (29 Oct), newer than M2 and M3 (56px, 48px orb).');
-      await b.hover();
-      const coral = await page.evaluate(() => getComputedStyle(document.querySelector('.ds-orb--fixed')).getPropertyValue('--coral').trim());
-      const edge = await until(async () => {
-        const e = await page.evaluate(() => getComputedStyle(document.querySelector('.ds-orb--fixed .ds-breathe')).borderColor);
-        return e === hexToRgb(coral) ? e : null;
-      }, 3000);
-      pass('Breathe button: the edge turns coral on hover', Boolean(edge), coral);
-      await shot(page, 'breathe-button-desktop');
-      await b.click();
-      pass('Breathe button: opens Breathe', Boolean(await until(async () => path(page) === '/breathe', 10000)));
+      pass('Breathe: nothing floats on a laptop', (await page.locator('.ds-orb--fixed .ds-breathe:visible').count()) === 0);
+      const items = await page.evaluate(() => [...document.querySelectorAll('.ds-frame-side .ds-mi')].map((e) => ({ t: e.textContent.trim(), l: Math.round(e.getBoundingClientRect().left) })));
+      const at = items.findIndex((i) => i.t === 'Breathe');
+      pass('Breathe: a plain menu item above My Account, lined up', at >= 0 && items[at + 1]?.t === 'My Account' && items.every((i) => i.l === items[0].l), JSON.stringify(items.map((i) => i.t)));
+      await shot(page, 'breathe-menu-desktop');
+      await page.locator('.ds-frame-side .ds-mi', { hasText: 'Breathe' }).click();
+      pass('Breathe: the menu item opens Breathe', Boolean(await until(async () => path(page) === '/breathe', 10000)));
     } finally {
       await context.close();
     }
@@ -382,55 +369,47 @@ if (part(4)) {
     const { context, page } = await newContext({ width: w, height: h, touch: true });
     try {
       await open(page);
-      // Polish 1 Stage B (walk item 5): Breathe shows on a phone too, at the bottom right, on the screen.
-      const br = await page.evaluate(() => { const els = [...document.querySelectorAll('.ds-breathe')].filter((e) => e.getBoundingClientRect().width > 0 && getComputedStyle(e).visibility !== 'hidden'); const r = els[0]?.getBoundingClientRect(); return { n: els.length, r: r && { left: r.left, right: r.right, bottom: r.bottom }, w: innerWidth, h: innerHeight }; });
+      const br = await page.evaluate(() => { const els = [...document.querySelectorAll('.ds-breathe')].filter((e) => e.getBoundingClientRect().width > 0 && getComputedStyle(e).visibility !== 'hidden'); const r = els[0]?.getBoundingClientRect(); const s = els[0] && getComputedStyle(els[0]); return { n: els.length, r: r && { left: r.left, right: r.right, bottom: r.bottom, w: r.width, h: r.height }, radius: s?.borderRadius, label: els[0]?.getAttribute('aria-label'), text: els[0]?.innerText.trim(), w: innerWidth, h: innerHeight }; });
       pass(`Breathe button: one on a ${label}, at the bottom right and on the screen`, br.n === 1 && br.r.right <= br.w && br.r.left > br.w / 2 && br.r.bottom <= br.h && br.r.bottom > br.h * 0.75, JSON.stringify(br));
+      pass(`Breathe button: a 48px circle with no word, named "Breathe" (${label})`, Math.abs(br.r.w - 48) < 0.6 && Math.abs(br.r.h - 48) < 0.6 && br.radius === '50%' && !br.text && br.label === 'Breathe', JSON.stringify(br));
+      if (label === 'phone upright') {
+        pass('Breathe button: 20px from the right and bottom', Math.abs(br.w - br.r.right - 20) < 1 && Math.abs(br.h - br.r.bottom - 20) < 1, JSON.stringify(br.r));
+        await shot(page, 'breathe-button-phone');
+        await sleep(500);
+        await page.locator('.ds-orb--fixed .ds-breathe').click();
+        pass('Breathe button: opens Breathe', Boolean(await until(async () => path(page) === '/breathe', 10000)));
+      }
     } finally {
       await context.close();
     }
   }
 }
 
-// ---------------------------------------------------------------- 5: the orb choice
+// ---------------------------------------------------------------- 5: the button's ring
 if (part(5)) {
-  const { context, page } = await newContext({ width: 1280 });
+  const { context, page } = await newContext({ width: 390, height: 844, touch: true });
   try {
     await open(page);
-    const style = () => page.locator('.ds-orb--fixed .ds-borb').getAttribute('data-orb-style');
-    pass('orb: Rings is the starting choice', (await style()) === 'rings');
-    pass('orb: Rings has the crosshair', (await page.locator('.ds-orb--fixed .ds-borb-cross').count()) === 1);
+    const read = () => page.evaluate(() => {
+      const ring = document.querySelector('.ds-orb--fixed .ds-breathe-ring');
+      const s = ring && getComputedStyle(ring);
+      return { w: ring?.getBoundingClientRect().width, anim: s && `${s.animationName} ${s.animationDuration}`, stroke: s?.stroke, edge: getComputedStyle(ring.closest(".ds-breathe")).boxShadow };
+    });
     const sizes = [];
-    for (let i = 0; i < 3; i += 1) {
-      sizes.push(await page.evaluate(() => document.querySelector('.ds-orb--fixed .ds-borb-art circle:last-of-type')?.getAttribute('r')));
-      await sleep(700);
-    }
-    pass('orb: Rings breathes (its size changes)', new Set(sizes).size > 1, sizes.join(', '));
-    await page.evaluate(() => localStorage.setItem('clarity-orb-style', 'level'));
-    await page.reload();
-    await page.waitForSelector('.ds-orb--fixed .ds-borb');
-    pass('orb: Level when chosen', (await style()) === 'level');
-    pass('orb: Level is a gauge (no crosshair, a clipped fill)', (await page.locator('.ds-orb--fixed .ds-borb-cross').count()) === 0 && (await page.locator('.ds-orb--fixed .ds-borb-art clipPath').count()) === 1);
-    await shot(page, 'orb-level');
-    await page.evaluate(() => localStorage.setItem('clarity-orb-style', 'something else'));
-    await page.reload();
-    await page.waitForSelector('.ds-orb--fixed .ds-borb');
-    pass('orb: an unknown choice falls back to Rings', (await style()) === 'rings');
+    for (let i = 0; i < 3; i += 1) { sizes.push((await read()).w); await sleep(700); }
+    const r = await read();
+    pass('ring: breathes over 8 seconds (its size changes)', r.anim === 'ds-breathe-ring 8s' && new Set(sizes).size > 1, `${r.anim}; ${sizes.join(', ')}`);
+    // The brand coral and light mode's deeper coral, in either mode.
+    pass('ring: no coral in the button', ![r.stroke, r.edge].some((c) => /rgb\((255, 111, 92|194, 65, 46|168, 78, 40)\)/.test(c)), JSON.stringify(r));
   } finally {
     await context.close();
   }
   {
-    const { context, page } = await newContext({ width: 1280, reduced: true });
+    const { context, page } = await newContext({ width: 390, height: 844, touch: true, reduced: true });
     try {
       await open(page);
-      const read = () => page.evaluate(() => {
-        const core = document.querySelector('.ds-orb--fixed .ds-borb-art circle:last-of-type');
-        return { r: core?.getAttribute('r'), o: core?.getAttribute('stroke-opacity') };
-      });
-      const a = await read();
-      await sleep(1500);
-      const b = await read();
-      pass('orb, reduced motion: still at half a breath', a.r === '16.50' && b.r === '16.50', `${a.r}, ${b.r}`);
-      pass('orb, reduced motion: fades with the breath', a.o !== b.o, `${a.o}, ${b.o}`);
+      const anim = await page.evaluate(() => getComputedStyle(document.querySelector('.ds-orb--fixed .ds-breathe-ring')).animationName);
+      pass('ring, reduced motion: still', anim === 'none', anim);
     } finally {
       await context.close();
     }

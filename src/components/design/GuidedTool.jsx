@@ -72,6 +72,7 @@ import './design.css';
 //              step's own content: no % bar, question or footer (M19's
 //              breathing, Sleep well and Work's done screens). Its
 //              content puts tool.headingRef on its heading, for focus.
+//   where:     a plain step's own words at the bar's right, in the step's place (Sleep wind down's time left),
 //   className: added to the tool while on this step ('ds-night', M19's
 //              night colours),
 //   render: (tool) => content; tool has go(i), index, skipped, steps
@@ -698,6 +699,8 @@ export default function GuidedTool({
                   <span className="ds-tool-step ds-guide-where">
                     {!step.plain && <SaveStatus state={saveState} />}
                     {!step.plain && stepWords && <span aria-hidden="true">{stepWords}</span>}
+                    {/* A plain step's own corner (Sleep wind down's "4:54 left"; NEXT-BREATHE-TOOLS.md point 7). */}
+                    {step.plain && step.where}
                   </span>
                 </div>
               )}

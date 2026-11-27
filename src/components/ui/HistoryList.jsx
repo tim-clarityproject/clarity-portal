@@ -292,7 +292,7 @@ function HistoryListStyles() {
 }
 
 // Inline so the component is a single-file drop-in, same pattern already
-// used by BreathingOrb.jsx/Toast.jsx elsewhere in this codebase. Values
+// used by Toast.jsx elsewhere in this codebase. Values
 // with no matching token are called out in the task summary.
 const HLIST_CSS = `
 /* Polish 1, Stage B (B1): the lists to the 25 Nov reference. The opening is PageOpening; each month is

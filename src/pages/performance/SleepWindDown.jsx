@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import {
   BreathOrb,
+  BreathWords,
   Button,
   EndScreen,
   GuidedTool,
@@ -19,6 +20,8 @@ import { WIND_DOWN_BREATHE_SECONDS, WIND_DOWN_THOUGHT_MAX, localToday, windDownN
 import { finishWindDown, readWindDown, refreshWindDown, saveWindDownThoughts } from '../../lib/performance/windDownStore';
 import './performance.css';
 import { TOOL_CLOSED } from '../../content/pageLines/client';
+import { ORB_LABEL } from '../../lib/breathOrb';
+import { soundSrc } from '../../lib/breathing';
 
 // Sleep wind down (mock-up M19, approved by Tim on 29 Oct; read in full
 // with its notes, and breathe-orb.html). A tool in Reset, offered on Home
@@ -26,15 +29,17 @@ import { TOOL_CLOSED } from '../../content/pageLines/client';
 //   Tomorrow   "What’s on your mind for tomorrow?" one row per thought
 //              (lists are rows), 300 characters each and no limit on how
 //              many; Skip goes straight to the breathing
-//   Breathe    the orb only, in the person's own style (Rings or Level),
-//              4 seconds in and 6 out for 5 minutes, no words; it ends by
-//              itself, or with End early
+//   Breathe    Breathe's own orb and words, dimmed (Tim, 26 Nov, decisions
+//              part 12; NEXT-BREATHE-TOOLS.md point 7), in the person's own
+//              style (Rings or Level), 4 seconds in and 6 out for 5 minutes,
+//              the time left at the top right; it ends by itself, or with
+//              End early
 //   Sleep well three lines and Back to Home, nothing to act on (brief:
 //              the last screen before sleep reassures in words only)
 // The breathing and Sleep well use the night colours (the mode's own, one
-// step quieter). The sound under the breathing is left out until there
-// are real audio files: WIND_DOWN_SOUNDS is empty, so no button shows, and
-// the choice is off until chosen and never plays by itself.
+// step quieter). "Play the ambient pad" shows once the ambient pad has an
+// audio file (BREATHE_SOUNDS in src/lib/breathing.js; none has yet), and it
+// never plays by itself.
 //
 // The thoughts save as they are typed (Saving, then Saved), kept as a
 // draft too, for the night they belong to: a wind-down before 04:00 is
@@ -171,6 +176,7 @@ export default function SleepWindDown() {
       name: 'Breathe',
       plain: true,
       className: 'ds-night',
+      where: <TimeLeft />,
       render: (tool) => <NightBreathe style={orbStyle} headingRef={tool.headingRef} onEnd={() => tool.go(2)} />,
     },
     {
@@ -204,25 +210,55 @@ export default function SleepWindDown() {
   );
 }
 
-// The breathing (M19 Breathe, breathe-orb.html night): the orb alone, 4 in
-// and 6 out, for 5 minutes, then Sleep well. No phase words, no count.
+// The time left at the top right of the breathing ("4:54 left"), counting down from 5:00 while the step shows.
+function TimeLeft() {
+  const [startedAt] = useState(() => Date.now());
+  const [left, setLeft] = useState(WIND_DOWN_BREATHE_SECONDS);
+  useEffect(() => {
+    const t = setInterval(() => setLeft(Math.max(0, WIND_DOWN_BREATHE_SECONDS - Math.floor((Date.now() - startedAt) / 1000))), 250);
+    return () => clearInterval(t);
+  }, [startedAt]);
+  const m = Math.floor(left / 60);
+  const sec = String(left % 60).padStart(2, '0');
+  return <span className="ds-bleft" aria-hidden="true">{`${m}:${sec} left`}</span>;
+}
+
+// The breathing (NEXT-BREATHE-TOOLS.md point 7): Breathe's round orb and its words, dimmed by the night colours, 4 in
+// and 6 out for 5 minutes, then Sleep well. "Play the ambient pad" (once it has a file) and End early at the foot.
 function NightBreathe({ style, headingRef, onEnd }) {
   const [startedAt] = useState(() => performance.now());
+  const [playing, setPlaying] = useState(false);
+  const pad = soundSrc('ambient');
   const onEndRef = useRef(onEnd);
   useEffect(() => { onEndRef.current = onEnd; }, [onEnd]);
   useEffect(() => {
     const t = setTimeout(() => onEndRef.current(), WIND_DOWN_BREATHE_SECONDS * 1000);
     return () => clearTimeout(t);
   }, []);
-  const label = style === 'level'
-    ? 'Breathe in for 4 seconds as the level rises, and out for 6 seconds as it falls, for 5 minutes.'
-    : 'Breathe in for 4 seconds as the circle grows, and out for 6 seconds as it shrinks, for 5 minutes.';
+  useEffect(() => {
+    if (!playing || !pad || typeof Audio === 'undefined') return undefined;
+    const audio = new Audio(pad);
+    audio.loop = true;
+    audio.play().catch(() => setPlaying(false));
+    return () => { audio.pause(); };
+  }, [playing, pad]);
   return (
     <div className="ds-night-breathe">
-      <h2 ref={headingRef} tabIndex={-1} className="ds-sr">Breathe slowly</h2>
-      <BreathOrb style={style} pattern="wind" startedAt={startedAt} night size="night" label={label} />
-      {/* Room for "Change the sound" (M19): it shows once WIND_DOWN_SOUNDS has audio files. */}
-      <Button variant="text" onClick={() => onEndRef.current()}>End early</Button>
+      <h2 ref={headingRef} tabIndex={-1} className="ds-sr">Breathe slowly for 5 minutes</h2>
+      <div className="ds-bsession-stage">
+        <div className="ds-bstage">
+          <BreathOrb style={style} pattern="wind" startedAt={startedAt} night size="night" label={ORB_LABEL} />
+          <BreathWords pattern="wind" startedAt={startedAt} name="Sleep wind down" />
+        </div>
+      </div>
+      <div className="ds-bsession-foot">
+        {pad && (
+          <Button variant="outline" aria-pressed={playing} onClick={() => setPlaying((p) => !p)}>
+            {playing ? 'Stop the ambient pad' : 'Play the ambient pad'}
+          </Button>
+        )}
+        <Button variant="outline" onClick={() => onEndRef.current()}>End early</Button>
+      </div>
     </div>
   );
 }

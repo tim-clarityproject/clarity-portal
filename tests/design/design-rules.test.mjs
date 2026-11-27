@@ -432,7 +432,7 @@ test('bare-zero in a row (walk B, item 9): a row’s value of £0 or £0/month f
 });
 
 test('breathe (walk B, item 2): Breathe over a fixed bar’s button fails; lifted over the bar it passes', async () => {
-  const page = '<div style="position:fixed;left:0;right:0;bottom:0;display:flex;gap:12px;padding:12px 20px;background:var(--bg)"><button class="ds-btn ds-btn--primary" style="flex:1">Save journal</button><button class="ds-btn ds-btn--outline" style="flex:1">Save as draft</button></div><div class="ds-orb ds-orb--fixed"><button type="button" class="ds-breathe">Breathe</button></div>';
+  const page = '<div style="position:fixed;left:0;right:0;bottom:0;display:flex;gap:12px;padding:12px 20px;background:var(--bg)"><button class="ds-btn ds-btn--primary" style="flex:1">Save journal</button><button class="ds-btn ds-btn--outline" style="flex:1">Save as draft</button></div><div class="ds-orb ds-orb--fixed"><button type="button" class="ds-breathe" aria-label="Breathe"></button></div>';
   let r = await check(page, { phone: true });
   assert.match(all(r), /breathe: Breathe is drawn over "Save as draft" in a fixed bar/);
   r = await check(page, { phone: true, extra: '.ui-root .ds-orb--fixed { --bottom-bar-h: 72px; }' });
@@ -441,11 +441,30 @@ test('breathe (walk B, item 2): Breathe over a fixed bar’s button fails; lifte
 
 test('breathe (FX8): a side panel drawn over Breathe hides it, so its foot’s button passes; Breathe over the panel fails', async () => {
   const panel = (z) => `<div role="dialog" aria-modal="true" style="position:fixed;top:0;right:0;bottom:0;width:390px;background:var(--bg);z-index:${z};display:flex;flex-direction:column;justify-content:flex-end"><div style="display:flex;padding:12px 20px"><button class="ds-btn ds-btn--primary" style="flex:1">Done</button></div></div>`;
-  const orb = '<div class="ds-orb ds-orb--fixed" style="z-index:100"><button type="button" class="ds-breathe">Breathe</button></div>';
+  const orb = '<div class="ds-orb ds-orb--fixed" style="z-index:100"><button type="button" class="ds-breathe" aria-label="Breathe"></button></div>';
   let r = await check(panel(5200) + orb, { phone: true });
   assert.ok(!has(r, 'breathe'), all(r));
   r = await check(panel(10) + orb, { phone: true });
   assert.match(all(r), /breathe: Breathe is drawn over "Done" in a fixed bar/);
+});
+
+test('breathe (NEXT-BREATHE.md, option D): the round 48px button passes on a phone; on a laptop, on the Breathe page, with words, square or coral it fails', async () => {
+  const ring = '<svg class="ds-breathe-ring" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8"/><circle cx="10" cy="10" r="3"/></svg>';
+  const button = (inside = ring) => `<div class="ds-orb ds-orb--fixed"><button type="button" class="ds-breathe" aria-label="Breathe">${inside}</button></div>`;
+  let r = await check(button(), { phone: true });
+  assert.ok(!has(r, 'breathe'), all(r));
+  r = await check(button(), { width: 960 });
+  assert.ok(!has(r, 'breathe'), all(r));
+  // On a laptop the stylesheet hides it; drawn there anyway, it fails.
+  r = await check(button(), { width: 1280, extra: '.ui-root .ds-orb--fixed { display: block !important; }' });
+  assert.match(all(r), /breathe: the Breathe button floats over the page on a laptop/);
+  r = await check(button(), { phone: true, route: '/breathe' });
+  assert.match(all(r), /breathe: the Breathe button shows on the Breathe page/);
+  r = await check(button(`${ring}Breathe`), { phone: true, extra: '.ui-root .ds-breathe { width: auto !important; border-radius: 999px !important; padding: 0 16px !important; }' });
+  assert.match(all(r), /breathe: the Breathe button is \d+ by 48px and not round/);
+  assert.match(all(r), /breathe: the Breathe button has words \("Breathe"/);
+  r = await check(button(), { phone: true, extra: '.ui-root .ds-breathe { box-shadow: inset 0 0 0 1px #FF6F5C !important; }' });
+  assert.match(all(r), /breathe: the Breathe button uses coral/);
 });
 
 test('year (walk B, item 4): a date this year with its year fails; without it, or last year’s, passes', async () => {
@@ -553,4 +572,54 @@ test('coral-fill (Tim, 26 Nov): a mistake in a coral or soft coral box fails, li
     r = await check('<div class="ds-error" role="alert"><span class="ds-error-mark" aria-hidden="true">!</span><span>That didn’t save. Check your connection and try again.</span></div>', { theme });
     assert.ok(!rules(r).includes('coral-fill') && !rules(r).includes('coral'), `${theme} line: ${r.problems.join('; ')}`);
   }
+});
+
+// The Breathe tools (Tim, 26 Nov, decisions part 12; NEXT-BREATHE-TOOLS.md "Checks"): the orb in thin lines of the text
+// colour, no coral or mint, the words beside it never on it, Box breathing in rounded squares, the controls 40px (44).
+const ROUNDED_SQUARE = (h, r) => `M${-h} ${h - r}V${-h + r}A${r} ${r} 0 0 1 ${-h + r} ${-h}H${h - r}A${r} ${r} 0 0 1 ${h} ${-h + r}V${h - r}A${r} ${r} 0 0 1 ${h - r} ${h}H${-h + r}A${r} ${r} 0 0 1 ${-h} ${h - r}Z`;
+const RINGS = (ink = 'var(--text)') => `<svg viewBox="-100 -100 200 200" width="100%" height="100%"><circle r="92" fill="none" style="stroke:var(--line)"/><circle r="60" fill="none" style="stroke:${ink}"/><circle r="14" fill="none" style="stroke:var(--text)"/></svg>`;
+const SQUARES = `<svg viewBox="-100 -100 200 200" width="100%" height="100%"><path d="${ROUNDED_SQUARE(88, 22)}" fill="none" style="stroke:var(--line)"/><path d="${ROUNDED_SQUARE(60, 15)}" fill="none" style="stroke:var(--text)"/><path d="${ROUNDED_SQUARE(13, 4)}" fill="none" style="stroke:var(--text)"/></svg>`;
+const breatheScreen = ({ art = RINGS(), shape = 'round', name = 'Physiological sigh', wordsStyle = '', button = '' } = {}) => `<div data-breathe="breathe"><div class="ds-bstage"><span class="ds-borb ds-borb--tool" data-breathe-orb="" data-orb-shape="${shape}" role="img" aria-label="Breathe in as it grows, and out as it shrinks."><span class="ds-borb-art">${art}</span></span><div class="ds-bwords" data-breathe-words="" style="${wordsStyle}"><div class="ds-bwords-word">Breathe in</div><div class="ds-bwords-how">through your nose</div><div class="ds-bwords-count"><strong>4</strong><span>seconds</span></div><div class="ds-bwords-name">${name}</div></div></div><div class="ds-bsession-foot"><button class="ds-btn ds-btn--outline" ${button}>Finish breathing</button></div></div>`;
+const breatheRules = (r) => r.problems.filter((p) => p.startsWith('breathe-'));
+
+test('breathe tools: the orb in thin text-colour lines with its words beside it passes, laptop and phone, light and dark; Box breathing in squares passes', async () => {
+  for (const phone of [false, true]) {
+    for (const theme of ['light', 'dark']) {
+      let r = await check(breatheScreen(), { phone, theme });
+      assert.deepEqual(breatheRules(r), [], `${phone ? 'phone' : 'laptop'} ${theme}: ${all(r)}`);
+      r = await check(breatheScreen({ art: SQUARES, shape: 'square', name: 'Box breathing' }), { phone, theme });
+      assert.deepEqual(breatheRules(r), [], `box ${phone ? 'phone' : 'laptop'} ${theme}: ${all(r)}`);
+    }
+  }
+});
+
+test('breathe-colour: a coral or mint line in the orb, or mint words, fails', async () => {
+  let r = await check(breatheScreen({ art: RINGS('#FF6F5C') }));
+  assert.match(all(r), /breathe-colour: coral or mint on a Breathe screen: coral on the orb's circle/);
+  r = await check(breatheScreen({ art: RINGS('#5FEFBB') }), { theme: 'dark' });
+  assert.match(all(r), /breathe-colour: .*mint on the orb's circle/);
+  r = await check(breatheScreen({ art: RINGS('#12A672') }));
+  assert.match(all(r), /breathe-colour: .*mint on the orb's circle/);
+  r = await check(breatheScreen({ wordsStyle: 'color:#0B7A52' }));
+  assert.match(all(r), /breathe-colour: .*mint on "Breathe in/);
+});
+
+test('breathe-words: the words drawn on top of the orb fail', async () => {
+  const r = await check(breatheScreen({ wordsStyle: 'position:relative;left:-200px' }));
+  assert.match(all(r), /breathe-words: the words "Breathe in/);
+});
+
+test('breathe-square: Box breathing drawn with circles fails; another exercise drawn square fails', async () => {
+  let r = await check(breatheScreen({ name: 'Box breathing' }));
+  assert.match(all(r), /breathe-square: Box breathing's orb draws 3 circles/);
+  r = await check(breatheScreen({ art: SQUARES, shape: 'square', name: 'Vagal breathing' }));
+  assert.match(all(r), /breathe-square: "Breathe in.*" is drawn square/);
+});
+
+test('breathe-height: a button off 40px on a laptop (44px on a phone) fails; the shared button passes', async () => {
+  const squat = '.ui-root .ds-bsession-foot .ds-btn:not(#_):not(#_) { min-height: 0 !important; height: auto !important; padding-block: 0 !important; }';
+  let r = await check(breatheScreen(), { extra: squat });
+  assert.match(all(r), /breathe-height: "Finish breathing" is (?!40px)\d+px high on a Breathe screen \(40px\)/);
+  r = await check(breatheScreen(), { phone: true, extra: squat });
+  assert.match(all(r), /breathe-height: "Finish breathing" is (?!44px)\d+px high on a Breathe screen \(44px\)/);
 });

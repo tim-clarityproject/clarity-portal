@@ -7,8 +7,9 @@
 //
 // 1. Daily review ends with Close the day, then Work's done for today.
 // 2. Sleep wind down from start to finish: the thoughts (rows, 300
-//    characters at most), the breathing (the orb alone, 4 in and 6 out,
-//    measured from the clock, no words), Sleep well (exactly three lines and
+//    characters at most), the breathing (Breathe's orb and its words, dimmed,
+//    4 in and 6 out, measured from the clock; Tim, 26 Nov, decisions part 12,
+//    NEXT-BREATHE-TOOLS.md point 7), Sleep well (exactly three lines and
 //    Back to Home, no list), and Home stops offering it that night.
 // 3. The next morning's Carried over list: Daily review's things first,
 //    then last night's thoughts, the source lines, duplicates merged;
@@ -204,9 +205,10 @@ async function typeThoughts(page, list) {
   }
   return until(async () => (await page.locator('.ds-guide-bar').innerText()).includes('Saved'), 8000);
 }
-// The orb's main circle (Rings), its radius in the drawing's units: 9 empty, 24 full.
+// The orb's breathing ring (Rings: the track, the ring, the centre ring), its radius in the drawing's units: 34 empty,
+// 86 full (the Breathe tools round, Tim, 26 Nov, decisions part 12).
 const orbR = (page) => page.evaluate(() => {
-  const c = [...document.querySelectorAll('.ds-night-breathe .ds-borb-art svg circle')].at(-1);
+  const c = [...document.querySelectorAll('.ds-night-breathe .ds-borb-art svg circle')][1];
   return c ? { r: Number(c.getAttribute('r')), o: Number(c.getAttribute('stroke-opacity') || 1) } : null;
 });
 
@@ -305,14 +307,15 @@ if (part(2)) {
     pass('wind-down: kept for Wednesday night, as typed', JSON.stringify(kept?.thoughts) === JSON.stringify(THOUGHTS), JSON.stringify(kept));
     await shot(page, 'wind-1-tomorrow');
 
-    // The breathing: the orb alone, 4 in and 6 out, measured from the clock.
+    // The breathing: Breathe's orb with its words beside it, dimmed, 4 in and 6 out, measured from the clock (point 7).
     await page.locator('.ds-guide-next').click();
     await page.locator('.ds-night-breathe .ds-borb').waitFor({ timeout: 8000 });
     pass('wind-down: the breathing uses the night colours', await page.locator('.ds-guide').evaluate((e) => e.classList.contains('ds-night')));
     pass('wind-down: the orb in the person’s style (Rings, the starting choice)', (await page.locator('.ds-night-breathe .ds-borb').getAttribute('data-orb-style')) === 'rings');
-    pass('wind-down: no words on or beside the orb', (await page.locator('.ds-night-breathe .ds-borb').innerText()) === '' && (await page.locator('.ds-bwords').count()) === 0
-      && (await seen(page, '.ds-guide-scroll')) === 'End early', await seen(page, '.ds-guide-scroll'));
-    pass('wind-down: the orb says 4 in and 6 out to a screen reader', /4 seconds.*6 seconds.*5 minutes/.test(await page.locator('.ds-night-breathe .ds-borb').getAttribute('aria-label')));
+    pass('wind-down: the words beside the orb, never on it, and End early', (await page.locator('.ds-night-breathe .ds-borb').innerText()) === '' && (await page.locator('.ds-night-breathe .ds-bwords').count()) === 1
+      && (await page.getByRole('button', { name: 'End early' }).count()) === 1, await seen(page, '.ds-guide-scroll'));
+    pass('wind-down: the time left at the top right', /^\d:\d\d left$/.test((await page.locator('.ds-guide-bar .ds-bleft').innerText()).trim()));
+    pass('wind-down: the orb is named for a screen reader', (await page.locator('.ds-night-breathe .ds-borb').getAttribute('aria-label')) === 'Breathe in as it grows, and out as it shrinks.');
     pass('wind-down: no % bar, no question and no footer while breathing', (await page.locator('.ds-guide-pct, .ds-guide-question, .ds-guide-foot').count()) === 0);
     pass('wind-down: no Saved in the top bar at night', !(await page.locator('.ds-guide-bar').innerText()).includes('Saved'));
     pass('wind-down: no sound plays by itself', (await page.locator('audio, video').count()) === 0 && !(await page.evaluate(() => [...document.querySelectorAll('audio')].some((a) => !a.paused))));
@@ -326,8 +329,8 @@ if (part(2)) {
     const ext = [];
     for (let i = 1; i < samples.length - 1; i += 1) {
       const [a, b, c] = [samples[i - 1].r, samples[i].r, samples[i + 1].r];
-      if (b >= a && b > c && b > 20) ext.push({ k: 'top', t: samples[i].t });
-      if (b <= a && b < c && b < 13) ext.push({ k: 'bottom', t: samples[i].t });
+      if (b >= a && b > c && b > 80) ext.push({ k: 'top', t: samples[i].t });
+      if (b <= a && b < c && b < 40) ext.push({ k: 'bottom', t: samples[i].t });
     }
     const gaps = [];
     for (let i = 1; i < ext.length; i += 1) gaps.push(`${ext[i - 1].k}>${ext[i].k}:${(ext[i].t - ext[i - 1].t).toFixed(2)}`);
@@ -335,7 +338,7 @@ if (part(2)) {
     const outOk = gaps.filter((g) => g.startsWith('top>bottom')).every((g) => Math.abs(Number(g.split(':')[1]) - 6) <= 0.3);
     pass('wind-down: 4 seconds in and 6 seconds out (measured)', gaps.length >= 3 && inOk && outOk, gaps.join(' '));
     const rs = samples.map((s) => s.r);
-    pass('wind-down: the orb fills and empties', Math.max(...rs) > 23.5 && Math.min(...rs) < 9.5, `${Math.min(...rs)} to ${Math.max(...rs)}`);
+    pass('wind-down: the orb fills and empties', Math.max(...rs) > 85.5 && Math.min(...rs) < 34.5, `${Math.min(...rs)} to ${Math.max(...rs)}`);
     await shot(page, 'wind-2-breathe');
     // It ends by itself after 5 minutes.
     await page.clock.resume();
@@ -463,7 +466,7 @@ if (part(5)) {
       await page.clock.runFor(500);
       s.push(await orbR(page));
     }
-    pass('reduced motion: nothing grows or shrinks (half a breath)', s.every((x) => Math.abs(x.r - 16.5) < 0.01), s.map((x) => x.r).join(','));
+    pass('reduced motion: nothing grows or shrinks (half a breath, .55)', s.every((x) => Math.abs(x.r - 62.6) < 0.01), s.map((x) => x.r).join(','));
     pass('reduced motion: it fades brighter and dimmer with the breath', Math.max(...s.map((x) => x.o)) - Math.min(...s.map((x) => x.o)) > 0.3);
     const anim = await page.locator('.ds-guide-page').evaluate((e) => getComputedStyle(e).animationName);
     pass('reduced motion: no slide between screens', !/from-right|from-left/.test(anim), anim);
@@ -474,8 +477,7 @@ if (part(5)) {
     await sleep(600); // the tool ignores a tap in its first moment
     await page.locator('.ds-guide-skip').click();
     await page.locator('.ds-night-breathe .ds-borb').waitFor({ timeout: 8000 });
-    pass('the person’s Level choice is used at night', (await page.locator('.ds-night-breathe .ds-borb').getAttribute('data-orb-style')) === 'level'
-      && /level rises/.test(await page.locator('.ds-night-breathe .ds-borb').getAttribute('aria-label')));
+    pass('the person’s Level choice is used at night', (await page.locator('.ds-night-breathe .ds-borb').getAttribute('data-orb-style')) === 'level');
   } finally {
     await context.close();
   }
@@ -497,7 +499,7 @@ if (part(6)) {
       const want = mode === 'dark' ? { bg: 'rgb(0, 0, 0)', fg: 'rgb(163, 163, 160)' } : { bg: 'rgb(239, 237, 232)', fg: 'rgb(74, 74, 73)' };
       pass(`360 ${mode}: the night colours are the mode's own, one step quieter`, night.bg === want.bg && night.fg === want.fg, `${JSON.stringify(night)} (day ${bg})`);
       pass(`360 ${mode}: the breathing has no sideways scrolling`, await noSideways(page));
-      pass(`360 ${mode}: the orb is 190px on a phone`, Math.round((await page.locator('.ds-night-breathe .ds-borb').boundingBox()).width) === 190);
+      pass(`360 ${mode}: the orb is 240px on a phone`, Math.round((await page.locator('.ds-night-breathe .ds-borb').boundingBox()).width) === 240);
       await shot(page, `w360-${mode}-breathe`);
       await page.getByRole('button', { name: 'End early' }).click();
       await until(async () => (await heading(page)) === 'Sleep well', 8000);
@@ -573,7 +575,7 @@ const PARTS = [
   ['Sleep well line', 'night', '.gn p', '.ds-end-line', ['fs', 'ff', 'color']],
   ['Sleep well button', 'night', '.gn .ghost', '.ds-end-action button', ['h', 'tt'], 'The shared outlined button is 48px, as M19 .ghost.'],
   ['night background', 'night', '.frame', '.ds-guide', ['bg', 'color']],
-  ['night orb', 'breathe', '.orbs', '.ds-night-breathe .ds-borb', ['w']],
+  ['night orb', 'breathe', '.orbs', '.ds-night-breathe .ds-borb', ['w'], 'The orb is Breathe’s own since the Breathe tools round: 280px, 240px on a phone (Tim, 26 Nov, decisions part 12).'],
   ['Work’s done title', 'wdone', '.wd h2', '.ds-end-title', ['fs', 'ls', 'ff', 'tt', 'ta', 'color']],
   ['Work’s done line', 'wdone', '.wd p', '.ds-end-line', ['fs', 'ff', 'color']],
   ['Work’s done button', 'wdone', '.wd .btn', '.ds-end-action button', ['h', 'bg']],

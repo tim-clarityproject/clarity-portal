@@ -1,33 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
-import { ORB_PATTERNS, breathAt, howToBreathe } from '../../lib/breathOrb';
+import { ORB_PATTERNS, ORB_STILL_SIZE, breathAt, howToBreathe, orbSvg } from '../../lib/breathOrb';
 import { useOrbStyle } from './useOrbStyle';
 import { SegmentedControl } from './Controls';
 import './design.css';
 
-// The Breathe orb (breathe-orb.html, approved 29 Oct; read in full with
-// its notes). One shared part for every place the orb appears: the
-// floating Breathe button now, Breathe and Sleep wind down when they are
-// rebuilt. Two styles, the person's choice (useOrbStyle):
+let clipIds = 0;
+
+// The Breathe orb in the 25 Nov style (Tim, 26 Nov, decisions part 12; NEXT-BREATHE-TOOLS.md point 3, the approved
+// tools mock-up). One shared part for Breathe and Sleep wind down (and the design gallery). Thin lines only: 1.25px in
+// the text colour (white in dark), no fill colour, no coral and no mint (the coral and mint orb ended with this round).
 //
-// - Rings: the approved orb with finer lines (Tim, 29 Oct, 17:39). A
-//   filled circle with two echo rings grows and shrinks, coral on the
-//   in-breath and mint on the out-breath (deeper in light), with the brand
-//   crosshair turning 45 degrees in the centre. Every line is a fixed 1 to
-//   1.25 pixels at any size.
-// - Level: a fixed round ring that fills from the bottom as you breathe in
-//   and empties as you breathe out: one mint line over a soft mint tint.
-//   Still during a hold.
+// - Rings: a faint outer track (1px, the line colour), a ring that grows from small to nearly the track on the
+//   in-breath and back on the out-breath, and a small fixed centre ring (the Breathe button's ring).
+// - Level: an outline that fills from the bottom with the soft surface grey on the in-breath, with a fine level line
+//   at the top of the fill.
+// - shape 'square' (Box breathing only): every part a rounded square, the track, the growing square, the centre square
+//   and Level's outline. No travelling dot.
 //
-// Reduced motion (the mock-up's note): nothing grows, shrinks or turns.
-// The orb stays at half a breath and fades brighter and dimmer with the
-// breath, while the words carry the pace.
+// Every phase eases on a cosine curve (breathAt). Reduced motion: the orb holds at half a breath (the mock-up's .55)
+// and its moving line fades brighter and dimmer with each breath; the words and the count carry on.
 //
-// pattern: a key of ORB_PATTERNS ('rest', 'sigh', 'box', 'vagal', 'wind')
-// or a list of phases. startedAt: performance.now() when the pattern
-// began (orbs and words given the same one breathe together). night:
-// Sleep wind down's quieter colours (M19). size: 'tool' (Breathe, 300px,
-// 164px on a phone) or 'night' (Sleep wind down, 220px, 190px on a phone);
-// otherwise the size its place gives it.
+// pattern: a key of ORB_PATTERNS ('sigh', 'box', 'vagal', 'wind', 'rest') or a list of phases. startedAt:
+// performance.now() when the pattern began (an orb and its words given the same one breathe together). night: Sleep
+// wind down's quieter colours (the page's .ds-night tokens do the dimming; the class is kept for the gallery). size:
+// 'tool' (280px, 240px on a phone; Sleep wind down's 'night' is the same orb). label: the image's name for screen
+// readers.
 
 function usePrefersStill() {
   const [still, setStill] = useState(() => (
@@ -43,105 +40,57 @@ function usePrefersStill() {
   return still;
 }
 
-// A colour token as numbers, read through the browser so any colour
-// format works (the tokens differ per mode).
-function rgbOf(probe) {
-  const m = /rgba?\(([^)]+)\)/.exec(getComputedStyle(probe).color || '');
-  if (!m) return [0, 0, 0];
-  return m[1].split(',').slice(0, 3).map((v) => Number.parseFloat(v));
-}
-
-const NS = ' vector-effect="non-scaling-stroke"';
-let levelIds = 0;
-
-function drawRings(b, colour, px, fade) {
-  const c = `rgb(${colour.map(Math.round).join(',')})`;
-  const lw = px < 80 ? 1 : 1.25;
-  let svg = `<svg viewBox="-30 -30 60 60" aria-hidden="true"><circle r="27" fill="none" stroke-width="1"${NS} style="stroke:var(--line)"/>`;
-  for (let k = 2; k >= 1; k -= 1) {
-    const bk = Math.max(0, b - 0.08 * k);
-    svg += `<circle r="${(9 + 15 * bk + 1.6 * k).toFixed(2)}" fill="none" stroke="${c}" stroke-width=".75"${NS} stroke-opacity="${((0.36 / k) * fade).toFixed(3)}"/>`;
-  }
-  svg += `<circle r="${(9 + 15 * b).toFixed(2)}" fill="${c}" fill-opacity="${(0.09 * fade).toFixed(3)}" stroke="${c}" stroke-opacity="${fade.toFixed(3)}" stroke-width="${lw}"${NS}/></svg>`;
-  return svg;
-}
-
-function drawLevel(s, px, fade, id) {
-  const R = 90;
-  const h = 0.08 + 0.84 * s;
-  const y = R - 2 * R * h;
-  const xw = Math.sqrt(Math.max(0, R * R - y * y));
-  return `<svg viewBox="-100 -100 200 200" aria-hidden="true"><defs><clipPath id="${id}"><circle r="${R}"/></clipPath></defs>`
-    + `<rect x="-100" y="${y.toFixed(2)}" width="200" height="${(100 - y).toFixed(2)}" clip-path="url(#${id})" style="fill:var(--o-tint)" fill-opacity="${fade.toFixed(3)}"/>`
-    + `<circle r="${R}" fill="none" style="stroke:var(--o-ring)" stroke-width="${px < 80 ? 1 : 1.25}"${NS}/>`
-    + `<path d="M${(-xw).toFixed(2)} ${y.toFixed(2)}H${xw.toFixed(2)}" style="stroke:var(--o-out)" stroke-opacity="${fade.toFixed(3)}" stroke-width="${px < 80 ? 1.25 : 1.5}"${NS} stroke-linecap="round"/></svg>`;
-}
-
-export function BreathOrb({ style = 'rings', pattern = 'rest', startedAt, night = false, size, label, className = '' }) {
+export function BreathOrb({ style = 'rings', shape, pattern = 'rest', startedAt, night = false, size, label, className = '' }) {
   const artRef = useRef(null);
-  const crossRef = useRef(null);
-  const inRef = useRef(null);
-  const outRef = useRef(null);
   const still = usePrefersStill();
   const [start] = useState(() => (typeof performance !== 'undefined' ? performance.now() : 0));
   const begin = startedAt ?? start;
   const phases = Array.isArray(pattern) ? pattern : (ORB_PATTERNS[pattern] || ORB_PATTERNS.rest);
   const phasesRef = useRef(phases);
   useEffect(() => { phasesRef.current = phases; }, [phases]);
+  // Box breathing draws squares (point 3); everything else is round.
+  const form = shape || (pattern === 'box' ? 'square' : 'round');
 
   useEffect(() => {
     const art = artRef.current;
     if (!art) return undefined;
-    const id = `ds-borb-${(levelIds += 1)}`;
-    let colour = null;
-    let last = performance.now();
+    const id = `ds-borb-${(clipIds += 1)}`;
     let raf = 0;
     const frame = (now) => {
       // Gone (the screen changed between a frame and the clean-up): stop.
-      if (!art.isConnected || !inRef.current || !outRef.current) return;
-      const dt = Math.min(0.1, (now - last) / 1000);
-      last = now;
+      if (!art.isConnected) return;
       const S = breathAt(phasesRef.current, (now - begin) / 1000);
-      const px = art.offsetWidth || 44;
-      // Reduced motion: still at half a breath, fading with the breath.
-      const size = still ? 0.5 : S.size;
-      const fade = still ? 0.42 + 0.58 * S.size : 1;
-      if (style === 'level') {
-        art.innerHTML = drawLevel(size, px, fade, id);
-      } else {
-        const goal = rgbOf(S.kind === 'out' ? outRef.current : inRef.current);
-        colour = !colour || still ? goal : colour.map((v, i) => v + (goal[i] - v) * (1 - Math.exp(-dt / 0.28)));
-        art.innerHTML = drawRings(size, colour, px, fade);
-        if (crossRef.current) {
-          crossRef.current.style.transform = `translate(-50%, -50%) rotate(${(45 * size).toFixed(1)}deg)`;
-          crossRef.current.style.opacity = fade.toFixed(3);
-        }
-      }
+      // Reduced motion: still at half a breath, its line fading with the breath.
+      const s = still ? ORB_STILL_SIZE : S.size;
+      const fade = still ? 0.35 + 0.65 * S.size : 1;
+      art.innerHTML = orbSvg({ style, shape: form, s, fade, id });
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [style, still, begin]);
+  }, [style, form, still, begin]);
 
   return (
     <span
-      className={`ds-borb ds-borb--${style}${night ? ' ds-borb--night' : ''}${size ? ` ds-borb--${size}` : ''} ${className}`.trim()}
+      className={`ds-borb ds-borb--${style} ds-borb--${form}${night ? ' ds-borb--night' : ''}${size ? ` ds-borb--${size}` : ''} ${className}`.trim()}
       data-orb-style={style}
+      data-orb-shape={form}
+      data-breathe-orb=""
       role={label ? 'img' : undefined}
       aria-label={label || undefined}
       aria-hidden={label ? undefined : 'true'}
     >
       <span ref={artRef} className="ds-borb-art" />
-      {style === 'rings' && <span ref={crossRef} className="ds-borb-cross" />}
-      <span ref={inRef} className="ds-borb-probe ds-borb-probe--in" />
-      <span ref={outRef} className="ds-borb-probe ds-borb-probe--out" />
     </span>
   );
 }
 
-// The phase word with how to breathe under it, and the seconds left,
-// beside the orb (never on top of it). Sleep wind down has no words.
-export function BreathWords({ pattern = 'rest', startedAt, className = '' }) {
+/**
+ * The words beside the orb (under it on a phone, never on top): the phase (20px), how to breathe (13px grey; nothing
+ * during a hold, the line keeping its height), the seconds left (24px light, "seconds" 16px grey), then the exercise's
+ * name (13px grey). The phase word is announced politely when it changes; the count is not read out each second.
+ */
+export function BreathWords({ pattern = 'rest', startedAt, name, className = '' }) {
   const [start] = useState(() => (typeof performance !== 'undefined' ? performance.now() : 0));
   const begin = startedAt ?? start;
   const phases = Array.isArray(pattern) ? pattern : (ORB_PATTERNS[pattern] || ORB_PATTERNS.rest);
@@ -157,25 +106,24 @@ export function BreathWords({ pattern = 'rest', startedAt, className = '' }) {
   }, [phases, begin]);
   if (!now) return null;
   return (
-    <div className={`ds-bwords ${className}`.trim()}>
-      <div className="ds-bwords-phase" aria-live="polite">
-        <span className="ds-bwords-word">{now.word}</span>
-        <span className="ds-bwords-how">{howToBreathe(now.kind)}</span>
-      </div>
-      <div className="ds-bwords-count">
+    <div className={`ds-bwords ${className}`.trim()} data-breathe-words="">
+      <div className="ds-bwords-word" aria-live="polite">{now.word}</div>
+      <div className="ds-bwords-how">{howToBreathe(now.kind)}</div>
+      <div className="ds-bwords-count" aria-hidden="true">
         <strong>{now.secondsLeft}</strong>
         <span>{now.secondsLeft === 1 ? 'second' : 'seconds'}</span>
       </div>
+      {name && <div className="ds-bwords-name">{name}</div>}
     </div>
   );
 }
 
-// The Rings or Level switch (inside Breathe, once it is rebuilt).
+// The Rings or Level switch (the design gallery; Breathe's own choose screen draws its row itself).
 export function OrbStyleChoice({ className = '' }) {
   const [style, setStyle] = useOrbStyle();
   return (
     <SegmentedControl
-      label="Orb style"
+      label="Orb"
       options={[{ value: 'rings', label: 'Rings' }, { value: 'level', label: 'Level' }]}
       value={style}
       onChange={setStyle}

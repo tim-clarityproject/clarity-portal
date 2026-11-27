@@ -33,7 +33,7 @@
 .ui-root .ds-frame-main {
   position: relative;
   min-width: 0;
-  /* The foot stays clear of the floating Breathe button (walk item 5). */
+  /* Nothing floats on a laptop (Breathe is the menu's item, NEXT-BREATHE.md): --breathe-room is 0 here. */
   padding: var(--frame-main-y) var(--frame-main-x) max(var(--frame-main-bottom), var(--breathe-room));
 }
 
@@ -282,8 +282,11 @@
   .ui-root .ds-frame-side {
     display: none;
   }
-  /* Edge to edge; the foot stays clear of the floating Breathe button,
-     which sits bottom right on a phone too (walk item 5). */
+  /* Edge to edge; the foot stays clear of the floating Breathe button while it shows (round, bottom right, under
+     1024px only: NEXT-BREATHE.md); with no button (switched off, a tool, the Breathe page) there is no room for it. */
+  :root:has(.ds-orb--fixed) .ui-root {
+    --breathe-room: calc(var(--breathe-h) + 2 * var(--breathe-inset));
+  }
   .ui-root .ds-frame-main {
     padding: 0 0 calc(var(--breathe-room) + env(safe-area-inset-bottom, 0px));
   }
