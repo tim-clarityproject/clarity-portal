@@ -802,6 +802,7 @@
   --night-text: var(--text-2);
   --night-text-2: var(--placeholder);
   --night-line: var(--line-soft);
+  --night-track: var(--line-soft); /* the orb's faint track at night (the tools mock-up's .N --line: #1A1A1A); decorative */
   --google-bg: #131314;      /* Continue with Google: Google's own dark version */
   --google-line: #8E918F;
   --google-text: #E3E3E3;
@@ -880,6 +881,8 @@
   --night-text: var(--text-2);
   --night-text-2: #696963;   /* the quieter grey, still 4.5 to 1 on the night background (Breathe tools, 26 Nov: its 13px words) */
   --night-line: var(--line);
+  --night-track: var(--line-soft); /* the orb's faint track at night (the tools mock-up's .N.L --line: #E9E7E1); decorative, so
+                                     End early's edge keeps the buttons' line */
   --google-bg: #FFFFFF;      /* Google's own light version */
   --google-line: #747775;
   --google-text: #1F1F1F;

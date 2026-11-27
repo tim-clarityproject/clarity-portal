@@ -269,6 +269,7 @@ export default function BreathingPage() {
               options={BREATHE_LENGTHS.map((m) => ({ value: m, label: `${m} min` }))}
               value={length}
               onChange={setLength}
+              fit
             />
           </div>
           <div className="bt-row">
@@ -278,6 +279,7 @@ export default function BreathingPage() {
               options={[{ value: 'rings', label: 'Rings' }, { value: 'level', label: 'Level' }]}
               value={orbStyle}
               onChange={setOrbStyle}
+              fit
             />
           </div>
           {/* Sound: shown once a sound has a file (none has yet; breathing.js BREATHE_SOUNDS). */}

@@ -36,6 +36,7 @@ export default function InlineChoice({
   coachName,
   className = '',
   tick = false,
+  fit = false,
 }) {
   const labelId = useId();
   const refs = useRef([]);
@@ -45,7 +46,9 @@ export default function InlineChoice({
   const many = options.length >= 4;
   const short = options.every((o) => !o.hint && typeof o.label === 'string' && o.label.length <= 18);
   // Two or three words this short always fit one line on a 360px phone: always the joined switch.
-  const tiny = !many && options.every((o) => !o.hint && !o.note && typeof o.label === 'string' && o.label.length <= 8);
+  // `fit`: measure even these, for a switch sharing its line with a name (Breathe's How long? and Orb at twice the text
+  // size on a 390px phone, the Breathe UI tester's F2): one whose equal parts won't fit becomes rows.
+  const tiny = !fit && !many && options.every((o) => !o.hint && !o.note && typeof o.label === 'string' && o.label.length <= 8);
   const { form: measured, isPhone, equal, boxRef, measureRef } = useInlineForm(forced || (many ? (short ? 'boxes' : 'rows') : (tiny ? 'pills' : undefined)), signature);
   const form = measured;
   const radio = semantics === 'radio';

@@ -74,7 +74,8 @@ export default function MyAccount() {
   const [loadingArchivedMissions, setLoadingArchivedMissions] = useState(false);
 
   // The brand-new client's two-item menu (src/lib/clientPreparing.js), when My Account is opened first.
-  useClientPreparing(user?.id);
+  // A client still being prepared has no Breathe anywhere, so no "Show the Breathe button" either (the Breathe UI tester, Q1).
+  const { preparing } = useClientPreparing(user?.id);
   const asked = new URLSearchParams(location.search).get('tab');
   const fromLink = HASH_TABS[location.hash] || (location.state?.scrollTo === 'mission-section' ? 'mission' : null);
   const tab = ACCOUNT_TABS.some((t) => t.key === asked) ? asked : (fromLink || 'profile');
@@ -311,12 +312,14 @@ export default function MyAccount() {
             <SleepTargetEditor id="account-sleep-target" target={sleepTarget} onChange={changeSleepTarget} />
           </div>
         )}
-        <SwitchRow
-          label="Show the Breathe button"
-          note="On a phone, it sits at the bottom right of every page."
-          checked={breatheButton}
-          onChange={changeBreatheButton}
-        />
+        {!preparing && (
+          <SwitchRow
+            label="Show the Breathe button"
+            note="On a phone, it sits at the bottom right of every page."
+            checked={breatheButton}
+            onChange={changeBreatheButton}
+          />
+        )}
         <Rows>
           <Row name="Customise my dashboard" value={<Chevron direction="right" />} onClick={() => setCustomising(true)} />
           {/* Only when there is one: a section with nothing in it stays hidden. */}

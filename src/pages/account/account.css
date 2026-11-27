@@ -52,6 +52,14 @@
 }
 
 .ui-root .acct-pane .ds-switchrow { margin-top: var(--space-3); }
+/* A switch between two lists (Settings' "Show the Breathe button") is one of their rows: the rows' spacing and one
+   hairline above it, none below, as the next row draws its own (the Breathe UI tester, P1). */
+.ui-root .acct-pane .ds-rows-list + .ds-switchrow:has(+ .ds-rows-list),
+.ui-root .acct-pane .account-sleep-target + .ds-switchrow:has(+ .ds-rows-list) {
+  margin-top: 0;
+  padding: var(--card-row-y) 0;
+  border-bottom: 0;
+}
 .ui-root .acct-pane .account-sleep-target { margin: var(--space-3) 0; }
 
 /* Your coaching: the agreement's name as the card's question, its price as the figure, 16px to the rows. */

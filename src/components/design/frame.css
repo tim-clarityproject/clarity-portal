@@ -173,18 +173,9 @@
   padding-top: var(--space-4);
 }
 
-/* On a laptop the foot (My Account or Settings, Sign out, Privacy) stays in view at the column's foot whatever the
-   window's height: a long menu (the coach's) scrolls under it, so Privacy is never cut off at 1280 by 768 or 900. */
-@media (min-width: 1024px) {
-  .ui-root .ds-frame-side .ds-mfoot {
-    position: sticky;
-    bottom: calc(-1 * var(--space-px18));
-    z-index: 1;
-    margin-bottom: calc(-1 * var(--space-px18));
-    padding-bottom: var(--space-px18);
-    background: var(--bg);
-  }
-}
+/* On a laptop the foot (Breathe, My Account or Settings, Sign out, Privacy) sits at the column's foot while there is
+   room, and in the flow under the last group once there isn't: the menu column then scrolls as one, so the foot never
+   draws over a group (the Breathe UI tester, F1: at 1280 by 600 a sticky foot hid Interpersonal and Strategic). */
 
 .ui-root .ds-mlegal {
   align-self: flex-start;

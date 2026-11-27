@@ -8819,6 +8819,9 @@
   color: var(--text);
 }
 
+/* The orb's track at night is the mock-up's quieter line (decorative; the Breathe UI tester, P3). */
+.ui-root .ds-night .ds-borb { --line: var(--night-track); }
+
 /* A plain step (GuidedTool): the top bar, then the step's own content,
    filling the space so it can sit in the middle. */
 .ui-root .ds-guide--plain .ds-guide-page {
@@ -8876,6 +8879,21 @@
 .ui-root .ds-guide-col:has(.ds-night-breathe) > .ds-tool,
 .ui-root .ds-tool:has(> .ds-guide-page .ds-night-breathe) > .ds-guide-page {
   flex: 1;
+}
+
+/* Its column is Breathe's own, centred at every width (the Breathe UI tester, F3 and P2): the mock-up's 600px on a
+   laptop (the orb 42px in, the words at 378px), and under 1024px 600px less the 20px sides, as Breathe's session. */
+.ui-root .ds-guide-col:has(.ds-night-breathe) > .ds-tool {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--bt-col);
+  margin-inline: auto;
+}
+
+@container guide (max-width: 1023px) {
+  .ui-root .ds-guide-col:has(.ds-night-breathe) > .ds-tool {
+    max-width: calc(var(--bt-col) - 2 * var(--page-x-phone));
+  }
 }
 
 /* The time left at the top right of Sleep wind down's breathing (13px grey, "4:54 left"). */

@@ -5,7 +5,7 @@ import './design.css';
 // Segmented control (design reference: Controls): switches between views
 // of the same thing ("Today" / "This week"). Pills when they fit on one
 // line (equal widths on phone), otherwise full-width rows (Tim, 23 Oct).
-export function SegmentedControl({ label, options, value, onChange, className = '' }) {
+export function SegmentedControl({ label, options, value, onChange, className = '', fit = false }) {
   return (
     <InlineChoice
       ariaLabel={label}
@@ -14,6 +14,7 @@ export function SegmentedControl({ label, options, value, onChange, className = 
       onChange={onChange}
       semantics="pressed"
       className={className}
+      fit={fit}
     />
   );
 }

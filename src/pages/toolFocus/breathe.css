@@ -144,8 +144,11 @@
 
 /* The switch or drop-down at the row's right end, sized to its parts. */
 .ui-root .bt-row > :not(.bt-row-name) { flex: none; }
-.ui-root .bt-row .ds-choice,
-.ui-root .bt-row .ds-inline { width: auto; }
+/* A joined switch takes the room beside the name and sits at its right end, so it is measured in the real room: one
+   whose equal parts won't fit there (twice the text size on a 390px phone) becomes rows (the Breathe UI tester, F2). */
+.ui-root .bt-row > .ds-choice { flex: 1 1 0; min-width: 0; }
+.ui-root .bt-row .ds-inline { display: flex; justify-content: flex-end; }
+.ui-root .bt-row .ds-rows { flex: 1 1 auto; min-width: 0; }
 
 .ui-root .bt-row-name { white-space: nowrap; }
 
