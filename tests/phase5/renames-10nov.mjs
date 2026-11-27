@@ -6,7 +6,7 @@
 // 1. Every old address opens its new one, with whatever follows it (a day,
 //    a month, a month's answers), its query and its hash.
 // 2. The new names show on Home, the hubs, the menu's pins, the sprint
-//    page, My Plans and My Reviews, the dashboard and the tools themselves,
+//    page, My plans and My reviews, the dashboard and the tools themselves,
 //    and none of those pages shows an old name.
 // 3. The browser tab carries each page's full name.
 // 4. A tile and Home's card give the same time for a tool, and the tools'
@@ -107,8 +107,8 @@ try {
     ['/personal/review', 'Review, The Clarity Portal', /Daily review[\s\S]*Monthly Hardware and Software review/],
     ['/performance-sprint', 'Performance Sprint, The Clarity Portal', null],
     ['/dashboard', 'Individual Performance Dashboard, The Clarity Portal', null],
-    ['/my-plans', 'My Plans, The Clarity Portal', null],
-    ['/my-reviews', 'My Reviews, The Clarity Portal', null],
+    ['/my-plans', 'My plans, The Clarity Portal', null],
+    ['/my-reviews', 'My reviews, The Clarity Portal', null],
     ['/performance-plan', 'Individual Performance Plan, The Clarity Portal', null],
     ['/my-account', 'My Account, The Clarity Portal', null],
     ['/daily-plan', 'Daily plan, The Clarity Portal', /Daily plan/i],

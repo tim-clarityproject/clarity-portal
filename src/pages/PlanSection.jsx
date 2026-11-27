@@ -44,7 +44,7 @@ export default function PlanSection() {
         <p className="dt-soon-label" style={{ marginTop: 'var(--space-6)' }}>Your history</p>
         <button type="button" className="hub-history-card" onClick={() => navigate('/my-plans')}>
           <span>
-            <span className="hub-history-card-title">My Plans</span>
+            <span className="hub-history-card-title">My plans</span>
             <span className="hub-history-card-desc">Your daily plans, meeting plans and decisions.</span>
           </span>
           <ClockIcon />

@@ -1,4 +1,5 @@
 import './design.css';
+import { bareFigure } from './Blocks';
 
 // The thin bar under a stat or a logging row. `value` is 0 to 1.
 // Decorative: the words beside it already say the numbers.
@@ -30,8 +31,17 @@ export function Bar({ value = 0, band, className = '' }) {
 //       that fades in once and stays. With reduced motion it is simply
 //       there. Implies panel.
 // note: one line, or a list of lines, each its own sentence.
-export function Stat({ label, value, unit, note, good = false, bar, barBand, panel = false, celebrate = false, className = '' }) {
+// empty: the sentence shown under the label instead of a bare 0, 0% or £0 (as Figure's `empty`; Polish 1, bare-zero).
+export function Stat({ label, value, unit, note, good = false, bar, barBand, panel = false, celebrate = false, empty, className = '' }) {
   const box = celebrate ? ' ds-stat--panel ds-stat--celebrate' : panel ? ' ds-stat--panel' : '';
+  if (empty && bareFigure(value)) {
+    return (
+      <div className={`ds-stat${box} ${className}`.trim()}>
+        <span className="ds-stat-label">{label}</span>
+        <p className="ds-fig-empty">{empty}</p>
+      </div>
+    );
+  }
   return (
     <div className={`ds-stat${box} ${className}`.trim()}>
       <span className="ds-stat-label">{label}</span>

@@ -5,8 +5,8 @@ import pageText from '../content/pageText';
 
 const CARDS = [
   { title: 'Breathe', description: 'Slow your breathing to settle your body.', route: '/breathe' },
-  { title: 'Daily Journal', description: 'Write down what is on your mind.', route: '/daily-journal' },
-  { title: 'Scenario Planning', description: 'Get clear on what you will do in different scenarios.', route: '/pressure-plan' },
+  { title: 'Journal', description: 'Write down what is on your mind.', route: '/daily-journal' },
+  { title: 'Scenario planning', description: 'Get clear on what you will do in different scenarios.', route: '/pressure-plan' },
 ];
 
 function ClockIcon() {
@@ -51,7 +51,7 @@ export default function GroundSection() {
         </button>
         <button type="button" className="hub-history-card" onClick={() => navigate('/daily-journals')}>
           <span>
-            <span className="hub-history-card-title">My Journals</span>
+            <span className="hub-history-card-title">My journals</span>
             <span className="hub-history-card-desc">Your daily journals, saved and in progress.</span>
           </span>
           <ClockIcon />

@@ -237,7 +237,7 @@ const PLAIN = [
   ['/wheel-of-life/results', '/life-balance-review/results', 'Life balance review'],
   ['/wheel-of-life/targets', '/life-balance-review/targets'],
   ['/ground-section', '/personal/reset', 'Reset'],
-  ['/decision-history', '/my-plans', 'My Plans'],
+  ['/decision-history', '/my-plans', 'My plans'],
 ];
 
 async function checkOldAddresses(page, tag) {
@@ -289,16 +289,17 @@ async function checkPins(tag, width) {
   const { context, page } = await signedIn({ width, mode: 'dark' });
   try {
     const phone = width < 769;
+    // Polish 1, Stage B ("Frame and menu"): on a laptop the menu is the frame's column, always in view; under 1024px the
+    // header's crosshair (Menu, .ds-mbtn in the page's own header) opens the phone menu. Pinned tools are the menu's own group after Home.
     const open = async () => {
       if (phone) {
-        await page.locator('.ds-bar-menu').click();
-        await page.waitForSelector('#site-tile-menu', { timeout: 5000 });
+        await page.locator('.ds-mbtn:visible').first().click();
+        await page.waitForSelector('#ds-phone-menu .ds-mi', { timeout: 5000 });
       } else {
-        await page.getByRole('button', { name: 'Menu', exact: true }).click();
-        await page.waitForSelector('#site-menu .ds-dmenu-area', { timeout: 5000 });
+        await page.waitForSelector('.ds-frame-side .ds-mi', { timeout: 10000 });
       }
     };
-    const sel = phone ? '#site-tile-menu .ds-menu-pins a' : '#site-menu .ds-dmenu-pins a';
+    const sel = phone ? '#ds-phone-menu .ds-mgroup:nth-of-type(2) .ds-mi' : '.ds-frame-side .ds-mgroup:nth-of-type(2) .ds-mi';
     await open();
     const names = await until(async () => {
       const t = (await page.locator(sel).allInnerTexts()).map((x) => x.trim());

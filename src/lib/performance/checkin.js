@@ -436,7 +436,7 @@ export const SUGGESTED = Object.freeze({
 export const OPTIONS = Object.freeze({
   sleep: [
     { key: 'wake', text: 'The same wake-up time every day', reason: 'A steady wake-up time sets your body clock, so sleep comes more easily.', as: 'habit', habit: { name: 'Same wake-up time', measure: 'yes_no_days_target', target: '7', per: 'week' } },
-    { key: 'wind', text: 'A Sleep wind down most evenings', reason: 'Writing down what’s on your mind makes it easier to switch off.', as: 'habit', habit: { name: 'Sleep wind down', measure: 'yes_no_days_target', target: '5', per: 'week' } },
+    { key: 'wind', text: 'A sleep wind down most evenings', reason: 'Writing down what’s on your mind makes it easier to switch off.', as: 'habit', habit: { name: 'Sleep wind down', measure: 'yes_no_days_target', target: '5', per: 'week' } },
     { key: 'screens', text: 'No screens in the hour before bed', reason: 'A quieter last hour helps you fall asleep sooner.', as: 'habit', habit: { name: 'No screens in the hour before bed', measure: 'yes_no_days_target', target: '5', per: 'week' } },
     { key: 'caffeine', text: 'No caffeine after midday', reason: 'Caffeine late in the day can keep sleep light.', as: 'habit', habit: { name: 'No caffeine after midday', measure: 'yes_no_days_target', target: '5', per: 'week' } },
   ],

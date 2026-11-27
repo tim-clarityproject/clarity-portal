@@ -10,6 +10,7 @@ import {
 import { InlineLink, SettingRow, TextLink } from './parts';
 import { useCalendar } from './calendarParts';
 import { copyWords, LinkPanel, useStartCallTypes } from './BookCall';
+import { shownCallName } from '../../lib/callNames.js';
 import './booking.css';
 
 // Settings, Booking (Phase 6a run 3; M11's "setph"): the reminders people
@@ -33,7 +34,7 @@ function CallTypePanel({ cal, type, onClose }) {
   const busy = useRef(false);
   useEffect(() => {
     if (!type) return;
-    setD({ ...type, questions: (type.questions || []).map((q) => ({ id: q.id, label: questionLabel(q), kind: q.kind, required: q.required === true })) });
+    setD({ ...type, name: shownCallName(type.name), questions: (type.questions || []).map((q) => ({ id: q.id, label: questionLabel(q), kind: q.kind, required: q.required === true })) });
     setProblem(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type?.id]);
@@ -46,7 +47,7 @@ function CallTypePanel({ cal, type, onClose }) {
     const line = callTypeProblem(d);
     if (line) { setProblem(line); return; }
     busy.current = true;
-    const next = { ...type, ...Object.fromEntries(CALL_TYPE_ROWS.map((r) => [r.key, Number(d[r.key])])), name: d.name.trim(), description: String(d.description || '').trim() || null, active: d.active !== false, questions: questionsToSave(d.questions, newId) };
+    const next = { ...type, ...Object.fromEntries(CALL_TYPE_ROWS.map((r) => [r.key, Number(d[r.key])])), name: d.name.trim() === shownCallName(type.name) ? type.name : d.name.trim(), description: String(d.description || '').trim() || null, active: d.active !== false, questions: questionsToSave(d.questions, newId) };
     try {
       const status = await saveRow(cal.userId, 'coach_call_types', next);
       toast.saved({ message: status === 'queued' ? 'Will sync' : 'Saved', long: true, onUndo: () => saveRow(cal.userId, 'coach_call_types', type).catch(() => {}) });
@@ -54,7 +55,7 @@ function CallTypePanel({ cal, type, onClose }) {
     } catch { setProblem(SAVE_PROBLEM); } finally { busy.current = false; }
   };
   return (
-    <SlidePanel draftKey={`booking-page:${type.key || type.id}`} open onClose={onClose} title={`${type.name} page`} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" className="ds-panel-go" onClick={save}>Save</Button></div>}>
+    <SlidePanel draftKey={`booking-page:${type.key || type.id}`} open onClose={onClose} title={`${shownCallName(type.name)} page`} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" className="ds-panel-go" onClick={save}>Save</Button></div>}>
       <div className="cc-field"><TextBox lines="one" label="Name" value={d.name} maxLength={80} onChange={(v) => set({ name: v })} /></div>
       <div className="cc-field"><TextBox label="A line under the name" value={d.description || ''} maxLength={300} onChange={(v) => set({ description: v })} /></div>
       {CALL_TYPE_ROWS.map((r) => (
@@ -128,11 +129,11 @@ export default function BookingSettings() {
       <p className="cc-small-label">Pages and links</p>
       {cal.callTypes.map((t) => (
         <div key={t.id} className="cc-setrow">
-          <span className="cc-setrow-label">{t.name} page</span>
+          <span className="cc-setrow-label">{shownCallName(t.name)} page</span>
           <span className="cc-setrow-value">{t.active === false ? 'Closed' : callTypeLine(t)}</span>
           <span className="cc-setrow-acts">
-            <TextLink aria-label={`Copy the ${t.name} page’s link`} onClick={() => copy(t)}>Copy link</TextLink>
-            <Button variant="text" aria-label={`Edit ${t.name} page`} onClick={() => setEditing(t.id)}>Edit</Button>
+            <TextLink aria-label={`Copy the ${shownCallName(t.name)} page’s link`} onClick={() => copy(t)}>Copy link</TextLink>
+            <Button variant="text" aria-label={`Edit ${shownCallName(t.name)} page`} onClick={() => setEditing(t.id)}>Edit</Button>
           </span>
         </div>
       ))}

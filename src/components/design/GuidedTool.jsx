@@ -430,7 +430,9 @@ export default function GuidedTool({
   useLayoutEffect(() => {
     if (!fullscreen || !open || !shown) return undefined;
     const foot = rootRef.current?.querySelector('.ds-guide-foot');
-    const button = foot?.querySelector('.ds-guide-next, .ds-guide-foot-own');
+    // Any control in the foot: a one-tap step has no Next, only Back and Skip this step (Stage D, DG item 1: calm-rules'
+    // toast check found a toast over the outside Health Check's foot "Back" at 390).
+    const button = foot?.querySelector('.ds-guide-next, .ds-guide-foot-own, button, a[href]');
     if (!foot || !button) return undefined;
     const html = document.documentElement;
     const before = html.style.getPropertyValue('--ds-toast-offset');

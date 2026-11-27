@@ -15,7 +15,7 @@ import { B1_LINES } from '../content/pageLines/client';
 import './hubs/clientPage.css';
 import { Loading, PageOpening, useToast } from '../components/design';
 
-// My Plans (Phase 4 step 4; decisions part 1 "My Plans and My Reviews"):
+// My plans (Phase 4 step 4; decisions part 1 "My plans and My reviews"):
 // one list of every saved plan across the three areas, old and new, named
 // in words (writing rule 60, src/lib/savedItems.js), with the area behind
 // the one Filter button. The old My decisions list (/decision-history)
@@ -80,12 +80,12 @@ export default function MyPlans() {
       <div className="plan-page cp-page">
         {isLoading ? (
           <>
-            <PageOpening title="My Plans" line={B1_LINES.myPlans} />
+            <PageOpening title="My plans" line={B1_LINES.myPlans} />
             <Loading label="Loading your plans" className="ds-loading--page" />
           </>
         ) : (
           <HistoryList
-            title="My Plans"
+            title="My plans"
             line={B1_LINES.myPlans}
             pageKey="myPlans"
             rows={rows}

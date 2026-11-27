@@ -60,7 +60,7 @@ function takeBackWaiting(userId, map) {
 }
 
 // Only what reads as a saved item is ever handed to a page: a copy that
-// was damaged, or kept by another version, never stops My Plans, a hub or
+// was damaged, or kept by another version, never stops My plans, a hub or
 // a tool (the break-it tester, 14 Nov). What can't be read is left out.
 const TOOLS = new Set(['team_check', 'emotional_wash']);
 const words = (v) => (typeof v === 'string' ? v : '');

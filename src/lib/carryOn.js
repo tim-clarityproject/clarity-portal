@@ -76,9 +76,9 @@ export function carryOnItems(userId, { today, yesterday, exclude = [], finished 
   // (pageCache's own key, read here without its network code)
   const hc = readJson(deviceKey('cache', userId, 'health-check-current'))?.v;
   // Kept until it is finished or deleted, so a version closed part-way (a
-  // draft in My Plans) is offered here too.
+  // draft in My plans) is offered here too.
   // A version that is on neither the device nor the last list read (deleted
-  // from My Plans, say) is not offered (the functionality tester, 15 Nov).
+  // from My plans, say) is not offered (the functionality tester, 15 Nov).
   const hcRows = hc && typeof hc.id === 'string' ? readJson(deviceKey('cache', userId, 'health-checks'))?.v : null;
   const hcGone = Array.isArray(hcRows) && !hcRows.some((r) => r?.id === hc.id)
     && !readJson(deviceKey('cache', userId, `health-checks:fresh:${hc.id}`))?.v

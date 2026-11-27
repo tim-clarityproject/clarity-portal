@@ -26,17 +26,20 @@ import { getLocalDateKey } from './dateFormatter.js';
  * everywhere (never shortened); the question word for word.
  * @type {ReadonlyArray<{ key: string, name: string, question: string }>}
  */
+// Sentence case with "and" for the slash (Tim, 27 Nov; Stage D item 6, follow-up): "Personal growth and learning".
+// Keys never change, and a check-in's saved snapshot label is never read for a standard area (areaName), so old
+// check-ins read the new names too.
 export const STANDARD_AREAS = Object.freeze([
-  { key: 'career', name: 'Career / Work', question: 'On a scale of 0–10, how satisfied are you with your career right now?' },
-  { key: 'financial', name: 'Financial / Money', question: 'On a scale of 0–10, how satisfied are you with your financial situation right now?' },
-  { key: 'health', name: 'Health / Fitness', question: 'On a scale of 0–10, how satisfied are you with your physical health and energy levels right now?' },
-  { key: 'relationships', name: 'Relationships / Family', question: 'On a scale of 0–10, how satisfied are you with the quality of your close relationships and family life right now?' },
-  { key: 'romance', name: 'Romance / Partner', question: 'On a scale of 0–10, how satisfied are you with your romantic relationship (or your dating life, if single) right now?' },
-  { key: 'growth', name: 'Personal Growth / Learning', question: 'On a scale of 0–10, how satisfied are you with how much you’re learning and developing as a person right now?' },
-  { key: 'fun', name: 'Fun / Recreation', question: 'On a scale of 0–10, how satisfied are you with the amount of fun and leisure in your life right now?' },
-  { key: 'home', name: 'Physical Environment / Home', question: 'On a scale of 0–10, how satisfied are you with your home and physical surroundings right now?' },
-  { key: 'contribution', name: 'Contribution / Community', question: 'On a scale of 0–10, how satisfied are you with your sense of contribution to others or your community right now?' },
-  { key: 'meaning', name: 'Purpose / Meaning', question: 'On a scale of 0–10, how satisfied are you with your sense of meaning or purpose right now?' },
+  { key: 'career', name: 'Career and work', question: 'On a scale of 0–10, how satisfied are you with your career right now?' },
+  { key: 'financial', name: 'Financial and money', question: 'On a scale of 0–10, how satisfied are you with your financial situation right now?' },
+  { key: 'health', name: 'Health and fitness', question: 'On a scale of 0–10, how satisfied are you with your physical health and energy levels right now?' },
+  { key: 'relationships', name: 'Relationships and family', question: 'On a scale of 0–10, how satisfied are you with the quality of your close relationships and family life right now?' },
+  { key: 'romance', name: 'Romance and partner', question: 'On a scale of 0–10, how satisfied are you with your romantic relationship (or your dating life, if single) right now?' },
+  { key: 'growth', name: 'Personal growth and learning', question: 'On a scale of 0–10, how satisfied are you with how much you’re learning and developing as a person right now?' },
+  { key: 'fun', name: 'Fun and recreation', question: 'On a scale of 0–10, how satisfied are you with the amount of fun and leisure in your life right now?' },
+  { key: 'home', name: 'Physical environment and home', question: 'On a scale of 0–10, how satisfied are you with your home and physical surroundings right now?' },
+  { key: 'contribution', name: 'Contribution and community', question: 'On a scale of 0–10, how satisfied are you with your sense of contribution to others or your community right now?' },
+  { key: 'meaning', name: 'Purpose and meaning', question: 'On a scale of 0–10, how satisfied are you with your sense of meaning or purpose right now?' },
 ].map((a) => Object.freeze(a)));
 
 const STANDARD_BY_KEY = Object.fromEntries(STANDARD_AREAS.map((a, i) => [a.key, { ...a, index: i }]));
@@ -96,7 +99,7 @@ export function areaFromRow(row) {
  * own areas, and areas from a check-in's snapshot, use their label.
  * @param {{ key: string, label?: string|null }} area
  * @returns {string}
- * @example areaName({ key: 'home' }) // 'Physical Environment / Home'
+ * @example areaName({ key: 'home' }) // 'Physical environment and home'
  * @example areaName({ key: 'own_ab12', label: 'Travel' }) // 'Travel'
  */
 export function areaName(area) {
@@ -132,9 +135,9 @@ export function questionFor(area) {
  * @param {string} t - the area's full name
  * @param {number} max - longest line, in characters
  * @returns {string[]}
- * @example wrapLabel('Physical Environment / Home', 18) // ['Physical', 'Environment /', 'Home']
- * @example wrapLabel('Career / Work', 18) // ['Career / Work']
- * @example wrapLabel('Career / Work', 12) // ['Career /', 'Work']
+ * @example wrapLabel('Physical environment and home', 18) // ['Physical', 'environment and', 'home']
+ * @example wrapLabel('Career and work', 18) // ['Career and work']
+ * @example wrapLabel('Career and work', 12) // ['Career and', 'work']
  */
 export function wrapLabel(t, max) {
   if (t.length <= max) return [t];
@@ -384,7 +387,7 @@ export function presetRange(presetKey, checkins) {
 }
 
 /**
- * The range for /life-balance-review/results?to=YYYY-MM-DD (from My Reviews):
+ * The range for /life-balance-review/results?to=YYYY-MM-DD (from My reviews):
  * To is that date, From is 6 months before it, no preset pill.
  * @param {string} toKey
  * @returns {{ preset: string, from: string, to: string }}
@@ -546,11 +549,11 @@ export function stepTarget(current, latest, dir) {
  * Ties go to the first area in wheel order, as the mock-up's indexOf.
  *
  * Worked check (example data, 6 months to 15 Oct 2026 = 8 May to 15 Oct):
- *   average 6.6, up 0.9 from 5.7; biggest rise +2 Relationships / Family;
- *   biggest drop −1 Fun / Recreation; furthest from target 2 below,
- *   Romance / Partner, 6 of 10 on target; showTargetsCard false.
- * With only 15 Oct in range: average 6.6, highest 8 Career / Work,
- *   lowest 4 Fun / Recreation, areas at 7+ 6 of 10 (without targets).
+ *   average 6.6, up 0.9 from 5.7; biggest rise +2 Relationships and family;
+ *   biggest drop −1 Fun and recreation; furthest from target 2 below,
+ *   Romance and partner, 6 of 10 on target; showTargetsCard false.
+ * With only 15 Oct in range: average 6.6, highest 8 Career and work,
+ *   lowest 4 Fun and recreation, areas at 7+ 6 of 10 (without targets).
  *
  * @param {object[]} range - the check-ins in the range, oldest first (see inRange)
  * @param {object[]} areas - the active areas, in wheel order (each with .target)
@@ -617,7 +620,7 @@ export function computeStats(range, areas) {
  * <first date>" when new in a range of two or more check-ins.
  *
  * Worked check (example data, 8 May to 15 Oct, targets as above):
- *   Romance / Partner: start 4, latest 5, change '+1', target 7, '2 below',
+ *   Romance and partner: start 4, latest 5, change '+1', target 7, '2 below',
  *   history [4, 4, 4, 5].
  *
  * @param {object[]} range - the check-ins in the range, oldest first
@@ -673,8 +676,8 @@ export function tableRows(range, areas) {
  * first. Bar width is fullPct (% of the full-width track).
  *
  * Worked check (example data, 8 May to 15 Oct): scale 3; desktop order
- * Relationships / Family +2 first, then the +1 areas in wheel order,
- * Fun / Recreation −1 last; phone groups Rose · 9, Dropped · 1.
+ * Relationships and family +2 first, then the +1 areas in wheel order,
+ * Fun and recreation −1 last; phone groups Rose · 9, Dropped · 1.
  *
  * @param {object[]} range - the check-ins in the range, oldest first (two or more)
  * @param {object[]} areas - the active areas, in wheel order

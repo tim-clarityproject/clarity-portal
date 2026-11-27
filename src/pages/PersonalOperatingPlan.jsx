@@ -174,7 +174,7 @@ export default function PersonalOperatingPlan() {
       <div className="ui-root">
         <DesignHeader />
         <div className="plan-page cp-page cp-page">
-          <PageOpening title="Personal operating plan" line={B1_LINES.pop} />
+          <PageOpening title="Individual Performance Plan" line={B1_LINES.pop} />
           <LoadError>Your plan didn’t load. Check your connection and try again.</LoadError>
           <div className="pop-links-row">
             <Button type="button" variant="outline" onClick={loaded.reload}>Try again</Button>
@@ -189,7 +189,7 @@ export default function PersonalOperatingPlan() {
       <div className="ui-root">
         <DesignHeader />
         <div className="plan-page cp-page cp-page">
-          <PageOpening title="Personal operating plan" line={B1_LINES.pop} />
+          <PageOpening title="Individual Performance Plan" line={B1_LINES.pop} />
           <EmptyState
             question="You don't have a plan yet. Start with your Mission, add the strategies that bring it to life, then the tactics you will do every day."
             action={{ label: 'Create your plan', onClick: () => navigate('/personal-operating-plan-edit', { state: { isNew: true } }) }}
@@ -215,7 +215,7 @@ export default function PersonalOperatingPlan() {
 
       <div className="plan-page cp-page cp-page">
         <PageOpening
-          title="Personal operating plan"
+          title="Individual Performance Plan"
           label={version ? formatVersion(version.major, version.minor) : undefined}
           line={lastReviewedAt ? `You last reviewed it on ${formatUkDate(lastReviewedAt)}.` : B1_LINES.pop}
         />
@@ -283,7 +283,7 @@ export default function PersonalOperatingPlan() {
       <ConfirmDialog
         open={archiveOpen}
         title="Archive this plan?"
-        message="It moves to Archived plans, where you can open it or restore it any time. Its Versions and reviews are kept. You can start a new plan straight away."
+        message="It moves to Archived plans, where you can open it or restore it any time. Its versions and reviews are kept. You can start a new plan straight away."
         confirmLabel={isArchiving ? 'Archiving' : 'Archive'}
         onCancel={() => setArchiveOpen(false)}
         onConfirm={handleArchive}

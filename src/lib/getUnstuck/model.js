@@ -245,7 +245,7 @@ export function summaryRows(plan, { guest = false } = {}) {
 
 // ------------------------------------------------------------ saving
 
-/** The saved item's name in My Plans: what was typed first, the goal (80 characters at most). */
+/** The saved item's name in My plans: what was typed first, the goal (80 characters at most). */
 export function planTitle(plan) {
   const goal = clean(plan?.goal).replace(/\s+/g, ' ');
   if (!goal) return TOOL_NAME;

@@ -148,7 +148,7 @@ export default function SleepWindDown() {
       key: 'tomorrow',
       name: 'Tomorrow',
       question: 'What’s on your mind for tomorrow?',
-      nudges: ['Write a few quick lines, then let them go.', 'They’ll wait for you in tomorrow’s Daily plan.'],
+      nudges: ['Write a few quick lines, then let them go.', 'They’ll wait for you in tomorrow’s daily plan.'],
       skippable: true,
       render: () => (
         <div className="day-narrow">
@@ -270,7 +270,7 @@ function SleepWell({ headingRef, onShown, onHome }) {
     <EndScreen
       kind="night"
       title="Sleep well"
-      lines={['Your thoughts are saved for the morning.', 'Your Daily plan will have them ready.']}
+      lines={['Your thoughts are saved for the morning.', 'Your daily plan will have them ready.']}
       headingRef={headingRef}
       action={<Button variant="outline" onClick={onHome}>Back to Home</Button>}
     />

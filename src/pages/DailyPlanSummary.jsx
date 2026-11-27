@@ -139,7 +139,7 @@ export default function DailyPlanSummary() {
 
       <div className="plan-page">
         <div className="plan-back-row">
-          <BackLink onClick={() => navigate('/my-plans')} label="Back to My Plans" />
+          <BackLink onClick={() => navigate('/my-plans')} label="Back to My plans" />
         </div>
 
         <div className="plan-summary-head">

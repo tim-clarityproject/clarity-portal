@@ -210,8 +210,8 @@ Then, in Vercel:
 3. Sign in as `client@example.com` with the password from your password manager.
 4. Check:
    - Home greets **Sam**.
-   - **My Plans** shows daily plans from the last two weeks, plus "Morrow Cycles kick-off".
-   - **My Reviews** shows day reviews, weekly momentum check-ins, after-action reviews, Daily Journal entries and a Wheel of Life check-in.
+   - **My plans** shows daily plans from the last two weeks, plus "Morrow Cycles kick-off".
+   - **My reviews** shows day reviews, weekly momentum check-ins, after-action reviews, Daily Journal entries and a Wheel of Life check-in.
    - The Personal Operating Plan mission is "Grow Harbour Lane Studio without giving up my evenings".
    - **Nothing from live appears**: no real clients, no plans you recognise, and your own live account doesn't exist here. If you try to sign in with your live email, it should fail.
 5. Sign out. If you like, also sign in as `org-client@example.com` and check that Home greets **Jordan**.

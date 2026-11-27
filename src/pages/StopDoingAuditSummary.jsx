@@ -94,7 +94,7 @@ export default function StopDoingAuditSummary() {
       <div className="ui-root">
         <DesignHeader />
         <div className="plan-page">
-          <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="Back to My Plans" /></div>
+          <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="Back to My plans" /></div>
           <p className="ui-subtitle">Audit not found.</p>
         </div>
       </div>
@@ -112,7 +112,7 @@ export default function StopDoingAuditSummary() {
       <DesignHeader />
 
       <div className="plan-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="Back to My Plans" /></div>
+        <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="Back to My plans" /></div>
 
         <div className="plan-summary-head">
           <PageOpening label={`Time audit, ${totalHours} ${totalHours === 1 ? 'hour' : 'hours'} a week to reclaim`} title={audit.title} line={B3_LINES.timeAuditSummary} />

@@ -343,7 +343,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await panel.locator('textarea').first().fill(WIN);
   await panel.getByRole('button', { name: 'Grow through referrals' }).click();
   await panel.getByRole('button', { name: 'Add my win' }).click();
-  const winToast = await until(async () => (await page.getByText('Win added to Grow through referrals and your Confidence Bank.').count()) > 0, 10000);
+  const winToast = await until(async () => (await page.getByText('Win added to Grow through referrals and your confidence bank.').count()) > 0, 10000);
   pass(`${tag}: the win's toast names its Strategy and Confidence Bank`, Boolean(winToast));
   pass(`${tag}: the win shows under the question, ticked`, (await page.locator('.ds-todo--win', { hasText: WIN }).count()) === 1);
   await shot(page, `${tag}-4-well`);
@@ -489,7 +489,7 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
       const picks = await next1.page.locator('.ds-answer--pick').allInnerTexts();
       for (let i = 0; i < 3; i += 1) {
         const at = picks.findIndex((p) => p.includes(THINGS[i]));
-        pass(`the next day: "${THINGS[i]}" is carried over from Daily review`, at === i && picks[i].includes('From Daily review'), picks.slice(0, 4).join(' | '));
+        pass(`the next day: "${THINGS[i]}" is carried over from Daily review`, at === i && picks[i].includes('From your daily review'), picks.slice(0, 4).join(' | '));
       }
       pass('the next day: last night\'s note is a note', (await next1.page.locator('.ds-note').innerText()).includes(NOTE));
       await shot(next1.page, 'next-day-plan');

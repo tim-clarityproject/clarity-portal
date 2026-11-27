@@ -74,7 +74,7 @@ test('Home’s line: what needs the person and the next session, a full sentence
   assert.equal(homeLine({ needs: 2, session: { when: 'tomorrow', day: 'Thu 26 Nov', time: '09:00' }, coached: true }), 'Two things need you today, and your coaching session is tomorrow at 09:00.');
   assert.equal(homeLine({ needs: 1, session: { when: 'later', day: 'Mon 30 Nov', time: '09:00' }, coached: true }), 'One thing needs you today, and your coaching session is on Mon 30 Nov at 09:00.');
   assert.equal(homeLine({ needs: 0, coached: true }), 'Nothing needs you today, and no coaching session is booked yet.');
-  assert.equal(homeLine({ needs: 0 }), 'Here is your day: what to log, and what’s on today.');
+  assert.equal(homeLine({ needs: 0 }), 'Here’s your day: what to log, and what’s on today.');
   for (const l of [homeLine({ needs: 3 }), homeLine({ needs: 0 })]) assert.match(l, /\.$/);
 });
 

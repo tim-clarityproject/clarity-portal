@@ -35,7 +35,7 @@ const PRESET_OPTIONS = RANGE_PRESETS.map((p) => ({ value: p.key, label: p.label 
 // and the logic in src/lib/wheelOfLife.js (spec section 6). Everything is
 // worked out from the areas on the wheel NOW; the date range picks which
 // check-ins are compared. /life-balance-review/results?to=YYYY-MM-DD (from
-// My Reviews) opens the six months up to that date.
+// My reviews) opens the six months up to that date.
 export default function WheelResults() {
   const location = useLocation();
   const toast = useToast();

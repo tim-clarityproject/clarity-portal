@@ -154,6 +154,28 @@ function collect(only = null) {
         const bottom = inked(stack[stack.length - 1]).base;
         // A chevron under the words, not beside them (a row's "more"), isn't one of these.
         if (mid < stack[0].r.top - 2 || mid > stack[stack.length - 1].r.bottom + 2) { skip('off its row', tops.length); continue; }
+        // Polish 1, Stage B (walk item 8, `chevron-line`): a row's chevron sits on the name's line, beside the name's
+        // words, not centred on the name and its grey line together. One drawn on the first line and not built for the
+        // block (no .ds-chevron--block) is measured against that line like any other (Stage D, DG item 3).
+        const onFirst = mid >= stack[0].r.top - 2 && mid <= stack[0].r.bottom + 2;
+        if (onFirst && !chev.closest('.ds-chevron--block') && !chev.classList.contains('ds-chevron--block')) {
+          onRow.splice(0, onRow.length, ...lines.filter((l) => l.parent === stack[0].parent));
+          ownRow = true;
+        }
+      }
+      if (!ownRow) {
+        const left = Math.min(...lines.map((l) => l.r.left));
+        const stack = lines.filter((l) => l.r.left - left < 4).sort((a, b) => a.r.top - b.r.top);
+        const inked = (l) => {
+          const st = getComputedStyle(l.parent);
+          const c2 = document.createElement('canvas').getContext('2d');
+          c2.font = `${st.fontStyle} ${st.fontWeight} ${st.fontSize} ${st.fontFamily}`;
+          const m = c2.measureText('H');
+          const base = l.r.top + (l.r.height - m.fontBoundingBoxAscent - m.fontBoundingBoxDescent) / 2 + m.fontBoundingBoxAscent;
+          return { top: base - m.actualBoundingBoxAscent, base };
+        };
+        const top = inked(stack[0]).top;
+        const bottom = inked(stack[stack.length - 1]).base;
         out.push({ block: true, label: name, beside, square, box: { x: cb.left, y: cb.top, width: cb.width, height: cb.height }, lines: tops.length, wordsMiddle: (top + bottom) / 2, capitals: false, font: '', chevEm: 0, line: '', dir: (chev.className.match(/ds-chevron--(up|down|left|right)|\b(up|dn|lf)\b/) || []).slice(1).find(Boolean) || '', state: control.getAttribute('aria-expanded') === 'true' ? 'open' : control.hasAttribute('aria-expanded') ? 'closed' : '' });
         continue;
       }

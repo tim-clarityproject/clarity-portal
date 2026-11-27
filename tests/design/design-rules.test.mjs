@@ -179,6 +179,12 @@ test('bare-zero (item 9): a 24px "0", "0%" or "£0" fails; a real figure and the
   assert.match(zeros.join('; '), /"£0"/);
 });
 
+test('bare-zero (Stage D, DG item 4): a plan’s "£0" among priced plans (data-price, M28 s-levels) passes; bare it fails', async () => {
+  const plans = (attr) => `<div class="ds-fig"${attr}>£0</div><div class="ds-fig"${attr}>£16/month</div>`;
+  assert.ok(!rules(await check(plans(' data-price'))).includes('bare-zero'));
+  assert.ok(rules(await check(plans(''))).includes('bare-zero'));
+});
+
 test('figures (item 13): two 24px figures in one card fail; one passes', async () => {
   const card = (figs) => `<section class="ds-card"><div class="ds-card-head"><h2 class="ds-label">Your weeks</h2></div>${figs}</section>`;
   let r = await check(card('<div class="ds-fig">72<span class="ds-fig-unit">%</span></div><div class="ds-li"><span class="ds-li-name">Revenue</span><span class="ds-li-value">Up £32k</span></div>'));
@@ -358,6 +364,13 @@ test('squeeze (walk item 17): a forced 340px side column squeezing the main one 
   assert.ok(!has(r, 'squeeze'), all(r));
   const moved = await tab.evaluate(() => { const n = document.querySelector('.ds-li-name').getBoundingClientRect(); const v = document.querySelector('.ds-li-value').getBoundingClientRect(); return v.top >= n.bottom - 1; });
   assert.ok(moved, 'the value sits under the name');
+});
+
+test('squeeze (Stage D, DG item 6): an email address under a row’s name breaks (.ds-address) and passes; a long word still fails', async () => {
+  let r = await check('<section class="ds-card" style="width:200px"><div class="ds-li"><span class="ds-li-name">Sent to<small class="ds-li-sub"><span class="ds-address">invoices@halden-freight.example.com</span></small></span></div></section>', { phone: true });
+  assert.ok(!has(r, 'squeeze'), all(r));
+  r = await check('<section class="ds-card" style="width:200px"><div class="ds-li"><span class="ds-li-name" style="flex:0 0 40px;min-width:0;overflow-wrap:anywhere">Performance score</span><span class="ds-li-value">40%</span></div></section>');
+  assert.ok(has(r, 'squeeze'), all(r));
 });
 
 // ------------------------------------------------------------------ Tim's walk of Stage B (26 Nov; WALK-B.md)

@@ -128,7 +128,7 @@ function measure({ side, frame, CORAL, MINT, BANNED, scope }) {
   const whole = side === 'app' ? document.body : document.querySelector(frame);
   const inScope = scope ? [...whole.querySelectorAll(scope)].find((el) => el.getBoundingClientRect().width > 0) : null;
   const root = inScope || whole;
-  const chrome = side === 'app' ? '.hdr, nav.ds-phone-bar, .ds-orb, .ds-toast-region' : '[data-hdw], [data-nb], [data-mn], .fab, [data-tw], [data-ov], .nbar, .hd';
+  const chrome = side === 'app' ? '.hdr, .ds-frame-side, .ds-orb, .ds-toast-region' : '[data-hdw], [data-nb], [data-mn], .fab, [data-tw], [data-ov], .nbar, .hd';
   const always = side === 'app' ? '.ds-sr, .ds-tip[hidden], [inert], [hidden]' : '.vh, .fbar [data-sv], [hidden], .toast';
   const hide = inScope ? always : `${chrome}, ${always}`;
   const outside = (el) => !inScope && el.closest(chrome);
@@ -166,6 +166,8 @@ function measure({ side, frame, CORAL, MINT, BANNED, scope }) {
     const before = getComputedStyle(el, '::before');
     const stretch = (p) => p.content !== 'none' && p.position === 'absolute' && (parseFloat(p.height) || 0) >= 43.5 && (parseFloat(p.width) || 0) >= 43.5;
     if ((b.height >= 43.5 && b.width >= 43.5) || stretch(after) || stretch(before)) continue;
+    // My Mission is a 40px box (the 25 Nov reference, Polish 1), as calm-rules allows it.
+    if (el.matches('.hdr-mbox') && b.height >= 39.5) continue;
     small.push(`${label(el)} ${Math.round(b.width)}x${Math.round(b.height)}`);
   }
 
@@ -732,9 +734,12 @@ const GROUPS = [
       { id: 'home, debrief ready', mock: m2('mid', 'deb'), coral: 'one', open: async (p) => { await holdWedReview(); await homeAt(p, WED, '13:00'); } },
       { id: 'home, coming back after a gap', mock: null, coral: 'atMost', open: async (p) => { await restoreWedReview(); await homeAt(p, '2026-10-30', '10:00'); } },
       { id: 'home, help open', mock: null, coral: 'atMost', open: async (p) => { await homeAt(p, THU, '13:00'); await p.locator('.home-help .ds-btn').click(); await p.waitForSelector('.ds-helplist-row', { timeout: 5000 }); await settle(p); } },
-      { id: 'header', mock: null, coral: 'none', scope: '.hdr', open: (p) => homeAt(p, THU, '13:00') },
-      { id: 'phone bar', mock: null, coral: 'none', scope: 'nav.ds-phone-bar', widths: phoneOnly, open: (p) => homeAt(p, THU, '13:00') },
-      { id: 'Breathe button', mock: { file: ORB, clicks: ['button[data-s="button"]'], scope: '.fab' }, coral: 'none', scope: '.ds-orb', widths: desktopOnly, open: (p) => homeAt(p, THU, '13:00') },
+      // Polish 1, Stage B ("Frame and menu"): the header is the phone's only (the crosshair and My Mission, under 1024px;
+      // a laptop has the frame's menu column), and there is no phone bar any more (its row is gone).
+      { id: 'header', mock: null, coral: 'none', scope: '.hdr-frame', widths: (w) => w < 1024, open: (p) => homeAt(p, THU, '13:00') },
+      // The Breathe round (Tim, 26 Nov; NEXT-BREATHE.md, option D): no floating Breathe on a laptop (the menu's item);
+      // under 1024px a 48px round button with the fine ring, no word and no coral. The old pill's mock-up no longer applies.
+      { id: 'Breathe button', mock: null, coral: 'none', scope: '.ds-orb--fixed', widths: (w) => w < 1024, open: (p) => homeAt(p, THU, '13:00') },
       // The slim desktop menu (option A, 9 Nov) has no coral button; the phone's tile menu keeps Log today.
       { id: 'menu open', mock: m3('plan', true), coral: 'most', scope: (phone) => (phone ? '.ds-tmenu' : '.ds-dmenu'), open: async (p, phone) => { await homeAt(p, THU, '13:00'); await openMenu(p, phone); } },
       { id: 'hub, Personal', mock: m3('personal'), coral: 'none', open: (p) => hub(p, '/personal') },
@@ -745,9 +750,9 @@ const GROUPS = [
       { id: 'hub, Interpersonal', mock: m3('interpersonal'), coral: 'none', open: (p) => hub(p, '/interpersonal') },
       { id: 'hub, Strategic', mock: m3('strategic'), coral: 'none', open: (p) => hub(p, '/strategic') },
       { id: 'pin tools panel', mock: null, coral: 'atMost', scope: '.ds-panel, .ds-sheet, [role=dialog]', open: async (p) => { await hub(p, '/personal/plan'); await p.getByRole('button', { name: 'Pin tools to my menu' }).click(); await p.getByRole('dialog', { name: 'Pin tools' }).waitFor({ timeout: 8000 }); await settle(p); } },
-      { id: 'My Plans', mock: null, coral: 'atMost', open: async (p) => { await go(p, '/my-plans', '.hlist-wrap'); await until(async () => (await p.locator('.hlist-row, .hlist-empty').count()) > 0, 20000); } },
-      { id: 'My Plans, filter open', mock: null, coral: 'atMost', open: async (p) => { await go(p, '/my-plans', '.hlist-wrap'); await p.locator('.ds-filter > button').click(); await p.waitForSelector('.ds-filter-panel:not([hidden])', { timeout: 5000 }); await settle(p); } },
-      { id: 'My Reviews', mock: null, coral: 'atMost', open: async (p) => { await go(p, '/my-reviews', '.hlist-wrap'); await until(async () => (await p.locator('.hlist-row, .hlist-empty').count()) > 0, 20000); } },
+      { id: 'My plans', mock: null, coral: 'atMost', open: async (p) => { await go(p, '/my-plans', '.hlist-wrap'); await until(async () => (await p.locator('.hlist-row, .hlist-empty').count()) > 0, 20000); } },
+      { id: 'My plans, filter open', mock: null, coral: 'atMost', open: async (p) => { await go(p, '/my-plans', '.hlist-wrap'); await p.locator('.ds-filter > button').click(); await p.waitForSelector('.ds-filter-panel:not([hidden])', { timeout: 5000 }); await settle(p); } },
+      { id: 'My reviews', mock: null, coral: 'atMost', open: async (p) => { await go(p, '/my-reviews', '.hlist-wrap'); await until(async () => (await p.locator('.hlist-row, .hlist-empty').count()) > 0, 20000); } },
       // Wednesday night, then Thursday morning: in this order, on one device.
       // Each width is a new device: last width's finished night is cleared
       // after it closes (cleanMorning), before the next device opens anything.

@@ -90,9 +90,11 @@
 
 /* The three cards sit side by side only while each card's Choose fits on one line (UI finding 3): the query is in the
    box's own em, so a larger text size, which needs wider cards, puts them one under another as on a phone. 16px in at
-   each side (M28's 20px left "Choose Individual" 2px short of one line in the 640px column). */
+   each side (M28's 20px left "Choose Individual" 2px short of one line in the 640px column). 43em, not 35em (Stage D,
+   DG item 5): at 1024px the column is 614px and three cards left "Choose Individual" 161px wide, wrapped; each card's
+   Choose needs about 215px of card, so three fit from about 43em. */
 .ui-root .cl-plans-box { container-type: inline-size; }
-@container (max-width: 35em) {
+@container (max-width: 43em) {
   .ui-root .cl-plans { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: var(--space-px14); }
   .ui-root .cl-plan { grid-row: auto; grid-template-rows: none; padding: var(--space-px20); }
 }

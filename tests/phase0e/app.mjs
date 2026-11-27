@@ -100,7 +100,7 @@ async function within(ms, fn) {
   await goInside(page, '/my-plans');
   const listed = await within(2000, async () => (await page.locator('.hlist-wrap').count()) > 0 && (await page.locator('.ds-loading').count()) === 0);
   const rowsOffline = await page.locator('.hlist-row, [class*="hlist-row"]').count();
-  pass('Offline: My Plans opens at once from the device', listed != null && rowsOffline === rowsOnline && (await page.locator('.hlist-error').count()) === 0,
+  pass('Offline: My plans opens at once from the device', listed != null && rowsOffline === rowsOnline && (await page.locator('.hlist-error').count()) === 0,
     `${listed}ms, ${rowsOffline} of ${rowsOnline} rows`);
   if (out) await page.screenshot({ path: join(out, 'offline-my-plans.png') });
   await context.setOffline(false);
@@ -129,7 +129,8 @@ async function within(ms, fn) {
   await jbox.click();
   await jbox.press('End');
   await jbox.type(' Typed while offline.');
-  await page.getByRole('button', { name: /^save journal$/i }).first().click();
+  // The Journal finishes with Done and saves as you type (Stage D, Draft 6): Done offline keeps it on the device.
+  await page.getByRole('button', { name: /^done$/i }).first().click();
   const willSync = await within(2000, async () => (await page.locator('.ds-status--sync').count()) > 0);
   pass('Offline save, Journal: "Will sync" shows within 2 seconds', willSync != null, willSync != null ? `${willSync}ms` : 'not shown');
   await context.setOffline(false);
@@ -143,8 +144,8 @@ async function within(ms, fn) {
   if (before !== undefined) {
     const last = page.locator('textarea').last();
     await last.fill(before);
-    await page.getByRole('button', { name: /^save as draft$/i }).first().click();
-    await page.waitForTimeout(1500);
+    // It saves itself once the typing stops (Draft 6: no Save as draft any more).
+    await page.waitForTimeout(3500);
   }
 
   // Meeting planner: the network drops mid-save. Since Draft 6 (Stage D item 1) it is a guided
@@ -165,7 +166,7 @@ async function within(ms, fn) {
   await page.waitForTimeout(3000);
   await page.goto(`${APP}/my-plans`);
   const listedMeeting = await within(15000, () => page.getByText(`${stamp} meeting`).first().isVisible().catch(() => false));
-  pass('Back online, Meeting planner: the plan is in My Plans', listedMeeting != null);
+  pass('Back online, Meeting planner: the plan is in My plans', listedMeeting != null);
   // Tidy up: delete the check's own meeting.
   if (listedMeeting != null) {
     const row = page.locator('.hlist-row, [class*="hlist-row"]').filter({ hasText: `${stamp} meeting` }).first();

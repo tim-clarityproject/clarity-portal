@@ -539,7 +539,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     }
     const names = view.strategies.filter((s) => strategyIds.includes(s.value));
     toast.saved({
-      message: `Win added to ${names.length === 1 ? names[0].label : `${names.length} Strategies`} and your Confidence Bank.`,
+      message: `Win added to ${names.length === 1 ? names[0].label : `${names.length} Strategies`} and your confidence bank.`,
       onUndo: () => {
         setData((d) => ({ ...d, wins: (d.wins || []).filter((w) => w.id !== id) }));
         sent(() => setWinDeleted(userId, id, new Date().toISOString()));

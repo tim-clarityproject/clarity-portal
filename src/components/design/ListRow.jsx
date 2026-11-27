@@ -43,7 +43,7 @@ export function ListRow({ title, type, date, onClick, ...rest }) {
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 /**
- * A saved item's own name (Polish 1, "My Plans and My Reviews repeat 'Daily
+ * A saved item's own name (Polish 1, "My plans and My reviews repeat 'Daily
  * plan' as their own subtitle"): a row never says the same words twice, so
  * an older Daily plan or Daily review, whose name would repeat its tool, is
  * named by its day ("Monday’s plan"), the tool staying under it.

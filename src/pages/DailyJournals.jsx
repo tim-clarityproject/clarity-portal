@@ -85,7 +85,7 @@ export default function DailyJournals() {
 
       <div className="plan-page cp-page">
         <HistoryList
-          title="My Journals"
+          title="My journals"
           line={B1_LINES.myJournals}
           pageKey="dailyJournals"
           rows={rows}

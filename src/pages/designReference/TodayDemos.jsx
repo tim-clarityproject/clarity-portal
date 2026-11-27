@@ -27,14 +27,14 @@ export function SuggestionDemo() {
       <SuggestionCard
         question="Ready to plan your day?"
         time="~4 minutes"
-        action={{ label: 'Daily plan', onClick: () => say('Opens Daily plan.') }}
+        action={{ label: 'Daily plan', onClick: () => say('Opens the daily plan.') }}
       />
       <SuggestionCard
         label="Sleep wind down"
         question="Ready to wind down?"
         lines={['Write down what’s on your mind for tomorrow, then breathe slowly.']}
         time="~6 minutes"
-        action={{ label: 'Start my wind down', onClick: () => say('Opens Sleep wind down.') }}
+        action={{ label: 'Start my wind down', onClick: () => say('Opens the sleep wind down.') }}
         link={{ label: 'Not tonight', onClick: () => say('You can wind down tomorrow evening.') }}
       />
       <QuietLines
@@ -128,7 +128,7 @@ export function CarryOnDemo() {
     <CarryOnList
       items={[
         { key: 'debrief', title: 'Weekly performance debrief', date: '23 Oct, 18:40', onClick: () => say('Opens the debrief where you left it.') },
-        { key: 'journal', title: 'Journal', date: '23 Oct, 07:12', onClick: () => say('Opens the Journal where you left it.') },
+        { key: 'journal', title: 'Journal', date: '23 Oct, 07:12', onClick: () => say('Opens the journal where you left it.') },
       ]}
     />
   );

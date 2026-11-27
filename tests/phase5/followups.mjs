@@ -6,7 +6,7 @@
 //
 // 1. During Recovery, Daily review and Daily plan say Recovery's calm
 //    line, never "No sprint is running".
-// 2. The search in My Plans and My Reviews: it sits with the Filter button
+// 2. The search in My plans and My reviews: it sits with the Filter button
 //    (not at the top of the page), finds by name and by tool, works with
 //    the area filter, says "Nothing matches “…”." when nothing does, clears
 //    with the 45 degree crosshair, opens from ?q=, and works offline on
@@ -342,15 +342,15 @@ try {
   for (const [width, mode] of [[1280, 'dark'], [360, 'light']]) {
     const { context, page, errors } = await signedIn({ width, mode });
     const tag = `${width}px ${mode}`;
-    await checkSearch(page, `${tag} My Plans`, '/my-plans', {
+    await checkSearch(page, `${tag} My plans`, '/my-plans', {
       label: 'Search my plans', mine: [`${STAMP}: Harbour proposal`], byTool: `${STAMP}: Referral pipeline`, toolWord: 'get unstuck', other: 'cafe',
     });
-    await checkSearch(page, `${tag} My Reviews`, '/my-reviews', {
+    await checkSearch(page, `${tag} My reviews`, '/my-reviews', {
       label: 'Search my reviews', mine: [`${STAMP}: Harbour discovery call`], byTool: `${STAMP}: Quarter progress`, toolWord: 'progress review',
     });
     if (width === 1280) {
-      await checkOffline(context, page, `${tag} My Plans`, '/my-plans', 'Search my plans', `${STAMP}: Harbour proposal`);
-      await checkOffline(context, page, `${tag} My Reviews`, '/my-reviews', 'Search my reviews', `${STAMP}: Harbour discovery call`);
+      await checkOffline(context, page, `${tag} My plans`, '/my-plans', 'Search my plans', `${STAMP}: Harbour proposal`);
+      await checkOffline(context, page, `${tag} My reviews`, '/my-reviews', 'Search my reviews', `${STAMP}: Harbour discovery call`);
     }
     pass(`${tag}: no page errors in the lists`, errors.length === 0, errors.slice(0, 3).join(' | '));
     await context.close();

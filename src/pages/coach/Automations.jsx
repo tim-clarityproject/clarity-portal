@@ -10,6 +10,7 @@ import {
 import { Back, TextLink, useCoachPortal } from './parts';
 import { useStartStages } from './leadParts';
 import { calm } from './crmParts';
+import { shownCallName } from '../../lib/callNames.js';
 import './crm.css';
 
 // Automations (M11 seq 77: "Automations", "Automations: add one"), the
@@ -145,7 +146,7 @@ export default function Automations() {
             {isKeep && <p className="cc-note">{CATCH_UP_HELP}</p>}
             {trigger.needs === 'stage' && <div className="cc-field"><Dropdown label={AUTOMATION_WORDS.stage} options={stages.map((s) => ({ value: s.id, label: s.name }))} value={draft.trigger_stage_id} onChange={(v) => set({ trigger_stage_id: v })} /></div>}
             {trigger.needs === 'count' && <div className="cc-field"><Dropdown label={draft.trigger === 'lead_quiet' ? AUTOMATION_WORDS.days : AUTOMATION_WORDS.times} options={countChoices(draft.trigger)} value={draft.trigger_count ?? trigger.suggested} onChange={(v) => set({ trigger_count: v })} /></div>}
-            {trigger.needs === 'call' && <div className="cc-field"><Dropdown label={AUTOMATION_WORDS.call} options={[{ value: NONE, label: AUTOMATION_WORDS.anyCall }, ...callTypes.map((c) => ({ value: c.key, label: c.name }))]} value={draft.call_type_key || NONE} onChange={(v) => set({ call_type_key: v === NONE ? null : v })} /></div>}
+            {trigger.needs === 'call' && <div className="cc-field"><Dropdown label={AUTOMATION_WORDS.call} options={[{ value: NONE, label: AUTOMATION_WORDS.anyCall }, ...callTypes.map((c) => ({ value: c.key, label: shownCallName(c.name) }))]} value={draft.call_type_key || NONE} onChange={(v) => set({ call_type_key: v === NONE ? null : v })} /></div>}
             {!isKeep && <div className="cc-field"><Dropdown label={AUTOMATION_WORDS.then} options={ACTIONS} value={draft.action} onChange={(v) => set({ action: v, to_stage_id: v === 'stage' ? draft.to_stage_id || openStages.find((s) => s.id !== draft.trigger_stage_id)?.id || null : null })} /></div>}
             {draft.action === 'todo' && !isKeep && (
               <>

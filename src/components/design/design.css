@@ -224,7 +224,9 @@
 
 /* Pointing down, the corner's strokes sit half a pixel lower in their
    square than pointing up (measured, 11 Nov): this evens them out. */
-.ui-root .ds-chevron-base > .ds-chevron.ds-chevron--down { translate: 0 calc(50% - var(--chev-half) + var(--chev-nudge)); }
+/* Stage D (DG item 3): the 25 Nov chevron (.cv, a 12px square) pointing down sits 0.75px lower than pointing up, read
+   from the screen's pixels on every fold and drop-down (calm-rules' chevron part); --chev-down-lift takes it back up. */
+.ui-root .ds-chevron-base > .ds-chevron.ds-chevron--down { translate: 0 calc(50% - var(--chev-half) + var(--chev-nudge) - var(--chev-down-lift)); }
 
 /* No rounding (Tim, 12 Nov): the shift is the exact part-pixel amount, so
    the chevron stays within half a pixel of its words at every text size.
@@ -2108,6 +2110,14 @@
 .ui-root .ds-check-box:focus-visible {
   outline: var(--focus-w) solid var(--coral-text);
   border-radius: var(--radius-box);
+}
+
+/* The family's hover (rule 8a: an edge at rest takes a step stronger, --text-2, under the pointer; Stage D, DG item 7:
+   coach Today's tick boxes showed nothing). A ticked box is already filled. */
+@media (hover: hover) {
+  .ui-root .ds-check-box:not([aria-checked='true']):hover > span { border-color: var(--text-2); }
+  /* Important keeps its edge and takes the quiet surface inside it instead. */
+  .ui-root .ds-todo--important .ds-check-box:not([aria-checked='true']):hover > span { border-color: var(--coral-soft-text); background: var(--raised); }
 }
 
 .ui-root .ds-check-label {
@@ -11389,6 +11399,8 @@
     box-sizing: border-box;
     align-items: flex-start;
   }
-  .ui-root .ds-pick-act::after { content: ''; position: absolute; inset: calc(-1 * var(--space-px10)) calc(-1 * var(--space-2)); }
+  /* Its tap area is 44px high and its words' width plus 8px a side, centred on it (an invisible ::after, as "+ Add" and
+     answer boxes have; Stage D, DG: the link itself is drawn 31px under the row's words at 390 and 360). */
+  .ui-root .ds-pick-act::after { content: ''; position: absolute; left: calc(-1 * var(--space-2)); right: calc(-1 * var(--space-2)); top: 50%; height: var(--tap-min); transform: translateY(-50%); }
 }
 .ui-root .ds-pick-act:focus-visible { outline: var(--focus-w) solid var(--text); border-radius: var(--space-1); }

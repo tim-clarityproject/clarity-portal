@@ -50,8 +50,8 @@ test('Carried over: review first, then the thoughts, duplicates merged into the 
 });
 
 test('the source line says where each came from', () => {
-  assert.equal(carriedSource({ review: true, windDown: false }, '2026-10-20', '2026-10-21'), 'From Daily review');
+  assert.equal(carriedSource({ review: true, windDown: false }, '2026-10-20', '2026-10-21'), 'From your daily review');
   assert.equal(carriedSource({ review: false, windDown: true }, null, '2026-10-21'), 'From last night’s sleep wind down');
-  assert.equal(carriedSource({ review: true, windDown: true }, '2026-10-20', '2026-10-21'), 'From Daily review and last night’s sleep wind down');
-  assert.equal(carriedSource({ review: true, windDown: false }, '2026-10-16', '2026-10-19'), 'From Daily review on Friday');
+  assert.equal(carriedSource({ review: true, windDown: true }, '2026-10-20', '2026-10-21'), 'From your daily review and last night’s sleep wind down');
+  assert.equal(carriedSource({ review: true, windDown: false }, '2026-10-16', '2026-10-19'), 'From your daily review on Friday');
 });

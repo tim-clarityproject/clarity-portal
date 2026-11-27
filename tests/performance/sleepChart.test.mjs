@@ -43,7 +43,7 @@ test('Usual quality: the most common word, ties going to the better word', () =>
 
 test('the action: below, inside and above, never repeating the figures', () => {
   const act = (h) => recoverySleepView({ recovery, nights: [night('2026-11-03', h, 'good')], today: '2026-11-03', target }).action;
-  assert.deepEqual(act(6.5).lines, ['Last night was under your target range.', 'Tonight, Sleep wind down could help.']);
+  assert.deepEqual(act(6.5).lines, ['Last night was under your target range.', 'Tonight, a sleep wind down could help.']);
   assert.equal(act(6.5).windDown, true);
   assert.deepEqual(act(9).lines, ['Last night was inside your target range.', 'Keep doing what’s working.']);
   assert.deepEqual(act(10).lines, ['Last night was above your target range.', 'Keep doing what’s working.']);

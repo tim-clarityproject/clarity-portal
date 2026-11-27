@@ -12,9 +12,9 @@ import { B2_LINES } from '../content/pageLines/client';
 
 
 const TAG = {
-  'after-action': 'After-Action Review',
+  'after-action': 'After-action review',
   'weekly-momentum': 'Weekly check-in',
-  progress: 'Progress Review',
+  progress: 'Progress review',
 };
 
 function RatingDots({ value }) {

@@ -308,7 +308,7 @@ function suggestionInTurn(input) {
       label: 'Priorities for tomorrow',
       question: null,
       list: priorities,
-      lines: priorities.length ? ['They’re waiting in tomorrow’s Daily plan.'] : ['Nothing is set for tomorrow yet.'],
+      lines: priorities.length ? ['They’re waiting in tomorrow’s daily plan.'] : ['Nothing is set for tomorrow yet.'],
       action: null,
       link: { label: 'Edit my review', to: input.reviewTo || '/daily-review' },
     };

@@ -102,11 +102,12 @@ export function carriedOver({ review = [], windDown = [] }) {
 /**
  * Where a carried-over thing came from, the small line under it (M19).
  * The review is "last night's" when it was the day before; an older one
- * (Daily plan looks back three days) is named by its day.
+ * (Daily plan looks back three days) is named by its day. Lower case inside
+ * the line (the capitals rule, Stage D item 6): "From your daily review".
  */
 export function carriedSource({ review, windDown }, reviewDate, date) {
   const fromReview = review
-    ? (reviewDate && reviewDate !== addDay(date, -1) ? `Daily review on ${DAY_FULL[weekday(reviewDate)]}` : 'Daily review')
+    ? (reviewDate && reviewDate !== addDay(date, -1) ? `your daily review on ${DAY_FULL[weekday(reviewDate)]}` : 'your daily review')
     : null;
   if (fromReview && windDown) return `From ${fromReview} and last night’s sleep wind down`;
   if (fromReview) return `From ${fromReview}`;

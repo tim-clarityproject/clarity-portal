@@ -105,7 +105,8 @@ const blockOthers = (context) => context.route('**/*', (route) => {
   if (/supabase\.co/.test(url) && !url.includes(TEST_HOST)) return route.abort();
   if (/\/functions\/v1\/|\/api\//.test(url)) return route.abort();
   // Nothing is saved: a write is answered here and goes nowhere.
-  if (/supabase\.co\/rest\/v1\//.test(url) && !/\/rpc\//.test(url) && !['GET', 'HEAD', 'OPTIONS'].includes(route.request().method())) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+  // (The test database's own host, the local stand-in by default since 25 Nov, not only a supabase.co address.)
+  if (url.includes(TEST_HOST) && /\/rest\/v1\//.test(url) && !/\/rpc\//.test(url) && !['GET', 'HEAD', 'OPTIONS'].includes(route.request().method())) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
   return route.fallback();
 });
 const signIn = async (page) => {
@@ -119,7 +120,9 @@ const signIn = async (page) => {
 };
 /** The outside Health Check, opened on a mocked link (nothing reaches a database). */
 const openHealthCheck = async (context, open) => {
-  await context.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => {
+  // The Health Check's two database calls are answered here wherever the database is (the local stand-in at 127.0.0.1
+  // since 25 Nov included); anything else outside this machine is stopped.
+  await context.route((u) => /\/rpc\/alignment_(open|save)$/.test(u.pathname) || !['localhost', '127.0.0.1'].includes(u.hostname), (route) => {
     const url = route.request().url();
     const json = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
     if (url.endsWith('/rpc/alignment_open')) return json(open);
@@ -159,7 +162,8 @@ try {
       let reviewedToday = false;
       // The browser's own day (its clock is London's).
       const londonToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date());
-      await context.route(/supabase\.co\/rest\/v1\/day_reviews\?/, async (route) => {
+      // The test database wherever it is (the local stand-in by default since 25 Nov).
+      await context.route((u) => u.host === TEST_HOST && /\/rest\/v1\/day_reviews$/.test(u.pathname), async (route) => {
         const url = decodeURIComponent(route.request().url());
         const day = /local_date=eq\.(\d{4}-\d{2}-\d{2})/.exec(url)?.[1];
         // (Either side of midnight: a page opened at 23:59 asks for the day it opened on, a moment after the day has turned here.)
@@ -174,15 +178,30 @@ try {
       try {
         await signIn(page);
         await page.locator('.home-page .ds-page-title').first().waitFor({ timeout: 20000 });
-        await page.getByRole('button', { name: 'Add to-do' }).first().waitFor({ timeout: 20000 });
+        await page.getByRole('button', { name: 'Add a to-do' }).first().waitFor({ timeout: 20000 });
         await settle();
         // Outlined buttons have no border since 18 Nov: a 1px hairline drawn as an inset shadow in the
         // outline grey, #3C3C3B in dark and #B9B7B1 in light (Tim's own values for Quiet precision, which
         // replace rule 8a's 3 to 1 for a button's edge; the button's words carry it).
+        // Polish 1, Stage A (the lead's call on the 25 Nov reference): buttons take the reference's --line, a 1px line all
+        // round (the 18 Nov outline grey hairline is retired). Read as the line's colour, whether it is drawn as a border or
+        // an inset shadow; a page with no outlined button has nothing to read (the 25 Nov pages lead with one main button).
         const hairlines = async (where) => {
-          const got = await page.evaluate(() => [...document.querySelectorAll('.ds-btn--outline')].filter((b) => b.getBoundingClientRect().width > 0).map((b) => getComputedStyle(b).boxShadow));
-          const want = mode === 'dark' ? 'rgb(60, 60, 59) 0px 0px 0px 1px inset' : 'rgb(185, 183, 177) 0px 0px 0px 1px inset';
-          pass(`${where} ${tag}: every outlined button has the outline grey hairline (${got.length} read)`, got.length >= 1 && got.every((x) => x === want), [...new Set(got)].join(' | '));
+          const r = await page.evaluate(() => {
+            const probe = document.createElement('span');
+            probe.style.color = 'var(--line)';
+            document.querySelector('.ui-root').appendChild(probe);
+            const want = getComputedStyle(probe).color;
+            probe.remove();
+            const got = [...document.querySelectorAll('.ds-btn--outline')].filter((b) => b.getBoundingClientRect().width > 0).map((b) => {
+              const st = getComputedStyle(b);
+              if (parseFloat(st.borderTopWidth) >= 1 && st.borderTopStyle !== 'none') return `${st.borderTopColor} ${st.borderTopWidth}`;
+              const m = /(rgba?\([^)]+\)) 0px 0px 0px 1px inset/.exec(st.boxShadow);
+              return m ? `${m[1]} 1px` : `none (${st.boxShadow})`;
+            });
+            return { want: `${want} 1px`, got };
+          });
+          pass(`${where} ${tag}: every outlined button has a 1px line in --line (${r.got.length} read)`, r.got.every((x) => x === r.want), `${[...new Set(r.got)].join(' | ')} vs ${r.want}`);
         };
         const home = await page.evaluate(outlinedEdges, true);
         await hairlines('Home');
@@ -195,16 +214,20 @@ try {
         await page.goto(`${APP}/performance-sprint`);
         await settle();
         const sprint = await page.evaluate(outlinedEdges, true);
-        // The segmented switch has no outer edge since 18 Nov (follow-up 1): a quiet grey surface, the chosen option a raised tile.
-        const seg = await page.evaluate(() => { const el = document.querySelector('.ds-seg:not(.ds-seg-measure)'); const st = el && getComputedStyle(el); return el ? { edge: st.borderTopWidth, radius: st.borderTopLeftRadius, fill: st.backgroundColor, tile: Boolean(el.querySelector('.ds-seg-tile')) } : null; });
-        pass(`Sprint page ${tag}: the segmented switch is a quiet surface with a raised tile, 8px corners, no edge`, Boolean(seg) && seg.edge === '0px' && seg.radius === '8px' && !/rgba\(0, 0, 0, 0\)/.test(seg.fill) && seg.tile, JSON.stringify(seg));
+        // The joined switch of the 25 Nov reference (Polish 1; replaces 18 Nov's quiet surface): a 1px --line edge, the one
+        // control radius (--radius-control, 12px), the chosen part a raised tile.
+        const seg = await page.evaluate(() => { const el = document.querySelector('.ds-seg:not(.ds-seg-measure)'); const st = el && getComputedStyle(el); return el ? { edge: st.borderTopWidth, radius: st.borderTopLeftRadius, tile: Boolean(el.querySelector('.ds-seg-tile')) } : null; });
+        pass(`Sprint page ${tag}: the joined switch has a 1px edge, 12px corners and a raised tile`, Boolean(seg) && seg.edge === '1px' && seg.radius === '12px' && seg.tile, JSON.stringify(seg));
         pass(`Sprint page ${tag}: no outlined edge under 3 to 1`, (await page.evaluate(outlinedEdges)).length === 0, (await page.evaluate(outlinedEdges)).join('; '));
         await shot('sprint-page');
 
         await page.goto(`${APP}/daily-journal`);
         await settle();
+        // The prompts show only from "Need a prompt?" since Tim's walk of Stage B, as answer boxes (no chips any more).
+        await page.getByRole('button', { name: 'Need a prompt?' }).click();
+        await sleep(400);
         const journal = await page.evaluate(outlinedEdges, true);
-        edgeCheck(`Journal ${tag}, the prompt chips`, journal, 'ds-chip', 3);
+        edgeCheck(`Journal ${tag}, the prompts`, journal, 'ds-answer', 3);
         pass(`Journal ${tag}: no outlined edge under 3 to 1`, (await page.evaluate(outlinedEdges)).length === 0, (await page.evaluate(outlinedEdges)).join('; '));
         await shot('journal');
 
@@ -229,7 +252,9 @@ try {
         await page.goto(`${APP}/welcome`);
         await settle();
         const link = page.getByRole('link', { name: 'Edit my review' }).or(page.getByRole('button', { name: 'Edit my review' }));
-        const text = await page.locator('.ui-root').first().innerText();
+        // The whole page: the first .ui-root is the frame's menu column since Polish 1.
+        let text = '';
+        for (let n = 0; n < 40 && !/Priorities for tomorrow/i.test(text); n += 1) { text = await page.locator('body').innerText(); await sleep(250); }
         pass(`Home ${tag}, the day reviewed: the card reads "Priorities for tomorrow"`, /Priorities for tomorrow/i.test(text), text.slice(0, 200));
         pass(`Home ${tag}, the day reviewed: the three priorities are listed`, /Call Evan about the proposal/.test(text) && /Book the venue/.test(text), text.slice(0, 300));
         pass(`Home ${tag}, the day reviewed: the link reads "Edit my review"`, (await link.count()) === 1 && await link.first().isVisible(), `${await link.count()} found`);
@@ -290,8 +315,8 @@ try {
         const unseen = (drawn.skipped || []).filter((s) => s.why === 'nothing drawn');
         pass(`high contrast, sprint page ${tag}: the chevrons are drawn on the screen (${drawn.length} read)`, drawn.length >= 1 && unseen.length === 0, unseen.map((s) => s.label).join('; ') || `${drawn.length} read`);
         if (out) await fp.screenshot({ path: join(out, `high-contrast-sprint-page-${size}-${mode}.png`), fullPage: true });
-        // The close crosshair, in a panel (Add to-do; closed again, nothing saved).
-        await fp.getByRole('button', { name: 'Add to-do' }).first().click({ timeout: 5000 });
+        // The close crosshair, in a panel (Add a to-do, the card's + since the walk fixes; closed again, nothing saved).
+        await fp.getByRole('button', { name: 'Add a to-do' }).first().click({ timeout: 5000 });
         await fp.locator('[role=dialog]').first().waitFor({ timeout: 8000 });
         await sleep(500);
         const close = await fp.evaluate(maskedIcons, '[role=dialog] .ds-cross');

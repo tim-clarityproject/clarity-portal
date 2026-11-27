@@ -160,7 +160,7 @@ export default function HealthCheckInside() {
     setChanged(true);
   });
 
-  // An older page's address, or My Plans, handing over a saved Health Check.
+  // An older page's address, or My plans, handing over a saved Health Check.
   const handed = location.state?.decisionId;
   if (!rest && isId(handed)) return <Navigate to={`${BASE}/version/${handed}`} replace />;
 

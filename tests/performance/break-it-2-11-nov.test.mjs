@@ -44,7 +44,12 @@ test('"Edit how it went": a summary label inside a sentence never reads "undefin
   assert.equal(inSentence('How it went'), 'how it went');
   assert.equal(inSentence('  How it went '), 'how it went');
   assert.equal(inSentence('Who I want to be'), 'who I want to be');
-  for (const kept of ['I', 'I’m ready', 'IT', 'iPhone', 'UK time', '3 things', '“Quoted”', '🎯 Goal', 'A', 'Strategies of the day', 'Outcome Objectives', 'Mission', 'Sam’s plan', "Sam's plan", 'Monday', 'November review', 'Monthly review', 'HOW IT WENT']) assert.equal(inSentence(kept), kept);
+  for (const kept of ['I', 'I’m ready', 'IT', 'iPhone', 'UK time', '3 things', '“Quoted”', '🎯 Goal', 'A', 'Strategies of the day', 'Outcome Objectives', 'Mission', 'Sam’s plan', "Sam's plan", 'Monday', 'November review', 'HOW IT WENT']) assert.equal(inSentence(kept), kept);
+  // Stage D, item 6 (the capitals rule, 27 Nov): a tool's name is lower case inside a sentence; the allowed terms keep theirs.
+  assert.equal(inSentence('Monthly review'), 'monthly review');
+  assert.equal(inSentence('Daily plan'), 'daily plan');
+  assert.equal(inSentence('Confidence bank'), 'confidence bank'); // Tim, 27 Nov: "your confidence bank"
+  for (const kept of ['Performance score', 'Strategic Alignment Health Check', 'Hardware']) assert.equal(inSentence(kept), kept);
   assert.equal(inSentence('May I ask'), 'May I ask'); // a month's name wins: harmless
   assert.equal(inSentence('Today’s plan'), 'Today’s plan');
   assert.equal(inSentence(''), '');

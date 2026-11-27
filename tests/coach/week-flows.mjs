@@ -574,7 +574,7 @@ async function run() {
       const g = await guestPage(store, when);
       await g.open(`/book/${CAL.chemKey}`);
       const start = await g.words();
-      pass(`${tag}: a guest's Discovery call page shows its own call only, and nothing of the calendar`, /Discovery call/i.test(start) && !/Connection Call/i.test(start) && !/Training|Sam Okafor|Client 1|Dentist|Swimming/.test(start));
+      pass(`${tag}: a guest's Discovery call page shows its own call only, and nothing of the calendar`, /Discovery call/i.test(start) && !/Connection call/i.test(start) && !/Training|Sam Okafor|Client 1|Dentist|Swimming/.test(start));
       await zoneTo(g.page, 'Los Angeles');
       const days = async () => freeDays(g.page);
       const first = await days();
@@ -613,7 +613,7 @@ async function run() {
       const near = (await h.page.locator('.cc-book-time').allTextContents()).map((x) => x.trim());
       pass(`${tag}: another visitor is never offered her time, nor one within 15 minutes of it`, near.length > 0 && near.every((x) => /^\d\d:\d\d$/.test(x)) && !near.some((x) => x >= '14:30' && x < '15:45') && near.includes('14:00'), near.join(','));
       await h.open(`/book/${CAL.connKey}`);
-      pass(`${tag}: the Connection Call page never shows the Discovery call`, /Connection Call/i.test(await h.words()) && !/Discovery call/i.test(await h.words()));
+      pass(`${tag}: the Connection call page never shows the Discovery call`, /Connection call/i.test(await h.words()) && !/Discovery call/i.test(await h.words()));
       await h.ctx.close();
       // She moves it, from her own link.
       const first0 = booking.starts_at;

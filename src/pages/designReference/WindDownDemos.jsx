@@ -49,9 +49,9 @@ export function WorkDoneDemo() {
 }
 
 const CARRIED = [
-  { value: 'c0', label: 'Call Evan before 09:00 about the referral', tags: ['From Daily review and last night’s sleep wind down'], group: 'carried' },
-  { value: 'c1', label: 'Finish the Harbour case study', tags: ['From Daily review and last night’s sleep wind down'], group: 'carried' },
-  { value: 'c2', label: 'Reply to Max about the workshop', tags: ['From Daily review'], group: 'carried' },
+  { value: 'c0', label: 'Call Evan before 09:00 about the referral', tags: ['From your daily review and last night’s sleep wind down'], group: 'carried' },
+  { value: 'c1', label: 'Finish the Harbour case study', tags: ['From your daily review and last night’s sleep wind down'], group: 'carried' },
+  { value: 'c2', label: 'Reply to Max about the workshop', tags: ['From your daily review'], group: 'carried' },
   { value: 'c3', label: 'Book a day off for the half term', tags: ['From last night’s sleep wind down'], group: 'carried' },
   { value: 'w0', label: 'Send the Harbour proposal by 12:00', detail: 'Grow through referrals', tags: ['To-do this week'], group: 'week' },
   { value: 'w1', label: 'Check-in message to a past client', detail: 'Grow through referrals', tags: ['Habit, 3 of 5 this week'], group: 'week' },

@@ -107,7 +107,7 @@ export const EMAIL_EXAMPLES = [
     key: 'guest-plan-copy',
     name: 'Get unstuck plan, a guest’s copy',
     from: 'From The Clarity Portal, to Alex, a guest',
-    sends: 'Sent only from the live site, when a guest finishes Get unstuck through a coach’s link (after migrations 035 and 042). Never from a preview.',
+    sends: 'Sent only from the live site, when a guest finishes getting unstuck through a coach’s link (after migrations 035 and 042). Never from a preview.',
     doc: () => guestPlanCopyEmail({
       origin: PORTAL,
       toolName: 'Get unstuck',
@@ -163,7 +163,7 @@ export const EMAIL_EXAMPLES = [
     name: 'A booked call moved by the person who booked it',
     from: 'From The Clarity Project, to the person who booked',
     sends: 'Sent only from the live site, once for each move. A reader outside the US and Canada sees a 24-hour time.',
-    doc: () => bookingConfirmedEmail({ name: 'Nadia Osei', callName: 'Connection Call', coach: 'Tim', at: instantAt('2026-11-24', '14:15', 'Europe/London'), zone: 'Europe/London', mineLink: `${PORTAL}/book/mine/3f1c0a52-7b1e-4c0a-9a57-2d0f6b1c8e12`, moved: true, now: NOW }),
+    doc: () => bookingConfirmedEmail({ name: 'Nadia Osei', callName: 'Connection call', coach: 'Tim', at: instantAt('2026-11-24', '14:15', 'Europe/London'), zone: 'Europe/London', mineLink: `${PORTAL}/book/mine/3f1c0a52-7b1e-4c0a-9a57-2d0f6b1c8e12`, moved: true, now: NOW }),
   },
   {
     key: 'call-tomorrow',

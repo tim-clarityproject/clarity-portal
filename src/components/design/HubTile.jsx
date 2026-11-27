@@ -63,7 +63,7 @@ export function HubAnchor({ children }) {
 
 /**
  * A hub's recent saved items (M3 .recent; writing rule 60; Polish 1 rules 13
- * and 14): one card, its label ("My Plans") with View all on the right, then
+ * and 14): one card, its label ("My plans") with View all on the right, then
  * the last few items as hairline rows, each the item's own name with the tool
  * under it and the date on the right. Nothing shows when there is nothing saved.
  *

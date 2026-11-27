@@ -202,7 +202,7 @@ export default function NewInvoice() {
                 <Row name="Payment terms" value={`${profile?.terms_days || 30} days`} />
                 <Row name="Timesheet page" value={profile?.timesheet ? 'Included' : 'Not included'} />
                 <Row name="Addressed to" sub={profile ? billTo(profile, org.name).join(', ') : 'No billing details yet'} onClick={() => navigate(`/coach/organisations/${org.id}/billing`)} label={profile ? 'Edit their billing details' : 'Add their billing details'} />
-                <Row name="Sent to" sub={profile?.invoices_email || 'Not set yet'} />
+                <Row name="Sent to" sub={profile?.invoices_email ? <span className="ds-address">{profile.invoices_email}</span> : 'Not set yet'} />
                 <Row name="The PDF" value={`One file, ${pageWords(pages)}`} />
               </Rows>
             </Card>

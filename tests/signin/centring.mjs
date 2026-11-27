@@ -171,6 +171,14 @@ export function centredGroups(arg) {
           }
         }
       }
+      // A small drawn mark at a row's start, a circle or square with an edge or a fill (the Health Check's project
+      // number, .hc-pn): its edge is ink, as the reader sees it (DG, Stage D: the outside Health Check's rows at 390).
+      if (!(node instanceof SVGElement) && node !== start) {
+        const b = node.getBoundingClientRect();
+        const st = cs(node);
+        const edged = parseFloat(st.borderLeftWidth) > 0 && st.borderLeftStyle !== 'none' && !clear(st.borderLeftColor);
+        if ((edged || !clear(st.backgroundColor)) && b.width <= 48 && b.height <= 48) add(b);
+      }
       if (node instanceof SVGSVGElement) {
         // A shape filled in the page's own colour with no line round it isn't seen
         // (the QR code's quiet zone in light mode).

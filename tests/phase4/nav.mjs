@@ -4,12 +4,11 @@
 //
 //   MOCKUPS=<folder with m3-hub-pages.html> node --import ./tests/scores/register.mjs tests/phase4/nav.mjs [folder]
 //
-// 1. Desktop menu: the slim panel (menu-options.html, option A; Tim, 9
-//    Nov), measured against its CSS: its rows in order under their quiet
-//    labels, no Log today or Breathe, every row opens the right route and
-//    is marked when someone is there, My Account and Sign out at the
-//    bottom, and the keyboard (Enter opens, focus moves in and stays in,
-//    Escape closes and gives focus back to the crosshair).
+// 1. The laptop's menu (Polish 1, Stage B, "Frame and menu"; replaces the
+//    slim panel of 9 Nov): the frame's column, always in view, its items in
+//    their groups, Breathe, My Account, Sign out and Privacy at the foot,
+//    the page you're on in the text colour at 500, every item opening its
+//    route, and the keyboard (its links take focus, Enter opens).
 // 2. Hub pages: every tile opens its tool's route (After-action review with
 //    its state), each ⓘ starts with one full sentence saying what the area
 //    is, and nothing unbuilt or removed has a tile.
@@ -225,84 +224,50 @@ if (part(1) || part(2) || part(3)) {
   const { page } = c;
   try {
     if (part(1)) {
+      // Polish 1, Stage B ("Frame and menu"; the 25 Nov reference): on a laptop the menu is the frame's column, always in
+      // view, plain grey words with the page you're on in the text colour at 500, groups by gaps, Breathe, My Account,
+      // Sign out (a real button) and Privacy at the foot. There is no Menu button, panel or open state to test any more.
       await goHub(page, '/personal/plan');
-      await openDesktopMenu(page);
       await shot(page, 'desktop-menu-dark');
-      // The slim panel (menu-options.html, option A; Tim, 9 Nov, 14:41).
-      const names = await page.locator('#site-menu .ds-dmenu-name').allInnerTexts();
-      pass('desktop menu: Home, Dashboard, Plan, Reset, Review, Interpersonal, Strategic, My Account, Sign out, in that order', samePins(names, MENU_ROWS.map((r) => r[0]).concat('Sign out')), names.join(', '));
-      const labs = await page.locator('#site-menu .ds-dmenu-lab').allInnerTexts();
-      pass('desktop menu: the quiet group labels are Personal and With others', samePins(labs.map((l) => l.toLowerCase()), ['personal', 'with others']), labs.join(', '));
-      pass('desktop menu: no Log today or Breathe button, and no coral button', (await page.locator('#site-menu .ds-btn').count()) === 0 && !/log today|breathe/i.test(await page.locator('#site-menu').innerText()));
-      pass('desktop menu: the crosshair turns 45 degrees while open', await until(async () => /matrix\(0\.707/.test(await page.locator('.hdr-menu .ds-bold-cross').evaluate((el) => getComputedStyle(el).transform)), 3000));
-      const cur = await page.locator('#site-menu .ds-dmenu-area[aria-current="page"] .ds-dmenu-name').allInnerTexts();
-      pass('desktop menu: on the Plan hub, Plan is marked as the current row', cur.length === 1 && cur[0] === 'Plan', cur.join(','));
-      pass('desktop menu: no pins shown before any are chosen', (await page.locator('#site-menu .ds-dmenu-pins').count()) === 0 && !labs.some((l) => /pinned/i.test(l)));
-      // Measured against option A's own CSS: 280px wide, rows in DM Sans at
-      // 15px in a 44px tap area with a 10px radius, labels in Nekst
-      // capitals at 10px, My Account and Sign out below a line.
-      const m = await page.evaluate(() => {
-        const one = (sel) => {
-          const el = document.querySelector(sel);
-          if (!el) return null;
-          const c = getComputedStyle(el);
-          const r = el.getBoundingClientRect();
-          return { x: r.x, y: r.y, w: r.width, h: r.height, right: r.right, bottom: r.bottom, fs: c.fontSize, ff: c.fontFamily.split(',')[0].replace(/["']/g, ''), radius: c.borderTopLeftRadius, tt: c.textTransform, bg: c.backgroundColor, color: c.color, fw: c.fontWeight, bt: c.borderTopWidth };
-        };
-        return {
-          panel: one('#site-menu'), row: one('#site-menu .ds-dmenu-area:not([aria-current])'), cur: one('#site-menu .ds-dmenu-area[aria-current="page"]'), lab: one('#site-menu .ds-dmenu-lab'),
-          foot: one('#site-menu .ds-dmenu-foot'), account: one('#site-menu .ds-dmenu-foot a'), out: one('#site-menu .ds-dmenu-out'), header: one('.hdr-desktop'), button: one('.hdr-menu'),
-          rows: [...document.querySelectorAll('#site-menu .ds-dmenu-area')].map((el) => el.getBoundingClientRect().height),
-        };
+      const side = page.locator('.ds-frame-side');
+      pass('frame menu: the menu column is in view on a laptop, with no Menu button', await side.isVisible() && (await menuButton(page).count()) === 0);
+      const groups = await side.locator('.ds-mgroup').evaluateAll((gs) => gs.map((g) => [...g.querySelectorAll('.ds-mi')].map((a) => a.textContent.trim())));
+      pass('frame menu: Home, then Dashboard, Plan, Reset, Review, then Interpersonal and Strategic, in groups', JSON.stringify(groups) === JSON.stringify([['Home'], ['Dashboard', 'Plan', 'Reset', 'Review'], ['Interpersonal', 'Strategic']]), JSON.stringify(groups));
+      const foot = (await side.locator('.ds-mfoot .ds-mi, .ds-mfoot .ds-mlegal').allInnerTexts()).map((t) => t.trim());
+      pass('frame menu: Breathe, My Account, Sign out and Privacy at the foot', JSON.stringify(foot) === JSON.stringify(['Breathe', 'My Account', 'Sign out', 'Privacy']), foot.join(', '));
+      pass('frame menu: Sign out is a real button, the rest are links', (await side.locator('button.ds-mi--out').count()) === 1 && (await side.locator('.ds-mgroup .ds-mi').evaluateAll((as) => as.every((a) => a.tagName === 'A' && a.getAttribute('href')))));
+      pass('frame menu: no counts and no coral button', (await side.locator('.ds-mi-n').count()) === 0 && (await side.locator('.ds-btn').count()) === 0);
+      const cur = await side.locator('.ds-mi[aria-current="page"]').allInnerTexts();
+      pass('frame menu: on the Plan hub, Plan is the page you’re on', cur.length === 1 && cur[0].trim() === 'Plan', cur.join(','));
+      const look = await side.evaluate((el) => {
+        const one = (a) => { const c = getComputedStyle(a); return { color: c.color, fw: c.fontWeight, ff: c.fontFamily.split(',')[0].replace(/["']/g, ''), h: a.getBoundingClientRect().height }; };
+        const rest = el.querySelector('.ds-mgroup .ds-mi:not([aria-current])');
+        const on = el.querySelector('.ds-mi[aria-current="page"]');
+        const ui = getComputedStyle(el.closest('.ui-root'));
+        // Each item's tap area: its box, or the invisible ::after laid round it (frame.css: 44px round a 40px item).
+        const tap = (a) => { const r = a.getBoundingClientRect(); const af = getComputedStyle(a, '::after'); return af.content !== 'none' && af.position === 'absolute' ? Math.max(r.height, parseFloat(af.height) || 0) : r.height; };
+        return { rest: one(rest), on: one(on), text: ui.getPropertyValue('--text').trim(), grey: ui.getPropertyValue('--text-2').trim(), heights: [...el.querySelectorAll('.ds-mi')].map(tap) };
       });
-      pass('desktop menu: 280px wide, starting under the header', Math.abs(m.panel.w - 280) <= 1 && m.panel.x === 0 && m.panel.y >= m.header.bottom - 1, JSON.stringify(m.panel));
-      pass('desktop menu: rows are DM Sans at 15px', m.row.ff === 'DM Sans' && m.row.fs === '15px', `${m.row.ff} ${m.row.fs}`);
-      pass('desktop menu: every row is a 44px tap area with a 10px radius', m.rows.every((h) => h >= 44) && m.row.radius === '10px', `${m.rows.join(',')} ${m.row.radius}`);
-      pass('desktop menu: the labels are Nekst capitals at 10px', m.lab.ff === 'Nekst' && m.lab.fs === '10px' && m.lab.tt === 'uppercase', JSON.stringify(m.lab));
-      pass('desktop menu: the panel is the box colour (dark)', m.panel.bg === 'rgb(11, 11, 11)', m.panel.bg);
-      pass('desktop menu: the current row sits on the raised surface, medium weight', m.cur.bg === 'rgb(17, 17, 16)' && m.cur.fw === '500', `${m.cur.bg} ${m.cur.fw}`);
-      pass('desktop menu: My Account and Sign out sit at the bottom, below a line', m.foot.bt === '1px' && m.account.y > m.foot.y && m.out.y > m.account.y && m.out.bottom <= m.panel.bottom + 1, JSON.stringify([m.foot, m.out]));
-      pass('desktop menu: Sign out is in the secondary grey', m.out.color === 'rgb(163, 163, 160)', m.out.color);
-      await page.keyboard.press('Escape');
+      pass('frame menu: DM Sans, the page you’re on at 500 and the others at 400', look.rest.ff === 'DM Sans' && look.on.fw === '500' && look.rest.fw === '400', JSON.stringify(look));
+      pass('frame menu: the others in grey, the page you’re on in the text colour', look.rest.color !== look.on.color, JSON.stringify([look.rest.color, look.on.color]));
+      pass('frame menu: every item a 44px tap area', look.heights.every((h) => h >= 43.5), look.heights.join(','));
 
       for (const [name, want] of MENU_ROWS) {
         await goHub(page, want === '/strategic' ? '/personal' : '/strategic');
-        await openDesktopMenu(page);
-        await page.locator('#site-menu .ds-dmenu-name', { hasText: new RegExp(`^${name}$`) }).click();
-        pass(`desktop menu: ${name} opens ${want}`, await landsOn(page, want), path(page));
-        pass(`desktop menu: closes after choosing ${name}`, await until(async () => (await page.locator('#site-menu').count()) === 0, 3000));
+        await side.locator('.ds-mi', { hasText: new RegExp(`^${name}$`) }).first().click();
+        pass(`frame menu: ${name} opens ${want}`, await landsOn(page, want), path(page));
         if (want !== '/welcome' && want !== '/my-account') {
-          await openDesktopMenu(page);
-          const now = await page.locator('#site-menu .ds-dmenu-area[aria-current="page"] .ds-dmenu-name').allInnerTexts();
-          pass(`desktop menu: on ${want}, ${name} is the current row`, now.length === 1 && now[0] === name, now.join(','));
-          await page.keyboard.press('Escape');
+          const now = await until(async () => { const t = await side.locator('.ds-mi[aria-current="page"]').allInnerTexts(); return t.length === 1 && t[0].trim() === name ? t : null; }, 5000);
+          pass(`frame menu: on ${want}, ${name} is the page you’re on`, Boolean(now), (await side.locator('.ds-mi[aria-current="page"]').allInnerTexts()).join(','));
         }
       }
 
-      // The keyboard.
+      // The keyboard: the menu's links are ordinary links, reached with Tab, opened with Enter.
       await goHub(page, '/personal');
-      await menuButton(page).focus();
+      await side.locator('.ds-mi', { hasText: /^Dashboard$/ }).first().focus();
+      pass('keyboard: a menu link takes keyboard focus', await page.evaluate(() => document.activeElement?.textContent?.trim() === 'Dashboard'));
       await page.keyboard.press('Enter');
-      await page.waitForSelector('#site-menu .ds-dmenu-area', { timeout: 5000 });
-      const inMenu = () => page.evaluate(() => Boolean(document.activeElement?.closest('#site-menu')) || document.activeElement?.getAttribute('aria-label') === 'Menu');
-      pass('keyboard: Enter opens the menu and focus moves into it', await until(() => page.evaluate(() => Boolean(document.activeElement?.closest('#site-menu'))), 3000));
-      let stayed = true;
-      for (let i = 0; i < 14; i += 1) {
-        await page.keyboard.press(i % 5 === 4 ? 'Shift+Tab' : 'Tab');
-        if (!(await inMenu())) stayed = false;
-      }
-      pass('keyboard: Tab and Shift+Tab stay inside the menu and its button', stayed);
-      await page.keyboard.press('Escape');
-      pass('keyboard: Escape closes the menu', await until(async () => (await page.locator('#site-menu').count()) === 0, 3000));
-      pass('keyboard: focus goes back to the menu button', await page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Menu'));
-      pass('keyboard: the menu button says it is closed', (await menuButton(page).getAttribute('aria-expanded')) === 'false');
-      await page.keyboard.press('Enter');
-      await page.waitForSelector('#site-menu .ds-dmenu-area', { timeout: 5000 });
-      await until(() => page.evaluate(() => Boolean(document.activeElement?.closest('#site-menu'))), 3000);
-      // First link is Home; the next is Dashboard.
-      await page.keyboard.press('Tab');
-      await page.keyboard.press('Enter');
-      pass('keyboard: Tab then Enter on Dashboard opens it', await landsOn(page, '/dashboard'), path(page));
+      pass('keyboard: Enter on Dashboard opens it', await landsOn(page, '/dashboard'), path(page));
     }
 
     if (part(2)) {
@@ -394,26 +359,21 @@ if (part(4)) {
     await page.keyboard.press('Escape');
     await panel.waitFor({ state: 'hidden', timeout: 5000 });
 
-    const menuPins = async () => (await page.locator('#site-menu .ds-dmenu-pins a').allInnerTexts()).map((t) => t.trim());
-    await openDesktopMenu(page);
-    pass('pins: the menu shows them at the top', samePins(await menuPins(), ['Get unstuck', 'Journal', 'Meeting planner']), (await menuPins()).join(','));
+    // Polish 1, Stage B: the pinned tools are the frame menu's own group after Home, by their short names (menuName()).
+    const pinGroup = (p) => p.locator('.ds-frame-side .ds-mgroup').nth(1).locator('.ds-mi');
+    const menuPins = async (p = page) => (await pinGroup(p).allInnerTexts()).map((t) => t.trim());
+    pass('pins: the menu shows them after Home', Boolean(await until(async () => samePins(await menuPins(), ['Get unstuck', 'Journal', 'Meeting planner']), 5000)), (await menuPins()).join(','));
     await shot(page, 'desktop-menu-pinned-light');
-    await page.keyboard.press('Escape');
     await page.reload();
     await page.waitForSelector('.ds-hub-page', { timeout: 30000 });
-    await openDesktopMenu(page);
-    pass('pins: kept after a reload', samePins(await menuPins(), ['Get unstuck', 'Journal', 'Meeting planner']), (await menuPins()).join(','));
-    await page.locator('#site-menu .ds-dmenu-pins a', { hasText: 'Journal' }).click();
+    pass('pins: kept after a reload', Boolean(await until(async () => samePins(await menuPins(), ['Get unstuck', 'Journal', 'Meeting planner']), 5000)), (await menuPins()).join(','));
+    await pinGroup(page).filter({ hasText: /^Journal$/ }).click();
     pass('pins: a pinned tool opens its page', await landsOn(page, '/daily-journal'), path(page));
 
     // Another device: nothing on it yet, the pins come from the account.
     const d = await signedIn({ width: 1280, mode: 'dark' });
     await goHub(d.page, '/personal');
-    await d.page.getByRole('button', { name: 'Menu', exact: true }).click();
-    const other = await until(async () => {
-      const t = (await d.page.locator('#site-menu .ds-dmenu-pins a').allInnerTexts()).map((x) => x.trim());
-      return samePins(t, ['Get unstuck', 'Journal', 'Meeting planner']) ? t : null;
-    }, 15000);
+    const other = await until(async () => (samePins(await menuPins(d.page), ['Get unstuck', 'Journal', 'Meeting planner']) ? true : null), 15000);
     pass('pins: another device shows the same pins', Boolean(other));
     await d.context.close();
 

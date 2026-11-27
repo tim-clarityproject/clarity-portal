@@ -33,7 +33,7 @@ export const HOW_IT_WORKS_SECTIONS = Object.freeze([
     key: 'working',
     label: 'See what’s working',
     line: 'Know what’s really making the difference.',
-    text: 'Your dashboard shows how each week compares with the standard you set, and which habits are making the biggest difference. Your Confidence bank keeps a record of your wins, so you can look back on what you’ve achieved when you need it most.',
+    text: 'Your dashboard shows how each week compares with the standard you set, and which habits are making the biggest difference. Your confidence bank keeps a record of your wins, so you can look back on what you’ve achieved when you need it most.',
   },
   {
     key: 'lead',

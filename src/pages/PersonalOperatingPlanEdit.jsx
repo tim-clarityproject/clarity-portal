@@ -418,7 +418,7 @@ export default function PersonalOperatingPlanEdit() {
       <DesignHeader />
 
       <div className="plan-page cp-page plan-page--form">
-        <PageOpening title="Shape your personal operating plan" line={B1_LINES.popEdit} />
+        <PageOpening title="Shape your Individual Performance Plan" line={B1_LINES.popEdit} />
 
         {pendingDraft && !draftDismissed && (
           <div className="pop-draft-banner">

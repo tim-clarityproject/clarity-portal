@@ -164,7 +164,7 @@ export default function Dashboard() {
     );
   }
 
-  const parts = coach ? [{ key: 'checkin', label: 'Your Monthly Hardware and Software review', shared }] : [];
+  const parts = coach ? [{ key: 'checkin', label: 'Your monthly Hardware and Software review', shared }] : [];
   return (
     <div className="ui-root">
       <DesignHeader />
@@ -645,7 +645,7 @@ function SleepBody({ row, target, changeTarget, navigate }) {
       <div className="dash-act">
         {row.action?.lines.map((l) => <p key={l} className="dash-fp">{l}</p>)}
         <div className="dash-links">
-          {row.action?.windDown && <Button variant="text" onClick={() => navigate('/sleep-wind-down')}>Open Sleep wind down</Button>}
+          {row.action?.windDown && <Button variant="text" onClick={() => navigate('/sleep-wind-down')}>Open sleep wind down</Button>}
           <SleepTargetLink open={editing} onToggle={() => setEditing((v) => !v)} controls="dash-sleep-target" />
         </div>
         {editing && <SleepTargetEditor id="dash-sleep-target" target={target} onChange={changeTarget} />}
@@ -658,7 +658,7 @@ function BehindSection({ view, closed, toggle, phone, target, changeTarget, coac
   const { behind } = view;
   const shut = closed.more;
   const checkEye = coach
-    ? <WhoSees audience={shared ? 'coach' : 'me'} coachName={coach} name="Your Monthly Hardware and Software review" onChange={(a) => setShared(a === 'coach')} />
+    ? <WhoSees audience={shared ? 'coach' : 'me'} coachName={coach} name="Your monthly Hardware and Software review" onChange={(a) => setShared(a === 'coach')} />
     : <WhoSees audience="me" />;
   const bodies = {
     wins: (row) => (
@@ -677,7 +677,7 @@ function BehindSection({ view, closed, toggle, phone, target, changeTarget, coac
             ))}
           </ul>
         ) : <p className="dash-fp">Add one from the Performance Sprint when something good happens that wasn’t planned.</p>}
-        {row.items.length > 0 && <p className="dash-fp">These come from the Performance Sprint, the Daily review and the weekly debrief.</p>}
+        {row.items.length > 0 && <p className="dash-fp">These come from the Performance Sprint, the daily review and the weekly debrief.</p>}
       </>
     ),
     rhythm: (row) => (
@@ -733,11 +733,11 @@ function BehindSection({ view, closed, toggle, phone, target, changeTarget, coac
     be: (row) => (
       <>
         <Lab text="Your daily rating, averaged each week" eye={<WhoSees audience="me" />} />
-        {row.enough ? <TrendBars bars={row.bars} max={10} label="How you want to be, week by week" /> : <p className="dash-fp">Your Daily review adds your first rating here.</p>}
+        {row.enough ? <TrendBars bars={row.bars} max={10} label="How you want to be, week by week" /> : <p className="dash-fp">Your daily review adds your first rating here.</p>}
         {row.enough && (
           <ChartTable caption="Your rating each week" columns={[{ key: 'week', label: 'Week' }, { key: 'v', label: 'Average rating' }]} rows={row.bars.filter((b) => b.value != null).map((b) => ({ key: b.key, cells: { week: b.tip.when, v: wayRatingWord(b.value) } }))} />
         )}
-        {row.latestWay && <p className="dash-fp">{`Your latest way of being was “${row.latestWay}”, from your Daily plan.`}</p>}
+        {row.latestWay && <p className="dash-fp">{`Your latest way of being was “${row.latestWay}”, from your daily plan.`}</p>}
         {row.enough && <p className="dash-fp">Green weeks averaged Very good or better.</p>}
       </>
     ),

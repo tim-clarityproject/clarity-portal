@@ -16,7 +16,7 @@
 //    after-action review still opens. Signed out, both land on the sign-in
 //    page, the same as the new tools do.
 // 2. Old saved items still open: a finished and a draft weekly check-in
-//    (from My Reviews, their summary, Edit review and Continue) and a
+//    (from My reviews, their summary, Edit review and Continue) and a
 //    finished and a draft POP review (read only: no pencil, no Continue,
 //    no Edit review), at 1280px dark and 360px light.
 // 3. Home's cards, and the menus' way to the Review hub's tools (Phase 4,
@@ -246,8 +246,8 @@ async function checkRedirects(page, tag) {
   await page.goto(`${APP}/welcome`);
   await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
   await pushRoute(page, '/my-journal', { reviewType: 'after-action' });
-  await until(async () => has(await textOf(page), 'After-Action Review'));
-  pass(`${tag}: an after-action review still opens`, path(page) === '/my-journal' && has(await textOf(page), 'After-Action Review'), path(page));
+  await until(async () => has(await textOf(page), 'After-action review'));
+  pass(`${tag}: an after-action review still opens`, path(page) === '/my-journal' && has(await textOf(page), 'After-action review'), path(page));
 }
 
 // ---------------------------------------------------------------- 3. old saved items
@@ -262,7 +262,7 @@ async function openMyReviews(page) {
 async function checkOldItems(page, tag) {
   await openMyReviews(page);
   const noSideways = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
-  pass(`${tag}: My Reviews has no sideways scroll`, noSideways);
+  pass(`${tag}: My reviews has no sideways scroll`, noSideways);
 
   // Weekly, finished: listed, opens its summary with its answers.
   const w = row(page, WEEKLY.title);
@@ -299,7 +299,7 @@ async function checkOldItems(page, tag) {
 
   // POP, finished: read only.
   await openMyReviews(page);
-  const pops = row(page, POP.mission).filter({ has: page.locator('.hlist-row-tags b', { hasText: 'POP review' }) });
+  const pops = row(page, POP.mission).filter({ has: page.locator('.hlist-row-tags b', { hasText: 'Individual Performance Plan review' }) });
   await until(async () => (await pops.count()) >= 2);
   const popRows = await pops.evaluateAll((els) => els.map((e) => ({
     draft: Boolean(e.querySelector('.hlist-draft-tag')),

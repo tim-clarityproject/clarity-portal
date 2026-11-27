@@ -330,6 +330,7 @@
      (measured from pixels, 5 Nov), so its visible edge can line up (29t). */
   --chev-left-inset: 2.7px;  /* the 25 Nov chevron (.cv) pointing left in its 12px square: its ink from 2.7px to 8.8px */
   --chev-right-inset: 3.2px;
+  --chev-down-lift: 0.75px;  /* the 25 Nov chevron pointing down sits 0.75px lower than pointing up (measured, Stage D) */
   /* From a title's last letter to its eye or play icon: 12px, measured from
      the letter's own ink to the icon's visible edge (rule 29d, Tim, 5 Nov;
      M9 and M10, read from their pixels, 14 Nov). A letter's box ends about
@@ -735,7 +736,7 @@
   --rowlist-n-w: 22px;       /* the thought's number column (M19 .trow) */
   --rowlist-n-top: 17px;     /* the number level with the box's first line (M19 .trow .n) */
 
-  /* Saved items (My Plans, My Reviews, the hubs' recent rows; Phase 4 step 4) */
+  /* Saved items (My plans, My reviews, the hubs' recent rows; Phase 4 step 4) */
   --space-px30: 30px;        /* above a hub's recent list (M3 .recent) */
   --saved-row-min-h: 60px;   /* a recent saved item's row (M3 .rows button) */
   --team-row-min-h: 58px;    /* a Health Check team's row (M3 .teams button) */

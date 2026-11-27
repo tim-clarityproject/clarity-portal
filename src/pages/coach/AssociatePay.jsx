@@ -163,8 +163,8 @@ export function YourHoursAndPay() {
   return (
     <>
       <PayFigures label="Your hours and pay">
-        <Stat label={labels.hours} value={hoursFigure(minutes)} />
-        {known && <Stat label={labels.pay} value={poundsWords(payMinor)} />}
+        <Stat label={labels.hours} value={hoursFigure(minutes)} empty="No coaching hours yet this month." />
+        {known && <Stat label={labels.pay} value={poundsWords(payMinor)} empty="Nothing earned yet this month." />}
       </PayFigures>
       {known && (
         <div className="cc-acts cc-pay-acts">

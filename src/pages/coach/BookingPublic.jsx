@@ -14,12 +14,13 @@ import {
   askBookingEmail, cancelBooking, loadBookingPage, loadFreeTimes, loadMoveTimes, loadMyBooking, loadPollPage, makeBooking, moveBooking, sendPollVotes,
 } from '../../lib/coach/bookingActions';
 import { visitorCalendar } from '../../lib/coach/connect/visitorCalendar';
+import { shownCallName } from '../../lib/callNames.js';
 import './coach.css';
 import './booking.css';
 
 // The booking pages outside the portal (Phase 6a run 3; M11's two booking
 // page screens), for people with no account:
-//   /book/<a call type's page key>     the Discovery call or the Connection Call (each its own link; neither shows the other)
+//   /book/<a call type's page key>     the Discovery call or the Connection call (each its own link; neither shows the other)
 //   /book/link/<a single-use link>     the same page for one person, once
 //   /book/mine/<the guest's own key>   their booking: Add to calendar, move it or cancel it
 //   /poll/<a person's own key>         a poll's times, to tick the ones they can make
@@ -198,7 +199,7 @@ export function BookingPage() {
   const [step, setStep] = useState('time'); // 'time', then 'details' (the example's two screens)
   const busy = useRef(false);
   const visitor = useMemo(() => visitorCalendar(), []);
-  const data = page?.data || null;
+  const data = useMemo(() => (page?.data ? { ...page.data, name: shownCallName(page.data.name) } : null), [page]);
   const ahead = data?.ahead_weeks || 4;
 
   const loadTimes = useCallback(async () => {
@@ -326,7 +327,7 @@ export function BookingMine() {
   const busy = useRef(false);
   const load = useCallback(() => loadMyBooking(key).then(setMine).catch(() => setMine({ there: true, data: null, down: true })), [key]);
   useEffect(() => { load(); }, [load]);
-  const b = mine?.data || null;
+  const b = useMemo(() => (mine?.data ? { ...mine.data, call_name: shownCallName(mine.data.call_name) } : null), [mine]);
   useEffect(() => { document.title = b?.call_name ? `${b.call_name}, The Clarity Project` : 'The Clarity Project'; }, [b]);
   const holiday = useHolidayLine(chosen, b?.time_zone);
 

@@ -141,7 +141,7 @@ export default function AgreementPage() {
     <div className="cc-page">
       <div className="cc-col ap-page">
         <Back to={name || 'Back'} onClick={back} />
-        <PageOpening label={statusLine(a, v)} title={agreementTitle(name)} line={line} />
+        <PageOpening label={statusLine(a, v)} title={agreementTitle(name, { whole: !client && Boolean(org) })} line={line} />
         <div className="ds-cols ds-cols--needs-first">
           <div>
             <Card label="Main points" data-year="">

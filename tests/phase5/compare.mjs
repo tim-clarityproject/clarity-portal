@@ -11,8 +11,8 @@
 // Screens: the dashboard (as it opens, every part open, Show as a table
 // open, Customise), the check-in (the opening, a question, a statement,
 // the results, Add to my sprint, the saved results, the First review's
-// opening and its goals), and the follow-ups (the search in My Plans and
-// My Reviews, found and nothing found).
+// opening and its goals), and the follow-ups (the search in My plans and
+// My reviews, found and nothing found).
 //
 // For each, at 1280, 640, 390 and 360px, dark and light: one coral button
 // (or none, or at most one), 44px taps, no coral marks, mint for good and
@@ -291,9 +291,9 @@ const SCREENS = [
   { id: 'check-in, the results', coral: 'atMost', open: async (p) => { await tapThrough(p, () => isResults(p)); await quiet(p); }, act: openTables },
   { id: 'check-in, Add to my sprint', coral: 'one', scope: '[role=dialog]', open: async (p) => { await p.locator('.ck-one-add').click(); await p.locator('[role=dialog]').first().waitFor({ timeout: 8000 }); await settle(p); await sleep(400); }, after: async (p) => { await p.locator('[role=dialog]').getByRole('button', { name: 'Cancel' }).click().catch(() => {}); await sleep(400); } },
   { id: 'check-in, the saved results', coral: 'atMost', open: async (p) => { await go(p, CUR_PATH, '.ds-guide, .ds-page-title, .ck-results'); await until(async () => isResults(p)); await quiet(p); } },
-  { id: 'My Plans, search found', coral: 'atMost', open: (p) => search(p, '/my-plans', firstWord) },
-  { id: 'My Plans, search nothing found', coral: 'atMost', open: (p) => search(p, '/my-plans', 'zzqx') },
-  { id: 'My Reviews, search found', coral: 'atMost', open: (p) => search(p, '/my-reviews', 'check-in') },
+  { id: 'My plans, search found', coral: 'atMost', open: (p) => search(p, '/my-plans', firstWord) },
+  { id: 'My plans, search nothing found', coral: 'atMost', open: (p) => search(p, '/my-plans', 'zzqx') },
+  { id: 'My reviews, search found', coral: 'atMost', open: (p) => search(p, '/my-reviews', 'check-in') },
   { id: 'First check-in, the opening', first: true, coral: 'one', open: async (p) => { await go(p, '/monthly-review', '.ds-guide-question, .ds-guide-title'); await until(async () => /first check-in/i.test(await heading(p))); } },
   { id: 'First check-in, the goals', first: true, coral: 'atMost', open: async (p) => { await sleep(450); await p.locator('.ds-guide-next').click(); await until(async () => !/^Ready /.test(await heading(p)), 6000); await settle(p); } },
 ];

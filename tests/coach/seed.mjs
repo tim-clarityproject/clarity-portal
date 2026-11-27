@@ -708,7 +708,7 @@ export function crmSeed() {
       lead(CAL.leadRuth, 'Ruth Adeyemi', CRM.stCall, { email: ruth.email, source: 'chemistry_page', call_type_key: 'chemistry', booking_id: CAL.bookRuth, organisation: 'Harbour City FC', organisation_id: ID.harbour,
         job_title: 'Head of performance', phone: '07700 900213', next_step: 'Discovery call', next_step_on: day(2), next_step_time: '13:00', last_contact_on: day(-2) }),
       lead(CAL.leadNadia, 'Nadia Osei', CRM.stCall, { email: 'nadia@example.invalid', source: 'connection_page', call_type_key: 'connection', booking_id: CAL.bookNadia, organisation: 'Vale Health',
-        next_step: 'Connection Call', next_step_on: day(4), next_step_time: '12:30', last_contact_on: day(-5) }),
+        next_step: 'Connection call', next_step_on: day(4), next_step_time: '12:30', last_contact_on: day(-5) }),
       lead(CRM.amy, 'Amy Cole', CRM.stProp, { email: amy.email, organisation: 'Northfield Logistics', organisation_id: ID.northfield, job_title: 'Chief operating officer', phone: '07700 900461', value: 13500,
         next_step: 'Follow up on the proposal', next_step_on: day(2), last_contact_on: day(0), referred_by: 'Hannah Wells', referred_by_person: CRM.hannah, source: 'referral',
         want_outcome: 'A leadership team that owns its decisions.', want_pain: 'Every decision still comes back to Amy.', who_decides: 'Amy, with the CEO.', who_funds: 'Northfield, from the L&D budget.' }),

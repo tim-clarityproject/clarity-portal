@@ -16,7 +16,7 @@
 //    Home with "Saved", the day plan is sent, and the new bar grows in once
 //    (not with reduced motion).
 // 2. chart: the "Sleep" section with "Only you" on the right; "Last night"
-//    and its hours in Nekst Light with "hours" small and grey; "Average
+//    and its hours in DM Sans Light (Polish 1) with "hours" small and grey; "Average
 //    quality" the most common word, ties to the better word; one bar per
 //    day, mint inside or above the range, grey below, a 2px stub to come;
 //    only last night's figure above its bar; "Day 1"... and "Last night";
@@ -163,7 +163,13 @@ async function open({ width = 1280, height = 900, mode = 'dark', nights = NIGHTS
       return json(route, [...list].sort((a, b) => (a.local_date < b.local_date ? -1 : 1)));
     }
     if (table === 'person_settings' && u.searchParams.get('select')?.includes('page_preferences')) {
-      return json(route, [{ user_id: 'me', page_preferences: state.prefs, updated_at: '2026-11-01 09:00:00' }]);
+      // The real row with this run's page preferences in it: since Stage D one read brings the time zone, the role
+      // (describes_you) and the preferences together, and a row with only the preferences made the page save the time
+      // zone and load again for ever (DG, Stage D).
+      const res = await route.fetch();
+      const rows = await res.json().catch(() => []);
+      const list = (Array.isArray(rows) ? rows : [rows]).filter(Boolean);
+      return json(route, (list.length ? list : [{ user_id: 'me' }]).map((r) => ({ ...r, page_preferences: state.prefs, updated_at: r.updated_at || '2026-11-01 09:00:00' })));
     }
     return route.fallback();
   });
@@ -371,7 +377,8 @@ if (part('chart')) {
       if (!f) { pass(`${tag}: the Sleep section shows`, false); await ctx.close(); continue; }
       pass(`${tag}: headed "Sleep"`, /^sleep$/i.test(f.title), f.title);
       pass(`${tag}: "Only you" beside the title, not at the far edge`, /Only you/.test(f.who || '') && f.whoRight != null && f.whoRight > 20 && f.whoRight < 160, `${f.who} ${f.whoRight}`);
-      pass(`${tag}: "Last night" 6.5 in Nekst Light`, f.last?.value === '6.5' && /nekst/i.test(f.last.font) && Number(f.last.weight) <= 300, JSON.stringify(f.last));
+      // Every figure is DM Sans since the 25 Nov reference (Polish 1: Nekst only for page titles and the product's name).
+      pass(`${tag}: "Last night" 6.5 in DM Sans Light`, f.last?.value === '6.5' && /DM Sans/.test(f.last.font) && !/nekst/i.test(f.last.font) && Number(f.last.weight) <= 300, JSON.stringify(f.last));
       pass(`${tag}: "hours" small and grey beside it`, f.last?.unit === 'hours' && f.last.unitSize < f.last.valueSize && f.last.unitColour !== 'rgb(255, 255, 255)' && f.last.unitColour !== 'rgb(0, 0, 0)', JSON.stringify(f.last));
       // The saved keys read straight across in the five words (Tim, 10 Nov, 23:22): the most common key, 'good', reads "Very good".
       pass(`${tag}: "Usual quality Very good" (most common)`, f.average?.value === 'Very good', f.average?.value);
@@ -458,7 +465,7 @@ if (part('chart')) {
 // ------------------------------------------------------------------ 3. the action
 if (part('action')) {
   const CASES = {
-    below: { lines: ['Last night was under your target range.', 'Tonight, Sleep wind down could help.'], links: ['Open Sleep wind down', 'Edit my target range'] },
+    below: { lines: ['Last night was under your target range.', 'Tonight, a sleep wind down could help.'], links: ['Open sleep wind down', 'Edit my target range'] },
     inside: { lines: ['Last night was inside your target range.', 'Keep doing what’s working.'], links: ['Edit my target range'] },
     above: { lines: ['Last night was above your target range.', 'Keep doing what’s working.'], links: ['Edit my target range'] },
   };
@@ -471,7 +478,7 @@ if (part('action')) {
       pass(`action ${key} ${width}px: one sentence per line`, f?.lines?.every((l) => (l.match(/[.!?]/g) || []).length === 1));
       pass(`action ${key} ${width}px: the links`, f?.links?.join(' | ') === want.links.join(' | '), f?.links?.join(' | '));
       if (key === 'below') {
-        const link = page.getByRole('button', { name: 'Open Sleep wind down' });
+        const link = page.getByRole('button', { name: 'Open sleep wind down' });
         await (phone ? link.tap() : link.click());
         await page.waitForURL(/sleep-wind-down/, { timeout: 8000 }).catch(() => {});
         pass(`action below ${width}px: opens Sleep wind down`, /\/sleep-wind-down/.test(page.url()), page.url());
@@ -506,8 +513,15 @@ if (part('target')) {
     // A plain minus and plus, drawn alike, never the crosshair (5e rules 29e and 29g; swept 10 Nov).
     const icons = await btns.evaluateAll((bs) => bs.slice(0, 2).map((b) => ({ step: Boolean(b.querySelector('svg.ds-step-icon')), cross: Boolean(b.querySelector('.ds-crosshair, [class*=cross], img')) })));
     pass(`${tag}: the portal's stepper: a plain minus and plus, never the crosshair`, icons.length === 2 && icons.every((i) => i.step && !i.cross), JSON.stringify(icons));
-    const tapBoxes = await btns.evaluateAll((list) => list.map((b) => { const r = b.getBoundingClientRect(); return Math.min(r.width, r.height); }));
-    pass(`${tag}: stepper buttons 44px`, tapBoxes.every((s) => s >= 43.5), tapBoxes.join(','));
+    // Drawn at the row's control height and tapped 44px through an invisible ::after (Polish 1, Stage B: the counter's
+    // buttons are drawn 40px with a 44 by 44 ::after); the tap area is the larger of the two.
+    const tapBoxes = await btns.evaluateAll((list) => list.map((b) => {
+      const r = b.getBoundingClientRect();
+      const a = getComputedStyle(b, '::after');
+      const tap = a.content !== 'none' && a.position === 'absolute' ? { w: Math.max(r.width, parseFloat(a.width) || 0), h: Math.max(r.height, parseFloat(a.height) || 0) } : { w: r.width, h: r.height };
+      return Math.round(Math.min(tap.w, tap.h) * 10) / 10;
+    }));
+    pass(`${tag}: stepper buttons' tap areas 44px`, tapBoxes.every((s) => s >= 43.5), tapBoxes.join(','));
     // From: up to 8.5 at most (below To 9).
     for (let i = 0; i < 6; i += 1) await btns.nth(1).click({ force: true });
     pass(`${tag}: the start stays below the end`, (await val(0)) === '8.5', await val(0));

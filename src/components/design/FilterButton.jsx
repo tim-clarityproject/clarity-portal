@@ -9,7 +9,7 @@ import './design.css';
 //
 // applied: words for what is applied ("day reviews from this month"), or
 //          empty when nothing is.
-// searchFor: the words being searched for, if any (My Plans, My Reviews):
+// searchFor: the words being searched for, if any (My plans, My reviews):
 //          the line then reads Showing results for “check-in”. (tidy pass
 //          item 8; filterLineText in lib/savedItems.js).
 

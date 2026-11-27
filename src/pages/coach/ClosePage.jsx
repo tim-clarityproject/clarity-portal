@@ -89,7 +89,7 @@ export default function ClosePage() {
 
         <Part title="Outcomes">
           {scores.length === 0 && (
-            <p className="cc-quiet">{profile.user_id ? `${possessive(first)} scores show here once ${first} has finished a Monthly review and shares it.` : `${first} has no portal account yet, so there are no scores to show.`}</p>
+            <p className="cc-quiet">{profile.user_id ? `${possessive(first)} scores show here once ${first} has finished a monthly review and shares it.` : `${first} has no portal account yet, so there are no scores to show.`}</p>
           )}
           {scores.map((s) => (
             <div key={s.key} className="cc-close-score">

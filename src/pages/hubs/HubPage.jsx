@@ -19,9 +19,9 @@ import { loadSavedPlans, loadSavedReviews, SAVED_PLANS_CACHE, SAVED_REVIEWS_CACH
 // every hub; Personal's three hubs have a back link to Personal on phone.
 //
 // Plan, Review and Interpersonal end with their last three saved items
-// and a link to My Plans or My Reviews filtered to the area; Strategic's
+// and a link to My plans or My reviews filtered to the area; Strategic's
 // Health Check card lists the saved teams, each opening its newest version
-// in the Health Check itself (M7). They share My Plans' and My Reviews' device copies, so
+// in the Health Check itself (M7). They share My plans' and My reviews' device copies, so
 // they show at once. Still to come: the tiles' live lines ("Done today",
 // "Version 3.2").
 

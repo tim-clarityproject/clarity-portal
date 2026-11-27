@@ -173,4 +173,6 @@ test('the agreement page: sessions counted, its panels’ dates, and Cancel with
   assert.equal(d.statusLine({ status: 'signed' }, { version: 1, status: 'signed', client_signed_at: signedAt }), 'Version 1, signed');
   assert.equal(d.statusLine({ status: 'sent' }, { version: 2, status: 'sent' }), 'Version 2, not signed yet');
   assert.equal(d.agreementTitle('Sam Reid'), 'Sam’s agreement');
+  // An organisation by its whole name (Stage D, DG item 8).
+  assert.equal(d.agreementTitle('Harbour Rowing', { whole: true }), 'Harbour Rowing’s agreement');
 });

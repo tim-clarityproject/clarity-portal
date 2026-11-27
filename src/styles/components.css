@@ -2400,7 +2400,7 @@ span.tc-editable:focus-visible {
   transform: translateX(6px);
 }
 
-/* ---- "Your history" card: My Plans / My reviews ---- */
+/* ---- "Your history" card: My plans / My reviews ---- */
 
 .ui-root .hub-history-card {
   all: unset;

@@ -319,7 +319,7 @@ test('the tool has its tile in Reset, with its one time', () => {
   assert.ok(PIN_GROUPS.find((g) => g.title === 'Reset').tools.includes('wash'));
 });
 
-test('My Plans lists a wash by a name that is never what was typed, and no hub’s recent list shows it', () => {
+test('My plans lists a wash by a name that is never what was typed, and no hub’s recent list shows it', () => {
   assert.equal(washTitle(), 'Your wash');
   const data = { decisions: [], toolAnswers: [
     { id: 'w1', tool: 'emotional_wash', title: washTitle(), status: 'completed', createdAt: '2026-11-14T09:00:00.000Z', updatedAt: '2026-11-14T09:10:00.000Z', finishedAt: '2026-11-14T09:10:00.000Z' },

@@ -421,7 +421,7 @@ export function useTravelPlans(userId, moments = []) {
   return { state, plans: visiblePlans(state), checked };
 }
 
-/** Every plan kept for a person, for lists outside the plan's pages (My Plans). */
+/** Every plan kept for a person, for lists outside the plan's pages (My plans). */
 export function travelPlansOf(userId) {
   return visiblePlans(read(userId));
 }

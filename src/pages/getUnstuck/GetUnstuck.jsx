@@ -40,13 +40,13 @@ import { TOOL_CLOSED } from '../../content/pageLines/client';
 //   restored"), with the step the tool was left on (GuidedTool);
 // - in `decisions` (tool_type 'grow', as before) through the offline
 //   queue: as a draft when the tool is closed part-way ("Saved", and it
-//   shows in My Plans as a draft), and as finished by "Finish my plan".
+//   shows in My plans as a draft), and as finished by "Finish my plan".
 //   The row's id is made on the device, so every save writes the same row.
 //
 // Finishing lands on This week (the sprint page) with the counted
 // message, "1 next step is in this week" (M9, "In your sprint").
 //
-// A saved plan opens with its id in the page's state (My Plans) or as
+// A saved plan opens with its id in the page's state (My plans) or as
 // ?id=…; with neither, the tool carries on the unfinished one on this
 // device, or starts a new one.
 
@@ -86,14 +86,14 @@ export default function GetUnstuck() {
   const fromState = location.state?.decisionId;
   const fromQuery = new URLSearchParams(location.search).get('id');
   const asked = isId(fromState) ? fromState : isId(fromQuery) ? fromQuery : null;
-  // My Plans hands over the whole row; an older link only its id.
+  // My plans hands over the whole row; an older link only its id.
   const handed = asked && location.state?.id === asked && location.state?.form_data ? location.state : null;
   const [state, setState] = useState(() => {
     if (!asked) return { item: { id: newId(), plan: emptyPlan(), status: 'new', saved: false }, error: null };
     return { item: handed ? fromRow(handed) : null, error: null };
   });
 
-  // A row handed over as a draft may be older than the plan: My Plans shows
+  // A row handed over as a draft may be older than the plan: My plans shows
   // its device copy first, so a plan finished since (in another tab, or
   // offline and sent) is read again, and opens on Your plan when it is.
   const handedDraft = Boolean(handed) && fromRow(handed).status !== 'completed';
@@ -142,7 +142,7 @@ function Shell({ children }) {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="My Plans" /></div>
+        <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="My plans" /></div>
         <PageOpening title={TOOL_NAME} line={B3_LINES.getUnstuck} />
         {children}
       </div>
@@ -192,7 +192,7 @@ function Flow({ userId, user, asked, start }) {
   });
 
   // The unfinished plan this device carries on was saved as a draft when
-  // it was closed. If it has since been deleted (from My Plans, here or
+  // it was closed. If it has since been deleted (from My plans, here or
   // on another device) the tool starts a new one, rather than bring it back.
   const savedId = !asked && item.saved ? item.id : null;
   useEffect(() => {
@@ -240,7 +240,7 @@ function Flow({ userId, user, asked, start }) {
     draft.clear();
     clearGuideDraft(stepDraftKey(userId, asked));
   };
-  // Deleted (the quiet "Delete" of a plan opened from My Plans): nothing of
+  // Deleted (the quiet "Delete" of a plan opened from My plans): nothing of
   // it stays on this device, the copy the tool's own address carries on
   // included, so Home never offers a deleted plan to carry on.
   const deleted = () => {
@@ -273,7 +273,7 @@ function Flow({ userId, user, asked, start }) {
   // Deleted in another tab: said plainly, and nothing is saved over it.
   const goneElsewhere = (error) => error?.code === 'NOT_FOUND';
 
-  // Back to where they came from: My Plans for a saved plan, otherwise the Plan hub.
+  // Back to where they came from: My plans for a saved plan, otherwise the Plan hub.
   const leave = () => navigate(asked ? '/my-plans' : '/personal/plan', { replace: true });
 
   const close = async () => {
@@ -297,7 +297,7 @@ function Flow({ userId, user, asked, start }) {
     try {
       const status = statusOf(mine());
       const result = await save(now.plan, status);
-      // A plan opened from My Plans, or a finished one, is in the list
+      // A plan opened from My plans, or a finished one, is in the list
       // again; a new one keeps its place on this device, so the tool
       // carries on from here.
       if (asked || status === 'completed') forget();

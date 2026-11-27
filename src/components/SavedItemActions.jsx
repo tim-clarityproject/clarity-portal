@@ -7,7 +7,7 @@ import { Button, useToast } from './design';
 
 // Delete, inside the opened item (Tim, 5 Nov: "no icons in list rows; edit
 // and delete sit inside the item once opened"). An item opened from My
-// Plans or My Reviews carries its row (savedItemRef) in the address's
+// Plans or My reviews carries its row (savedItemRef) in the address's
 // state; this shows a quiet "Delete" for it. Opened any other way, it
 // shows nothing.
 //

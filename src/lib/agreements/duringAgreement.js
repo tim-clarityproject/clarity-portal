@@ -63,8 +63,11 @@ export const currentEnd = (agreement, terms) => agreement?.ends_on || (agreement
 /** The day an agreement ends early (End early: ending_on with who ended it), or null. */
 export const earlyEnd = (agreement) => (agreement?.ending_on && agreement?.ending_by ? agreement.ending_on : null);
 
-/** "Sam's agreement" (the page's title), with the right apostrophe. */
-export const agreementTitle = (name) => (name ? `${firstWord(name)}’s agreement` : 'The agreement');
+/**
+ * "Sam's agreement" (the page's title), with the right apostrophe. A person goes by their first name; an organisation
+ * by its whole name (`whole`: "Harbour Rowing’s agreement", never "Harbour’s"; Stage D, DG item 8).
+ */
+export const agreementTitle = (name, { whole = false } = {}) => (name ? `${whole ? String(name).trim() : firstWord(name)}’s agreement` : 'The agreement');
 
 /**
  * The agreement's own coaching sessions: the client's, from the day it starts (on the coach's clock), oldest first,

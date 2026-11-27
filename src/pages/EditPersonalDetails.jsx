@@ -258,7 +258,7 @@ export default function EditPersonalDetails() {
             <BackLink onClick={goBack} />
           </div>
 
-          <PageOpening title="Edit Profile" line={B1_LINES.profile} />
+          <PageOpening title="Edit profile" line={B1_LINES.profile} />
 
           {isLoading ? (
             <div className="edit-profile-loading"><Loading label="Loading your profile" /></div>

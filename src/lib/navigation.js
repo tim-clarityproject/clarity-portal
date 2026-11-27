@@ -229,7 +229,7 @@ export const TOOLS = {
  * Each ⓘ starts with one full sentence saying what the
  * area is (Tim, 2 Nov). The "most used move up" lines in M3 are left out
  * until the tiles really do move. `recent`: the last three saved items at
- * the foot of Plan, Review and Interpersonal (M3), from My Plans or My
+ * the foot of Plan, Review and Interpersonal (M3), from My plans or My
  * Reviews in that area, with a link to the whole list filtered to it.
  * Reset has none, so journal entries never show on a shared screen.
  */
@@ -254,7 +254,7 @@ export const HUBS = {
       { title: 'Plan ahead', tools: ['ipp', 'sprint', 'pmd', 'travel'] },
       { title: 'Decide', tools: ['grow', 'inv', 'time'] },
     ],
-    recent: { list: 'plans', area: 'personal', title: 'My Plans', to: '/my-plans?area=personal' },
+    recent: { list: 'plans', area: 'personal', title: 'My plans', to: '/my-plans?area=personal' },
   },
   reset: {
     title: 'Reset',
@@ -273,7 +273,7 @@ export const HUBS = {
     line: 'Turn what happened into better performance.',
     info: pageText.hubReview,
     groups: [{ title: 'Reflect', tools: ['rmd', 'debrief', 'aar', 'lbr', 'check'] }],
-    recent: { list: 'reviews', area: 'personal', title: 'My Reviews', to: '/my-reviews?area=personal' },
+    recent: { list: 'reviews', area: 'personal', title: 'My reviews', to: '/my-reviews?area=personal' },
   },
   interpersonal: {
     title: 'Interpersonal',
@@ -284,7 +284,7 @@ export const HUBS = {
       { title: 'Meetings and conversations', tools: ['meet', 'fb'] },
       { title: 'Your people', tools: ['team'] },
     ],
-    recent: { list: 'plans', area: 'interpersonal', title: 'My Plans', to: '/my-plans?area=interpersonal' },
+    recent: { list: 'plans', area: 'interpersonal', title: 'My plans', to: '/my-plans?area=interpersonal' },
   },
   strategic: {
     title: 'Strategic',
@@ -471,8 +471,8 @@ const PAGE_NAMES = [
   ['/about', 'About'],
   ['/about/how-it-works', 'How it works'],
   ['/how-it-works', 'How it works'],
-  ['/my-plans', 'My Plans'],
-  ['/my-reviews', 'My Reviews'],
+  ['/my-plans', 'My plans'],
+  ['/my-reviews', 'My reviews'],
   ['/daily-journals', 'Journal'],
   ['/performance-plan/build', 'Build my plan'],
   ['/performance-plan/edit', 'Edit my plan'],
@@ -644,7 +644,7 @@ export const MOVED = {
   '/review-section': '/personal/review',
   '/account-section': '/my-account',
   '/points-of-leverage': '/strategic',
-  // My decisions joined the one My Plans list (step 4). Its discard toast
+  // My decisions joined the one My plans list (step 4). Its discard toast
   // comes with it in the state.
   '/decision-history': '/my-plans',
   ...RENAMED,

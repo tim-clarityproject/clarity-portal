@@ -20,8 +20,8 @@ export const COUNT_FROM = WORDING_MAX - 20;
 export const ANSWER_MAX = 4000;
 
 export const TOOLS = [
-  { key: 'daily_plan', name: 'Daily plan', inSentence: 'the Daily plan' },
-  { key: 'daily_review', name: 'Daily review', inSentence: 'the Daily review' },
+  { key: 'daily_plan', name: 'Daily plan', inSentence: 'the daily plan' },
+  { key: 'daily_review', name: 'Daily review', inSentence: 'the daily review' },
   { key: 'weekly_debrief', name: 'Weekly performance debrief', inSentence: 'the weekly debrief' },
 ];
 export const TOOL_KEYS = TOOLS.map((t) => t.key);
@@ -74,7 +74,7 @@ export const HINTS = {
  * Writing rule 52: tools that look ahead never ask about stress, tension or
  * worry. Advice only, in the same quiet grey: the person owns their questions.
  */
-export const WORRY_LINE = 'The Daily plan looks ahead, so questions about stress or worry work better in the Daily review.';
+export const WORRY_LINE = 'The daily plan looks ahead, so questions about stress or worry work better in the daily review.';
 const WORRY = /\b(stress|worr|anxi|nervous|dread)/i;
 export const soundsLikeWorry = (text) => WORRY.test(String(text || ''));
 export const hintFor = (tool, wording) => (tool === 'daily_plan' && soundsLikeWorry(wording) ? WORRY_LINE : HINTS[tool] || '');

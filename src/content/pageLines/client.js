@@ -21,7 +21,7 @@ export function homeLine({ needs = 0, session = null, coached = false } = {}) {
     return `${needsPart}, and your coaching session is ${at}.`;
   }
   if (coached) return `${needsPart}, and no coaching session is booked yet.`;
-  return needs === 0 ? 'Here is your day: what to log, and what’s on today.' : `${needsPart}.`;
+  return needs === 0 ? 'Here’s your day: what to log, and what’s on today.' : `${needsPart}.`;
 }
 
 export const HOME = Object.freeze({
@@ -88,11 +88,11 @@ export const B1_LINES = Object.freeze({
   sprintYear: 'Here are your sprints this year, week by week.',
   recovery: 'Take a lighter week and come back stronger.',
   recoveryToday: 'Today is about getting back to your best.',
-  pop: 'This is your Personal Operating Plan, as you wrote it.',
-  popEdit: 'Edit your Personal Operating Plan.',
-  popHistory: 'Every version of your Personal Operating Plan is kept here.',
+  pop: 'This is your Individual Performance Plan, as you wrote it.',
+  popEdit: 'Edit your Individual Performance Plan.',
+  popHistory: 'Every version of your Individual Performance Plan is kept here.',
   popArchived: 'Plans you’ve put away stay here, and you can still read them.',
-  about: 'Here is who is behind The Clarity Portal, and why it exists.',
+  about: 'Here’s who’s behind The Clarity Portal, and why it exists.',
   profile: 'This is the name your coach and the portal use for you.',
   coaching: 'Your coaching agreements, sessions and invoices are all here.',
   coachingSessions: 'Your coaching sessions, past and coming, are all here.',
@@ -113,15 +113,15 @@ export const B3_LINES = Object.freeze({
   peakMoments: 'Plan how you’ll be at your best for the moments that matter most.',
   travelPlan: 'Arrive rested: when to sleep, eat and see daylight on your trip.',
   strategicAlignment: 'See how well a team’s work lines up with its strategy.',
-  feedbackSummary: 'Here is your script and the questions you’ll ask.',
-  preMortemSummary: 'Here is how this could go wrong, and what you’ll do about it.',
+  feedbackSummary: 'Here’s your script and the questions you’ll ask.',
+  preMortemSummary: 'Here’s how this could go wrong, and what you’ll do about it.',
   meetingSummary: 'Your meeting is on one page, ready to share.',
-  timeAuditSummary: 'Here is what you’ll stop, hand over or shrink, and the time it gives back.',
+  timeAuditSummary: 'Here’s what you’ll stop, hand over or shrink, and the time it gives back.',
   pressurePlanSummary: 'This is what you’ll do if the pressure comes.',
   missionReview: 'See how you’re living your Mission this month.',
-  getUnstuck: 'Here is your plan to get unstuck, from your goal to your first step.',
+  getUnstuck: 'Here’s your plan to get unstuck, from your goal to your first step.',
   teamCheck: 'See how your team is performing, person by person, and what you’ll do next.',
-  emotionalWash: 'Here is what happened, how it felt, and what you’ll do now.',
+  emotionalWash: 'Here’s what happened, how it felt, and what you’ll do now.',
 });
 
 /* ------------------------------------------------------------------ B2 (Stage B): the daily, weekly and monthly reviews */

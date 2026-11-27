@@ -561,10 +561,10 @@ part('old', async ({ browser, w, mode, tag }) => {
   pass(`${tag}: resource it never had reads Not rated`, (await text(page, '.hc-ptab')).includes('Not rated'));
   pass(`${tag}: nothing is written by opening it`, b.store.writes.length === 0);
   await page.screenshot({ path: join(out, `old-${w}-${mode}.png`) });
-  // From My Plans: its row opens the same version.
+  // From My plans: its row opens the same version.
   await page.goto(`${APP}/my-plans?area=strategic`);
   await page.getByText('Board of directors').first().click();
-  pass(`${tag}: My Plans opens it in the Health Check`, await onPage(page, new RegExp(`/strategic-alignment/version/${IDS.old}$`), 15000));
+  pass(`${tag}: My plans opens it in the Health Check`, await onPage(page, new RegExp(`/strategic-alignment/version/${IDS.old}$`), 15000));
   noProblems(b, `${tag}, old`);
   await b.ctx.close();
 });

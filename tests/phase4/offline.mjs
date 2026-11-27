@@ -9,7 +9,7 @@
 // In Chromium AND WebKit:
 // 1. After one online visit in a fresh profile, offline: the portal opens
 //    from the start URL "/" and shows Today, the sprint and the plan, plus
-//    Daily plan, Daily review, the debrief, My Plans, My Reviews and a
+//    Daily plan, Daily review, the debrief, My plans, My reviews and a
 //    tool never opened, all as last seen; a page never opened with no copy
 //    yet says calmly that it needs a connection the first time.
 // 2. Offline: a day's logging (Home), Daily plan and Daily review. The
@@ -318,7 +318,7 @@ for (const kind of BROWSERS) {
       return missing.length === 0 ? true : null;
     }, 45000, 500);
     const missing = await page.evaluate((want) => want.filter((k) => localStorage.getItem(k) == null), WARMED.map(cacheKey));
-    pass(`${tag}: after one visit the key pages' data is on the device (Home's day, the plan, the sprint, Plan and Daily review, the debrief, My Plans, My Reviews, the check-in, the dashboard and its patterns)`, Boolean(warmed), missing.join(', '));
+    pass(`${tag}: after one visit the key pages' data is on the device (Home's day, the plan, the sprint, Plan and Daily review, the debrief, My plans, My reviews, the check-in, the dashboard and its patterns)`, Boolean(warmed), missing.join(', '));
 
     if (part(1)) {
       await offline(true);
@@ -335,8 +335,8 @@ for (const kind of BROWSERS) {
       pass(`${tag}: offline, Daily review opens`, await openPage(page, '/daily-review', '.ds-guide-question'));
       const debrief = await openPage(page, '/performance-sprint/debrief', '.ds-page-title, .ds-guide-question');
       pass(`${tag}: offline, the debrief opens without a load error`, debrief && !(await bodyText(page)).includes('didn’t load') && !(await bodyText(page)).includes(FIRST_OPEN), ((await bodyText(page)).match(/.{0,120}(didn’t load|needs a connection the first time).{0,60}/s) || [''])[0]);
-      pass(`${tag}: offline, My Plans opens with its list`, await openPage(page, '/my-plans', '.ds-page-title') && !(await bodyText(page)).includes('didn’t load') && !(await bodyText(page)).includes(FIRST_OPEN));
-      pass(`${tag}: offline, My Reviews opens with its list`, await openPage(page, '/my-reviews', '.ds-page-title') && !(await bodyText(page)).includes('didn’t load') && !(await bodyText(page)).includes(FIRST_OPEN));
+      pass(`${tag}: offline, My plans opens with its list`, await openPage(page, '/my-plans', '.ds-page-title') && !(await bodyText(page)).includes('didn’t load') && !(await bodyText(page)).includes(FIRST_OPEN));
+      pass(`${tag}: offline, My reviews opens with its list`, await openPage(page, '/my-reviews', '.ds-page-title') && !(await bodyText(page)).includes('didn’t load') && !(await bodyText(page)).includes(FIRST_OPEN));
       pass(`${tag}: offline, a tool never opened (Get unstuck) opens`, await openPage(page, '/get-unstuck', '.ds-page-title, .ds-guide-question, h1'));
       // Its own code file comes from the device; never opened, it has no copy of its data yet.
       await openPage(page, '/life-balance-review', '.plan-page');

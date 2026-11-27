@@ -16,7 +16,7 @@ import { B1_LINES } from '../content/pageLines/client';
 import './hubs/clientPage.css';
 import { Loading, useToast } from '../components/design';
 
-// My Reviews (Phase 4 step 4; decisions part 1 "My Plans and My
+// My reviews (Phase 4 step 4; decisions part 1 "My plans and My
 // Reviews"): one list of every saved review across the three areas, old
 // and new, named in words (writing rule 60, src/lib/savedItems.js), with
 // the area behind the one Filter button. ?area= (and &tool=) opens it
@@ -25,7 +25,7 @@ import { Loading, useToast } from '../components/design';
 // Old reviews keep their own delete and edit (POP reviews read only, as
 // Phase 3 left them). Day reviews, debriefs and end-of-sprint reviews open
 // their own pages, where they are changed; they have no bin here. Journal
-// entries are listed too ("Journal saved. It is in My Reviews too."), as
+// entries are listed too ("Journal saved. It is in My reviews too."), as
 // "Journal entry", never their first words.
 
 export default function MyReviews() {
@@ -109,7 +109,7 @@ export default function MyReviews() {
 
       <div className="plan-page cp-page">
         <HistoryList
-          title="My Reviews"
+          title="My reviews"
           line={B1_LINES.myReviews}
           pageKey="myReviews"
           rows={rows}

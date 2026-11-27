@@ -4,7 +4,7 @@
 //
 // Where it is kept (no migration): one `decisions` row per version, tool
 // type 'strategic-alignment' (as the older pages saved it), its title the
-// team's name (so My Plans and the Strategic hub group it as before), and
+// team's name (so My plans and the Strategic hub group it as before), and
 // form_data in this shape:
 //
 //   {

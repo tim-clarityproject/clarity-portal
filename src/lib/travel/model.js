@@ -21,7 +21,7 @@ export const CAFFEINE_GONE = 'Caffeine steps removed from your plan.';
 export const CAFFEINE_BACK = 'Caffeine steps are back.';
 export const MEDICINES = 'This plan doesn’t cover medicines or supplements. Ask your GP or pharmacist about those.';
 export const OFFER_GONE = 'We won’t ask again for this trip.';
-/** A plan's name is the place, as My Plans lists it ("New York trip"). */
+/** A plan's name is the place, as My plans lists it ("New York trip"). */
 export const NAME_MAX = 120;
 
 const isDay = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -306,7 +306,7 @@ export function shortSpan(from, to) {
   return fm === tm ? `${fd} to ${td} ${MONTHS[tm - 1]}` : `${fd} ${MONTHS[fm - 1]} to ${td} ${MONTHS[tm - 1]}`;
 }
 
-/** The plan's name, as My Plans and Saved plans list it: "New York trip". */
+/** The plan's name, as My plans and Saved plans list it: "New York trip". */
 export const planTitle = (plan) => (plan.flightOut?.to?.city ? `${plan.flightOut.to.city} trip` : 'Your trip');
 
 /** The plan's days in the order M21 lists them, each with its line (the key moment's on its day). */

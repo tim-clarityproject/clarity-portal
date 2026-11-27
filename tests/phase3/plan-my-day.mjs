@@ -204,8 +204,11 @@ async function checkScreen(page, tag, { eye = true, oneTap = false } = {}) {
       .filter((el) => !el.matches('.ds-addsq, .ds-addsq *') && !el.querySelector('.ds-addsq'))
       .map((el) => {
         const r = el.getBoundingClientRect();
-        // A button's tap area may be wider than its look (padding or ::before); measure the element.
-        return { w: Math.round(r.width), h: Math.round(r.height), what: (el.getAttribute('aria-label') || el.textContent || el.tagName).trim().slice(0, 30) };
+        // A button's tap area may be wider than its look (padding or ::before); measure the element, or its invisible
+        // absolutely placed ::after where it draws one round itself ("Move to top" on a phone, Stage D; as calm-rules reads it).
+        const after = getComputedStyle(el, '::after');
+        const h = after.content !== 'none' && after.position === 'absolute' ? Math.max(r.height, parseFloat(after.height) || 0) : r.height;
+        return { w: Math.round(r.width), h: Math.round(h), what: (el.getAttribute('aria-label') || el.textContent || el.tagName).trim().slice(0, 30) };
       })
       .filter((b) => b.h < (phone ? 44 : 40) - 0.5);
     const page = root.querySelector('.ds-tool-step-body');
@@ -294,7 +297,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
 
   // 4. Do
   pass(`${tag}: Do`, (await heading(page)) === 'What will you do today?');
-  pass(`${tag}: last night's thing is first, carried over from Daily review`, ((await page.locator('.ds-answer--pick').first().textContent()) || '').includes(NIGHT) && ((await page.locator('.ds-answer--pick').first().textContent()) || '').includes('From Daily review'));
+  pass(`${tag}: last night's thing is first, carried over from Daily review`, ((await page.locator('.ds-answer--pick').first().textContent()) || '').includes(NIGHT) && ((await page.locator('.ds-answer--pick').first().textContent()) || '').includes('From your daily review'));
   pass(`${tag}: last night's note is a note, not a task`, (await page.locator('.ds-note').textContent()).includes(NOTE) && (await page.locator('.ds-note button, .ds-note [role=checkbox]').count()) === 0);
   await checkScreen(page, `${tag} do`);
   const pick = (name) => page.locator('.ds-answer--pick', { hasText: name }).first();

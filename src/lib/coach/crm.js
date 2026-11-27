@@ -15,6 +15,7 @@ import { addDays, CHANGED_ELSEWHERE_CODE, clean, IMPORT_FILE_MAX, cut, dayWords,
 import { dueOn, mobileForLinks, monthsOn, typedDay } from './network.js';
 import { stableId } from './googleBusy.js';
 import { countFigure } from './numbers.js';
+import { shownCallName, shownCallWords } from '../callNames.js';
 export { CRM_SAVE_PROBLEM, crmProblem, isRefusal, CHECK_IN_MONTHS, CHECK_IN_AHEAD, CHECK_INS_SWITCH, checkInsOn, checkInName, checkInsFor, checkInsDue, suggestedAsk, ASK_BUTTONS, checkInNote, checkInSend, checkInLater, checkInMeta, checkInsToSuggest, PAST_WORDS, checkInAsk } from './pastClients.js';
 export { todoEmailLine } from './todoEmail.js';
 
@@ -471,12 +472,12 @@ export function withNextStep(lead, typed) {
 
 /** "Where did they come from?" in Add lead, in order. */
 export const LEAD_SOURCES = [
-  ['referral', 'Referred by someone'], ['chemistry_page', 'Discovery call page'], ['connection_page', 'Connection Call page'],
+  ['referral', 'Referred by someone'], ['chemistry_page', 'Discovery call page'], ['connection_page', 'Connection call page'],
   ['other', 'Somewhere else'],
 ];
 const SOURCE_WORDS = {
-  referral: 'A referral', chemistry_page: 'Discovery call page', connection_page: 'Connection Call page', booking_page: 'A booking page', single_use_link: 'A booking link',
-  manual: 'Added by you', import: 'A spreadsheet', email: 'Your email', network: 'Your Network', other: 'Somewhere else',
+  referral: 'A referral', chemistry_page: 'Discovery call page', connection_page: 'Connection call page', booking_page: 'A booking page', single_use_link: 'A booking link',
+  manual: 'Added by you', import: 'A spreadsheet', email: 'Your email', network: 'Your network', other: 'Somewhere else',
 };
 /** Where a lead came from, in words. */
 export const sourceWords = (lead) => SOURCE_WORDS[lead?.source] || SOURCE_WORDS.other;
@@ -573,11 +574,11 @@ export function leadEvent({ id, lead, kind, nowIso, todayKey, title, detail = nu
 export const withContact = (lead, event) => (CONTACT_KINDS.includes(event?.kind) && event.happened_on && (!lead.last_contact_on || lead.last_contact_on < event.happened_on) ? { ...lead, last_contact_on: event.happened_on } : lead);
 
 /** "Discovery call, 30 minutes", or "Call, 30 minutes" when it isn't one of the call types. */
-export const callTitle = (callName, minutes) => `${clean(callName) || 'Call'}${minutes ? `, ${minutes} minutes` : ''}`;
+export const callTitle = (callName, minutes) => `${clean(shownCallName(callName)) || 'Call'}${minutes ? `, ${minutes} minutes` : ''}`;
 /** "Leadership Accelerator, £13,500 + VAT." */
 export const proposalDetail = (name, amount, currency = 'GBP') => `${[clean(name), amount ? `${moneyWords(amount, currency)} + VAT` : ''].filter(Boolean).join(', ')}.`;
 /** The two lines a booking writes on its lead (the database writes them itself once 052 is there). */
-export const BOOKING_LINES = (callName) => ({ first: { title: 'First contact', detail: `From the ${clean(callName) || 'booking'} page.` }, booked: { title: `Booked a ${clean(callName) || 'call'}`, detail: `From your ${clean(callName) || 'booking'} page.` } });
+export const BOOKING_LINES = (name) => { const callName = shownCallName(name); return ({ first: { title: 'First contact', detail: `From the ${clean(callName) || 'booking'} page.` }, booked: { title: `Booked a ${clean(callName) || 'call'}`, detail: `From your ${clean(callName) || 'booking'} page.` } }); };
 
 /**
  * Log a call: the timeline line, the lead with what was learned, its next
@@ -655,8 +656,10 @@ export function leadTimeline(events, { emails = [], lead = null, todayKey, callN
   for (const e of newest) {
     const email = e.kind === 'email' && e.data?.email_id ? mail.get(e.data.email_id) || null : null;
     if (email?.hidden) continue;
-    let title = clean(e.title);
-    let lines = String(e.detail || '').split(/\n+/).map((s) => s.trim()).filter(Boolean);
+    // A call's or booking's saved line reads its call's name as people read it now ("Connection call"; display only).
+    const callLine = e.kind === 'call' || e.kind === 'booking' || e.kind === 'first_contact';
+    let title = callLine ? shownCallWords(clean(e.title)) : clean(e.title);
+    let lines = String(e.detail || '').split(/\n+/).map((s) => s.trim()).filter(Boolean).map((s) => (callLine ? shownCallWords(s) : s));
     let tag = '';
     if (e.kind === 'proposal_opened') {
       const k = `${e.lead_id}|${lower(e.data?.name)}`;
@@ -1129,7 +1132,7 @@ export const todoDayChoices = (trigger) => TODO_DAYS.filter((d) => d >= 0 || tri
  * @param {{ stages?: object[], callTypes?: object[] }} ctx
  */
 export function automationSentence(a, { stages = [], callTypes = [] } = {}) {
-  const call = (callTypes || []).find((c) => c.key === a.call_type_key)?.name;
+  const call = shownCallName((callTypes || []).find((c) => c.key === a.call_type_key)?.name);
   const when = {
     lead_stage: `a lead moves to ${stageName(stages, a.trigger_stage_id) || 'a stage'}`,
     proposal_opened: `a proposal is opened ${a.trigger_count === 1 ? 'once' : `${a.trigger_count || 3} times`}`,

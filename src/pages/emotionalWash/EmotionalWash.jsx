@@ -47,7 +47,7 @@ import { TOOL_CLOSED } from '../../content/pageLines/client';
 // (043 refuses it), and its name in the lists is never what was typed.
 // Once finished, its trashed thoughts are let go for good.
 //
-// A saved wash opens with its id in the page's state (My Plans) or as
+// A saved wash opens with its id in the page's state (My plans) or as
 // ?id=…; with neither, the tool carries on the unfinished one on this
 // device, or starts a new one.
 
@@ -123,7 +123,7 @@ function Shell({ children }) {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="My Plans" /></div>
+        <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="My plans" /></div>
         <PageOpening title={TOOL_NAME} line={B3_LINES.emotionalWash} />
         {children}
       </div>
@@ -253,7 +253,7 @@ function Flow({ userId, user, asked, start }) {
     return result;
   };
 
-  // Back to where they came from: My Plans for a saved wash, otherwise Reset.
+  // Back to where they came from: My plans for a saved wash, otherwise Reset.
   const leave = () => navigate(asked ? '/my-plans' : '/personal/reset', { replace: true });
 
   const close = async () => {
@@ -279,7 +279,7 @@ function Flow({ userId, user, asked, start }) {
       const wash = tidy(own.wash);
       // A finished wash stays finished only while it is still whole.
       const status = own.status === 'completed' && isComplete(wash) ? 'completed' : 'draft';
-      // A finished wash, or one opened from My Plans, is in the list: the
+      // A finished wash, or one opened from My plans, is in the list: the
       // next visit starts a new one. An unfinished new one keeps its place
       // on this device, so the tool carries on from here.
       const leaves = Boolean(asked) || status === 'completed';

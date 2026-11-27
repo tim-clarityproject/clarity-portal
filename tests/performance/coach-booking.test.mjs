@@ -10,6 +10,8 @@ import assert from 'node:assert/strict';
 import * as cal from '../../src/lib/coach/calendar.js';
 import { instantAt, onQuarterHour, wallClock } from '../../src/lib/time/index.js';
 import { bookingConfirmedEmail } from '../../src/lib/email/emails.js';
+import { shownCallName, shownCallWords } from '../../src/lib/callNames.js';
+import { BOOKING_LINES, callTitle } from '../../src/lib/coach/crm.js';
 import { renderEmail } from '../../src/lib/email/template.js';
 import { claimMoment, emailFor, minutesOf, readRequest } from '../../api/_routes/booking-email.js';
 
@@ -37,9 +39,9 @@ test('a key is only ever a uuid, so the database is never asked about anything e
   for (const bad of ['', 'chemistry', '../x', '3f1c0a52', null]) assert.equal(cal.isBookingKey(bad), false);
 });
 
-test('a coach starts with a Discovery call and a Connection Call, each with its own page, and never a second of either', () => {
+test('a coach starts with a Discovery call and a Connection call, each with its own page, and never a second of either', () => {
   const made = cal.startingCallTypes({ coachId: ME, newId });
-  assert.deepEqual(made.map((t) => [t.key, t.name, t.minutes, t.notice_hours, t.ahead_weeks]), [['chemistry', 'Discovery call', 30, 24, 4], ['connection', 'Connection Call', 30, 48, 2]]);
+  assert.deepEqual(made.map((t) => [t.key, t.name, t.minutes, t.notice_hours, t.ahead_weeks]), [['chemistry', 'Discovery call', 30, 24, 4], ['connection', 'Connection call', 30, 48, 2]]);
   assert.notEqual(made[0].page_key, made[1].page_key);
   assert.deepEqual(cal.startingCallTypes({ coachId: ME, newId, have: [made[0]] }).map((t) => t.key), ['connection']);
   assert.deepEqual(cal.startingCallTypes({ coachId: ME, newId, have: made }), []);
@@ -268,8 +270,9 @@ test('the confirmation email gives the time in the reader’s own zone (12-hour 
   assert.ok(coaching.text.includes('Your coaching session with Tim is booked for Thu 26 Nov at 15:00 UK time, for 60 minutes on Zoom.'));
   assert.match(us.text, /https:\/\/portal\.theclarityproject\.co\.uk\/book\/mine\/k/);
   const uk = renderEmail(bookingConfirmedEmail({ name: 'Nadia Osei', callName: 'Connection Call', coach: 'Tim', at: at('2026-11-24', '14:15'), zone: LON, mineLink: 'https://portal.theclarityproject.co.uk/book/mine/k', moved: true, now: NOW }));
-  assert.equal(uk.subject, 'Your Connection Call has moved to Tue 24 Nov at 14:15 UK time');
-  assert.ok(uk.text.includes('Your Connection Call with Tim is now on Tue 24 Nov at 14:15 UK time.'));
+  // The stored default 'Connection Call' (051, 066) reads "Connection call" (Tim, 27 Nov).
+  assert.equal(uk.subject, 'Your Connection call has moved to Tue 24 Nov at 14:15 UK time');
+  assert.ok(uk.text.includes('Your Connection call with Tim is now on Tue 24 Nov at 14:15 UK time.'));
   assert.doesNotMatch(uk.text, /\bEST\b|\bGMT\b|\bBST\b/);
 });
 
@@ -288,4 +291,16 @@ test('the email server takes only a guest’s own key, claims one send for each 
   assert.equal(minutesOf('2026-11-23T14:15:00Z', null), null);
   assert.match(emailFor({ booking: { ...booking, ends_at: '2026-11-23T14:45:00Z' }, callName: 'Discovery call', coach: 'Tim', origin: 'https://portal.theclarityproject.co.uk', kind: 'booked', now: NOW }).text, /for 30 minutes on Zoom\./);
   assert.doesNotMatch(email.html, /javascript:/);
+});
+
+test('the stored call type names read as people read them now (Tim, 27 Nov): display only', () => {
+  assert.equal(shownCallName('Connection Call'), 'Connection call');
+  assert.equal(shownCallName(' Connection Calls '), 'Connection calls');
+  assert.equal(shownCallName('Chemistry Call'), 'Discovery call');
+  for (const typed of ['Connection call', 'Discovery call', 'CONNECTION CALL', 'My Connection Call', 'Intro chat', '']) assert.equal(shownCallName(typed), typed);
+  assert.equal(shownCallName(null), null);
+  assert.equal(shownCallWords('Booked a Connection Call'), 'Booked a Connection call');
+  assert.equal(shownCallWords('From your Connection Call page.'), 'From your Connection call page.');
+  assert.equal(callTitle('Connection Call', 30), 'Connection call, 30 minutes');
+  assert.deepEqual(BOOKING_LINES('Connection Call').booked, { title: 'Booked a Connection call', detail: 'From your Connection call page.' });
 });

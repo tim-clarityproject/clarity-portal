@@ -68,7 +68,7 @@ import './teamCheck.css';
 //   sourceId            the saved item's id, for the to-dos made from it
 //   pdf                 the "Download my PDF" link in the results' bottom bar
 //   onResults()         the results are showing with every answer in: the page saves it
-//   actions             “Delete”, for a check opened from My Plans: under the
+//   actions             “Delete”, for a check opened from My plans: under the
 //                       results, and under the list while it is still a draft
 //                       (`actionsFirst`), which opens there
 //   draftKey, initialStep, onClose   as GuidedTool's

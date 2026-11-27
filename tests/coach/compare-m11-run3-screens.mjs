@@ -94,7 +94,7 @@ export const EVERYWHERE = {
     [/^name: .+\. Jump to a date$/, 'the dates open the mini month (calendar-parity.md: jump to a date)', null, { quiet: true, say: 'Jump to a date' }],
     [/^name: Second time column, .+\. Edit$/, '“Edit”, never “Choose” (5e rule 29am)', null, { quiet: true, say: 'Second time column, Chicago. Edit' }],
     [/^Show the whole day$/, 'the grid shows 08:00 to 21:00, opened out for what is on it; this link shows midnight to midnight (builder C’s report)', null, { quiet: true, say: 'Show the whole day' }],
-    seeded(/^(Zoom|Zoom, \d\d:\d\d to \d\d:\d\d|Call Priya about the keynote|Travel|15 minutes|30 minutes|1 hour|To-do|Chemistry Call|Connection Call)$/, 'the seed also holds the day seed’s sessions and a second placed to-do, so some lines show more often than in M11', { quiet: true, say: 'the day seed’s extra calls' }),
+    seeded(/^(Zoom|Zoom, \d\d:\d\d to \d\d:\d\d|Call Priya about the keynote|Travel|15 minutes|30 minutes|1 hour|To-do|Chemistry Call|Connection call)$/, 'the seed also holds the day seed’s sessions and a second placed to-do, so some lines show more often than in M11', { quiet: true, say: 'the day seed’s extra calls' }),
     seeded(/^(08:30|11:30|12:30|Ruth Adeyemi|Nadia Osei|Group)$/, 'M11’s Maya has a quieter week of her own; the test’s associate keeps the owner’s', { who: 'associate', quiet: true, say: 'the owner’s week on the associate’s calendar' }),
     seeded(/^Sam Okafor (in \d minutes|is starting now)$/, 'the test’s call is Sam’s for both roles', { who: 'associate', quiet: true, say: 'Sam’s call on the associate’s bar' }),
     ['Working hours', 'on a phone the bar holds only the date and Book a call, so Working hours is a link at the foot (the prompt: working hours are set on the calendar; a day at a time on a phone)', null, { on: 'p', quiet: true, say: 'Working hours, at the foot on a phone' }],
@@ -125,7 +125,7 @@ export const ROWS = [
     ],
     added: [
       [new RegExp(`^${D.toUpperCase()} \\d+ (NOV|DEC)$`), TIM(SCHED), null, { say: 'the days after Friday' }],
-      seeded(/^(\d\d:\d\d|All day|Leading Teams conference|In person|Chemistry Call|Connection Call)$/, 'the rows of the days M11 doesn’t list, the seed’s two-day conference among them', { say: 'later days’ rows' }),
+      seeded(/^(\d\d:\d\d|All day|Leading Teams conference|In person|Chemistry Call|Connection call)$/, 'the rows of the days M11 doesn’t list, the seed’s two-day conference among them', { say: 'later days’ rows' }),
     ],
     moved: [[/./, 'with Monday left out and later weeks added, the lines both show fall in other places', null, { quiet: true, say: 'the order of the Schedule’s rows' }]] },
   { name: 'Calendar, one day', m11: 'calday', built: 'cal-day', moved: [GRID_ORDER] },

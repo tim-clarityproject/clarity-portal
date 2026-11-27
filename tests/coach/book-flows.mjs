@@ -315,7 +315,7 @@ async function run() {
     await press(page.locator('.cc-setrow--edit'), page, 'Save');
     const settings = (await rowsNow('coach_settings'))[0];
     pass(`${tag}: a limit is saved as a number`, settings?.booking?.gap === 20 && /20 minutes/.test(await page.locator('.cc-setrow', { hasText: 'Gap between calls' }).textContent()), JSON.stringify(settings?.booking?.gap));
-    pass(`${tag}: each call type has its own page and link`, (await page.locator('.cc-setrow', { hasText: 'Discovery call page' }).count()) === 1 && (await page.locator('.cc-setrow', { hasText: 'Connection Call page' }).count()) === 1 && /open/.test(await page.locator('.cc-setrow', { hasText: 'Single-use links' }).textContent()));
+    pass(`${tag}: each call type has its own page and link`, (await page.locator('.cc-setrow', { hasText: 'Discovery call page' }).count()) === 1 && (await page.locator('.cc-setrow', { hasText: 'Connection call page' }).count()) === 1 && /open/.test(await page.locator('.cc-setrow', { hasText: 'Single-use links' }).textContent()));
     await t.done();
   }
 
@@ -350,7 +350,7 @@ async function run() {
     const a = await guestPage(store);
     await a.open(`/book/${CAL.chemKey}`);
     const start = await a.words();
-    pass(`${tag}: the Discovery call page shows its own call only, with the coach's full name above the title only when it's set (never "With …")`, /Discovery call/.test(start) && !/Connection Call/.test(start) && /30-minute call on Zoom/.test(start) && !/With Alex|With Maya/.test(start) && /Alex Morgan|Maya Collins/i.test(start));
+    pass(`${tag}: the Discovery call page shows its own call only, with the coach's full name above the title only when it's set (never "With …")`, /Discovery call/.test(start) && !/Connection call/.test(start) && /30-minute call on Zoom/.test(start) && !/With Alex|With Maya/.test(start) && /Alex Morgan|Maya Collins/i.test(start));
     pass(`${tag}: it never shows the calendar`, !/Training|Sam Okafor|Dentist|Swimming/.test(start));
     await zoneTo(a.page, 'New York');
     const firstTime = a.page.locator('.cc-book-time').first();
@@ -406,7 +406,7 @@ async function run() {
 
     // ---- early and late times, and a public holiday said first
     await a.open(`/book/${CAL.connKey}`);
-    pass(`${tag}: the Connection Call page never shows the Discovery call`, /Connection Call/.test(await a.words()) && !/Discovery call/.test(await a.words()));
+    pass(`${tag}: the Connection call page never shows the Discovery call`, /Connection call/.test(await a.words()) && !/Discovery call/.test(await a.words()));
     await zoneTo(a.page, 'Sydney');
     const hiddenFirst = await a.page.locator('.cc-book-time').allTextContents();
     await a.page.getByRole('button', { name: 'Show early and late times', exact: true }).click(); await settle(a.page, 400);

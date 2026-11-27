@@ -131,7 +131,7 @@ import CommitTodo from './CommitTodo';
 // the coach's side is Phase 6a.
 //
 // /check-in             this month's (its results once finished)
-// /check-in/2026-10     a month's results (a saved item in My Reviews)
+// /check-in/2026-10     a month's results (a saved item in My reviews)
 // /check-in/2026-10/answers  change a month's answers (experience rule 7)
 
 export const CHECKIN_CACHE = 'checkin-page';

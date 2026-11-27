@@ -57,7 +57,8 @@
 //                 isn't there, or wider than the box)
 //   edge          a page opening not on the frame's left edge: the frame's padding on a laptop, 20px under 1024px (F15)
 //   progress      a tool's progress line with less than 8% filled: step 1 shows a short filled start (P15)
-//   bare-zero     also a nought with its unit in words ("0 minutes") as a headline figure (F8)
+//   bare-zero     also a nought with its unit in words ("0 minutes") as a headline figure (F8); a price among prices
+//                 (data-price: the Free plan's "£0" beside the others, M28 s-levels) is not one (Stage D)
 //   coral-fill    any coral background, a mistake's included: a mistake is one coral line of words (Tim, 26 Nov, 15:55)
 //
 // Tim's walk fixes (27 Nov):
@@ -66,7 +67,7 @@
 //   mission       (changed) on a laptop no My Mission box in the header; the Mission line under the title on one 13px line
 //                 with "…", a hairline, 24px to what follows; never under 1024px (item 5)
 //   squeeze       two columns with the main one under 560px; a row's name, a figure's label, a section label or a card
-//                 narrower than its longest word (item 17)
+//                 narrower than its longest word (item 17); an email address isn't a word here: it breaks (Stage D)
 //
 // The Breathe tools (Tim, 26 Nov, decisions part 12; NEXT-BREATHE-TOOLS.md "Checks"), on any screen with the orb
 // (Breathe and Sleep wind down):
@@ -438,7 +439,9 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
     if (!own || el.closest(`${TITLE}, svg, input, .ds-code, [class*="code-sq"]`) || !vis(el)) continue;
     const fs = parseFloat(getComputedStyle(el).fontSize);
     if (fs < 23.5 || fs > 25.5 * scale) continue;
-    if (/^[£$€]?\s*0+(?:[.,]0+)?\s*%?$/.test(own) || /^0+\s+[a-z]+$/i.test(own)) say('bare-zero', `a bare "${own}" as a headline figure (say it in words: Figure's \`empty\`)`);
+    // A price set beside other prices (a plan's "£0" among "£16/month" and "£40/month", as M28 draws s-levels) is a
+    // price, not a count that says nothing yet: marked data-price (DG, Stage D item 4).
+    if ((/^[£$€]?\s*0+(?:[.,]0+)?\s*%?$/.test(own) || /^0+\s+[a-z]+$/i.test(own)) && !el.closest('[data-price]')) say('bare-zero', `a bare "${own}" as a headline figure (say it in words: Figure's \`empty\`)`);
     const card = el.closest('.ds-card');
     if (card && /\d/.test(own)) { if (!perCard.has(card)) perCard.set(card, []); perCard.get(card).push(own); }
   }
@@ -698,7 +701,7 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
   // focus: a tool runs in focus mode, with no menu, header, My Mission or Breathe.
   const path = (route || '').split(/[?#]/)[0].replace(/\/$/, '') || null;
   // The tools' addresses (inside the function: the page receives it as text, so nothing outside travels with it).
-  const TOOL_ROUTES = tools || ['/daily-journal', '/daily-plan', '/plan-meeting', '/pressure-plan', '/time-audit', '/pre-mortem', '/pre-mortem/risks', '/pre-mortem/plan', '/give-difficult-feedback', '/give-difficult-feedback/questions', '/breathe', '/sleep-wind-down'];
+  const TOOL_ROUTES = tools || ['/daily-journal', '/daily-plan', '/plan-meeting', '/pressure-plan', '/time-audit', '/pre-mortem', '/give-difficult-feedback', '/give-difficult-feedback/questions', '/breathe', '/sleep-wind-down'];
   // A client still being prepared sees the preparing page at a tool's address (walk item 15): no tool, so no focus mode.
   if (path && TOOL_ROUTES.includes(path) && !document.querySelector('[data-preparing]')) {
     const shown = ['.ds-frame-side .ds-mi', '.ds-mbtn', '.hdr-mbox', '.ds-orb--fixed .ds-breathe'].filter((sel) => [...document.querySelectorAll(sel)].some(seen));
@@ -807,7 +810,8 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
       const st = getComputedStyle(el);
       canvas.font = `${st.fontStyle} ${st.fontWeight} ${st.fontSize} ${st.fontFamily}`;
       const ls = parseFloat(st.letterSpacing) || 0;
-      const ws = (el.innerText || '').split(/\s+/).filter((w) => w.length >= 4 && /\p{L}/u.test(w));
+      // An email address may break anywhere (.ds-address; Stage D, DG item 6), so it never sets a column's width.
+      const ws = (el.innerText || '').split(/\s+/).filter((w) => w.length >= 4 && /\p{L}/u.test(w) && !/^[^@]+@[^@]+$/.test(w));
       let best = { w: 0, word: '' };
       for (const word of ws) {
         const shown = st.textTransform === 'uppercase' ? word.toUpperCase() : word;

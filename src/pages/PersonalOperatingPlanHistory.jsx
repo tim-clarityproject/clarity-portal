@@ -85,9 +85,9 @@ export default function PersonalOperatingPlanHistory() {
         {isLoading ? (
           <Loading label="Loading your version history" className="ds-loading--page" />
         ) : !missionId ? (
-          <EmptyState question="You do not have a personal operating plan yet." />
+          <EmptyState question="You don’t have an Individual Performance Plan yet." />
         ) : versions.length === 0 ? (
-          <EmptyState question="No Versions yet. Your first one is created when you save your plan." />
+          <EmptyState question="No versions yet. Your first one is created when you save your plan." />
         ) : (
           versions.map((version, index) => {
             const reviewedAt = reviewedDates[version.id];
@@ -108,7 +108,7 @@ export default function PersonalOperatingPlanHistory() {
                   variant="outline"
                   onClick={() => navigate(`/personal-operating-plan-history/${version.major}.${version.minor}`, { state: { missionId } })}
                 >
-                  {isCurrent ? 'View' : 'View Version'}
+                  {isCurrent ? 'View' : 'View version'}
                 </Button>
               </div>
             );

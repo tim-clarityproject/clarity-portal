@@ -57,8 +57,21 @@ const NEW_PHONE_KEY = 'KRUGKIDROVUWG2ZAMJZG653OEBTG66BA'; // an invented base-32
 const SAM = { id: '00000000-0000-4000-8000-0000000005a0', email: 'sam.carter@harbourlane.co', first: 'Sam' };
 const path = (page) => new URL(page.url()).pathname;
 const squash = (t) => String(t || '').replace(/\s+/g, ' ').trim();
-const words = (page, sel = '.si-col') => page.locator(sel).first().innerText().then(squash).catch(() => '');
-const message = (page) => page.locator('.si-err').first().innerText().then((t) => squash(t).replace(/^! /, '')).catch(() => '');
+// The page's words once they have settled: since Polish 1 a new screen may still be drawing just after its address
+// changes (the previous screen's words were read), so it reads until two readings 300ms apart agree.
+const wordsNow = (page, sel) => page.locator(sel).first().innerText().then(squash).catch(() => '');
+const words = async (page, sel = '.si-col') => {
+  let last = await wordsNow(page, sel);
+  for (let n = 0; n < 15; n += 1) {
+    await sleep(300);
+    const now = await wordsNow(page, sel);
+    if (now === last && now) return now;
+    last = now;
+  }
+  return last;
+};
+// The mistake line: .si-err, or the code squares' own line (.si-code-msg, Polish 1: the six squares' message under them).
+const message = (page) => page.locator('.si-err, .si-code-msg:not(:empty)').first().innerText().then((t) => squash(t).replace(/^! /, '')).catch(() => '');
 const codeBox = (page) => page.getByRole('textbox', { name: 'Code', exact: true });
 const press = (page, name) => page.getByRole('button', { name, exact: true }).click();
 const verifies = (world) => world.calls.filter((c) => /\/auth\/v1\/factors\/:id\/verify$/.test(c)).length;
@@ -93,7 +106,10 @@ async function signIn(page, world, at = '/coach/sign-in') {
 async function giveCode(page, key, button = 'Sign in') {
   await codeBox(page).waitFor({ timeout: 15000 });
   await codeBox(page).fill(totp(key));
-  await press(page, button);
+  // Polish 1 (sign-in rule 24's note): the sixth digit sends the code, on Enter your code (no Sign in button any more),
+  // Set up and Sign-in security alike, so nothing is pressed after it (pressing again would send the emptied squares).
+  // `button` is kept for the callers' reading: the button the code once went with.
+  void button;
 }
 
 /** The key as the page shows it, typed into the "app" (the QR is read back by coach-auth.mjs). */
@@ -108,9 +124,12 @@ async function codesOnPage(page) {
   return page.locator('.si-rc li').allInnerTexts();
 }
 
+// Polish 1, Stage B ("Frame and menu"): on a laptop Sign out is in the frame's menu column, always in view; under 1024px
+// the header's crosshair (Menu) opens the phone menu first.
 async function signOut(page) {
-  await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click();
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  const out = page.getByRole('button', { name: 'Sign out', exact: true });
+  if (!(await out.first().isVisible().catch(() => false))) await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).locator('visible=true').first().click();
+  await out.locator('visible=true').first().click();
 }
 
 const signedOutLine = SIGNED_OUT_BY_RESET.join(' ');
@@ -133,9 +152,9 @@ if (PARTS.includes('first')) {
     pass(`${tag}: typing /coach before set-up is done returns to set-up`, (await waitPath(page, /set-up$/)) === '/coach/sign-in/set-up', path(page));
     const phone = await keyOnPage(page);
     pass(`${tag}: coming back starts again with a new key (the unfinished one is taken off)`, phone && phone !== key && world.factors.length === 1 && world.factors[0].status === 'unverified', `${world.factors.length} factors`);
+    // The sixth digit sends it (Polish 1, sign-in rule 24's note): pressing Turn it on as well would send the emptied squares.
     await codeBox(page).fill('000000');
-    await press(page, 'Turn it on');
-    await page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+    await page.waitForSelector('.si-err, .si-code-msg:not(:empty)', { timeout: 10000 }).catch(() => null);
     pass(`${tag}: a wrong code: "That code didn't work. Check the time on your phone and try again."`, (await message(page)) === CODE_DIDNT_WORK.join(' '));
     await giveCode(page, phone, 'Turn it on');
     pass(`${tag}: Turn it on, with the code from the key typed into the app, leads to the codes`, (await waitPath(page, /recovery-codes$/)) === '/coach/sign-in/recovery-codes', path(page));
@@ -182,7 +201,8 @@ if (PARTS.includes('second')) {
     const { ctx, page, errors } = await device(world, { width, mode });
     await signIn(page, world);
     pass(`${tag}: after the password, the code is asked on the new computer`, (await waitPath(page, /\/code$/)) === '/coach/sign-in/code', path(page));
-    pass(`${tag}: "You're only asked on a new phone or computer."`, (await words(page)).includes('You’re only asked on a new phone or computer.'));
+    // Polish 1, Stage A (the 25 Nov example's code screen) replaced M26's line with this one.
+    pass(`${tag}: "Enter the 6-digit code from your authenticator app."`, /Enter the 6.digit code from your authenticator app\./.test(await words(page, 'body')), await words(page, 'body'));
     await giveCode(page, M26_KEY);
     pass(`${tag}: the code from the phone opens the coach portal`, (await waitPath(page, /^\/coach$/)) === '/coach' && verifies(world) === 1, path(page));
     await page.reload();
@@ -243,7 +263,7 @@ if (PARTS.includes('lost')) {
     pass(`${tag}: the line names the owner from the data, with the video call, and offers no email`, lost.includes('Lost your codes too? Ask Tim to reset your authenticator.') && lost.includes('video call') && !/email/i.test(lost));
     await page.getByLabel('Recovery code').fill('zzzz-zzzz');
     await press(page, 'Sign in');
-    await page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+    await page.waitForSelector('.si-err, .si-code-msg:not(:empty)', { timeout: 10000 }).catch(() => null);
     pass(`${tag}: a wrong code: one calm line that names no part`, (await message(page)) === RECOVERY_DIDNT_WORK.join(' '));
     await page.getByLabel('Recovery code').fill('K7Q2 9FMD');
     await press(page, 'Sign in');
@@ -256,7 +276,7 @@ if (PARTS.includes('lost')) {
     pass(`${tag}: and Supabase was asked to end the others, never this one (scope others)`, world.calls.includes('POST /auth/v1/logout'), world.calls.filter((c) => /logout/.test(c)).join(', '));
     await lostPhone.page.reload();
     await waitPath(lostPhone.page, /^\/coach\/sign-in$/);
-    await lostPhone.page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+    await lostPhone.page.waitForSelector('.si-err, .si-code-msg:not(:empty)', { timeout: 10000 }).catch(() => null);
     pass(`${tag}: the lost phone is signed out of the coach portal and told why`, path(lostPhone.page) === '/coach/sign-in' && (await message(lostPhone.page)) === recoveryLine, `${path(lostPhone.page)} "${await message(lostPhone.page)}"`);
     pass(`${tag}: nothing of the lost phone's sign-in is left on it`, !(await tokenOf(lostPhone.page)));
     await lostPhone.ctx.close();
@@ -277,13 +297,13 @@ if (PARTS.includes('lost')) {
     await signIn(other.page, world);
     pass(`${tag}: another computer, signed in after the code, is asked for its 6-digit code`, (await waitPath(other.page, /\/code$/)) === '/coach/sign-in/code', `${path(other.page)} "${await message(other.page)}"`);
     await giveCode(other.page, M26_KEY);
-    await other.page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+    await other.page.waitForSelector('.si-err, .si-code-msg:not(:empty)', { timeout: 10000 }).catch(() => null);
     pass(`${tag}: the lost phone's code no longer works`, path(other.page) === '/coach/sign-in/code' && (await message(other.page)) === CODE_DIDNT_WORK.join(' '), path(other.page));
     await other.page.getByRole('link', { name: 'Lost your authenticator app?' }).click();
     await other.page.getByRole('textbox', { name: 'Recovery code' }).waitFor({ timeout: 15000 }).catch(() => null);
     await other.page.getByLabel('Recovery code').fill('k7q2-9fmd');
     await press(other.page, 'Sign in');
-    await other.page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+    await other.page.waitForSelector('.si-err, .si-code-msg:not(:empty)', { timeout: 10000 }).catch(() => null);
     pass(`${tag}: the used recovery code is refused, with the same words as a wrong one`, path(other.page) === '/coach/sign-in/help' && (await message(other.page)) === RECOVERY_DIDNT_WORK.join(' ') && world.left() === 9);
     await other.page.goto(`${APP}/coach/sign-in/code`);
     await giveCode(other.page, phone);
@@ -324,7 +344,7 @@ if (PARTS.includes('others')) {
   pass(`${tag}: its token, still within its hour, now reads no coach data (055's marker)`, Array.isArray(after) && after.length === 0, JSON.stringify(after)?.slice(0, 80));
   await lostPhone.page.reload();
   await waitPath(lostPhone.page, /^\/coach\/sign-in$/);
-  await lostPhone.page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+  await lostPhone.page.waitForSelector('.si-err, .si-code-msg:not(:empty)', { timeout: 10000 }).catch(() => null);
   pass(`${tag}: and the coach portal lets it go, saying why`, path(lostPhone.page) === '/coach/sign-in' && (await message(lostPhone.page)) === recoveryLine, `${path(lostPhone.page)} "${await message(lostPhone.page)}"`);
   // The coach carries on: the sign-in that used the code is still good (set-up is walked in "lost").
   const mine = world.rpc('coach_auth_state', null, claimsOf(await tokenOf(page))).body;
@@ -346,7 +366,7 @@ if (PARTS.includes('newcodes')) {
   pass(`${tag}: Sign-in security reads "On since" and "9 of 10 left"`, before.includes('On since') && before.includes(codesLeftSummary(9, 10)), before.slice(0, 160));
   await page.getByRole('button', { name: 'Make new codes' }).click();
   await giveCode(page, '2222222222222222', 'Carry on');
-  await page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+  await page.waitForSelector('.si-err, .si-code-msg:not(:empty)', { timeout: 10000 }).catch(() => null);
   pass(`${tag}: a code that isn't the phone's is refused, and nothing is made`, world.madeSets === 0 && (await message(page)) === CODE_DIDNT_WORK.join(' '));
   await giveCode(page, M26_KEY, 'Carry on');
   pass(`${tag}: with the current code, a new set`, (await waitPath(page, /recovery-codes$/)) === '/coach/sign-in/recovery-codes', path(page));
@@ -366,7 +386,7 @@ if (PARTS.includes('newcodes')) {
   await other.page.getByRole('textbox', { name: 'Recovery code' }).waitFor({ timeout: 15000 }).catch(() => null);
   await other.page.getByLabel('Recovery code').fill('x3vp-r8tn');
   await press(other.page, 'Sign in');
-  await other.page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+  await other.page.waitForSelector('.si-err, .si-code-msg:not(:empty)', { timeout: 10000 }).catch(() => null);
   pass(`${tag}: an old code (never used) no longer works`, path(other.page) === '/coach/sign-in/help' && (await message(other.page)) === RECOVERY_DIDNT_WORK.join(' '));
   await other.page.getByLabel('Recovery code').fill(fresh[3]);
   await press(other.page, 'Sign in');
@@ -452,7 +472,7 @@ if (PARTS.includes('reset')) {
   for (const [name, d] of [['laptop', laptop], ['phone', phone]]) {
     await d.page.reload();
     await waitPath(d.page, /^\/coach\/sign-in$/);
-    await d.page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+    await d.page.waitForSelector('.si-err, .si-code-msg:not(:empty)', { timeout: 10000 }).catch(() => null);
     const said = await message(d.page);
     pass(`${tag}: her ${name}'s open session is signed out on its next load, and told why`, path(d.page) === '/coach/sign-in' && said === signedOutLine, `${path(d.page)} "${said}"`);
     pass(`${tag}: and nothing of it is left on her ${name}`, !(await d.page.evaluate(() => localStorage.getItem('clarity-portal-auth'))));
@@ -478,7 +498,7 @@ if (PARTS.includes('reset')) {
   await phone.page.getByRole('textbox', { name: 'Recovery code' }).waitFor({ timeout: 15000 }).catch(() => null);
   await phone.page.getByLabel('Recovery code').fill('m9ze-t4ra');
   await press(phone.page, 'Sign in');
-  await phone.page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+  await phone.page.waitForSelector('.si-err, .si-code-msg:not(:empty)', { timeout: 10000 }).catch(() => null);
   pass(`${t6}: a recovery code from before the reset is refused`, (await message(phone.page)) === RECOVERY_DIDNT_WORK.join(' '));
   await phone.page.goto(`${APP}/coach/sign-in/code`);
   await giveCode(phone.page, key);
@@ -507,7 +527,7 @@ if (PARTS.includes('hosted')) {
   const before = refreshes();
   await page.reload();
   await waitPath(page, /^\/coach\/sign-in$/);
-  await page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+  await page.waitForSelector('.si-err, .si-code-msg:not(:empty)', { timeout: 10000 }).catch(() => null);
   pass(`${tag}: the token was refreshed as the page loaded`, refreshes() > before, `${refreshes() - before}`);
   pass(`${tag}: a sign-in from before the reset is still signed out after its refresh, and told why`, path(page) === '/coach/sign-in' && (await message(page)) === signedOutLine, `${path(page)} "${await message(page)}"`);
   pass(`${tag}: no page errors`, errors.length === 0, errors.slice(0, 2).join(' | '));

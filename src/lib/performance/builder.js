@@ -34,7 +34,7 @@ export const TEMPLATE_LABEL = 'First 90 days in a new role';
 export const OBJECTIVE_KINDS = Object.freeze([
   { value: 'number', label: 'I’ll track a number', lines: ['A figure you move towards a target.', 'If you can’t count it, rate it from Poor to Excellent instead.'] },
   { value: 'milestone', label: 'I’ll track a milestone', lines: ['Something you get done once, by a date.', 'Tick it off when it’s done.'] },
-  { value: 'rating', label: 'I’ll rate it from Poor to Excellent', lines: ['Your own honest rating.', 'You update it in each Weekly performance debrief.'] },
+  { value: 'rating', label: 'I’ll rate it from Poor to Excellent', lines: ['Your own honest rating.', 'You update it in each weekly performance debrief.'] },
 ]);
 
 /** A figure typed into a box, or null when it isn't one. Commas in "10,000" are allowed. */

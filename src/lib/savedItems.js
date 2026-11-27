@@ -2,7 +2,7 @@ import { getLocalDateKey, parseDbTimestamp, formatSavedDate } from './dateFormat
 import { STANDARD_AREAS, areaName } from './wheelOfLife';
 import { CHECKIN_ROUTE, checkinMonth, checkinPath, checkinTitle } from './performance/checkin';
 
-// My Plans and My Reviews (Phase 4 step 4): one list each across the three
+// My plans and My reviews (Phase 4 step 4): one list each across the three
 // areas, every saved item in it, old and new. This file only turns rows
 // read from the database (savedItemsApi.js) into list rows, so the pages,
 // the hubs' recent lists and the tests all name things the same way.
@@ -53,7 +53,7 @@ const DECISION_AREA = {
   'strategic-alignment': 'strategic',
 };
 
-// The old My Plans opened these with the whole saved row in its state; the
+// The old My plans opened these with the whole saved row in its state; the
 // old My decisions list opened the rest with the id only. Both kept.
 const SUMMARY_WITH_ROW = {
   daily_plan: '/daily-plan-summary',
@@ -152,8 +152,32 @@ const filled = (...values) => values.some((v) => (Array.isArray(v) ? v.length > 
  */
 export function shownTitle(title) {
   if (typeof title !== 'string') return title;
-  return /^\s*first review\s*$/i.test(title) ? 'First check-in' : title;
+  if (/^\s*first review\s*$/i.test(title)) return 'First check-in';
+  // The capitals rule (Tim, 27 Nov; Stage D, item 6): a tool's name saved in capitals by an older version ("Daily
+  // Plan - Mon, Nov 2, 2026", "After-Action Review") reads in sentence case. Display only, as above.
+  const old = OLD_CAPITALS.find(([re]) => re.test(title));
+  return old ? title.replace(old[0], old[1]) : title;
 }
+
+/** Tool names older versions saved in capitals, at the start of a saved name, and how they read now. */
+const OLD_CAPITALS = [
+  [/^Daily Plan\b/, 'Daily plan'],
+  [/^Daily Review\b/, 'Daily review'],
+  [/^Plan My Day\b/, 'Plan my day'],
+  [/^Review My Day\b/, 'Review my day'],
+  [/^After-Action Review\b/, 'After-action review'],
+  [/^Daily Journal\b/, 'Daily journal'],
+  [/^Weekly Momentum Check\b/, 'Weekly momentum check'],
+  [/^Progress Review\b/, 'Progress review'],
+  [/^Confidence Bank\b/, 'Confidence bank'],
+  [/^Life Balance Review\b/, 'Life balance review'],
+  [/^Pressure Plan\b/, 'Pressure plan'],
+  [/^Meeting Planner\b/, 'Meeting planner'],
+  [/^Time Audit\b/, 'Time audit'],
+  [/^Get Unstuck\b/, 'Get unstuck'],
+  [/^Team Performance Check\b/, 'Team performance check'],
+  [/^Emotional Wash\b/, 'Emotional wash'],
+];
 
 function base(today, { at, day, ...rest }) {
   const when = day || at;
@@ -170,7 +194,7 @@ function base(today, { at, day, ...rest }) {
   };
 }
 
-// ------------------------------------------------------------- My Plans
+// ------------------------------------------------------------- My plans
 
 function decisionRow(d, reviews, today) {
   const tool = d.tool_type;
@@ -326,8 +350,9 @@ export function planRows(data, today = getLocalDateKey()) {
       dbId: m.id,
       source: 'pop',
       area: 'personal',
-      title: (m.title || '').trim() || 'Personal Operating Plan',
-      typeLabel: 'Personal Operating Plan',
+      // The old plan's rows read as the Individual Performance Plan (Tim, 27 Nov: the old name is never shown).
+      title: (m.title || '').trim() || 'Individual Performance Plan',
+      typeLabel: 'Individual Performance Plan',
       at: m.updated_at || m.created_at,
       to: { path: m.archived_at ? `/personal-operating-plan-archived/${m.id}` : '/personal-operating-plan' },
     }));
@@ -336,7 +361,7 @@ export function planRows(data, today = getLocalDateKey()) {
   return out;
 }
 
-// ----------------------------------------------------------- My Reviews
+// ----------------------------------------------------------- My reviews
 
 const JOURNAL_ENTRY = {
   'weekly-momentum': { tool: 'Weekly check-in', fallback: 'Weekly check-in' },
@@ -391,13 +416,13 @@ function journalEntryRow(e, today) {
 }
 
 // "Focus on sleep": the area chosen to work on. A standard area by the
-// first half of its name, in lower case ("Health / Fitness" is "health";
-// "Purpose / Meaning" is "meaning", rule 8); someone's own area as typed.
+// first half of its name, in lower case ("Health and fitness" is "health";
+// "Purpose and meaning" is "meaning", rule 8); someone's own area as typed.
 function focusWords(area) {
   if (STANDARD_AREAS.some((a) => a.key === area.key)) {
     const name = areaName(area);
     if (area.key === 'meaning') return 'meaning';
-    return name.split(' / ')[0].toLowerCase();
+    return name.split(/ and | \/ /)[0].toLowerCase();
   }
   return (area.label || '').trim();
 }
@@ -429,8 +454,8 @@ export function reviewRows(data, today = getLocalDateKey()) {
       dbId: r.id,
       source: 'plan',
       area: 'personal',
-      title: r.review_data?.mission_title || 'Personal operating plan',
-      typeLabel: 'POP review',
+      title: r.review_data?.mission_title || 'Individual Performance Plan',
+      typeLabel: 'Individual Performance Plan review',
       at: r.created_at,
       version: r.version || null,
       isDraft: r.status === 'draft',
@@ -637,7 +662,7 @@ function plainWords(text) {
 
 /**
  * The rows whose name or tool hold every word typed (Phase 5 step 4: the
- * search in My Plans and My Reviews). It works on the rows already on
+ * search in My plans and My reviews). It works on the rows already on
  * the device, so it works offline too. Nothing typed keeps every row.
  */
 export function searchRows(rows, query) {

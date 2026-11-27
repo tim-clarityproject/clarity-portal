@@ -1198,7 +1198,7 @@ export const READY_NOT_NOW = 'Hidden for a month.';
 /** The person's panel when they aren't there any more. */
 export const PERSON_GONE = 'This person isn’t in your Network any more.';
 /** The map's own words for a screen reader. */
-export const MAP_LABEL = 'Your Network by influence and trust';
+export const MAP_LABEL = 'Your network by influence and trust';
 /** Actions' "Show more" once Show all has more than a page to show. */
 export const moreWords = (shown, total) => (total > shown ? `Show ${count(Math.min(ACTIONS_ALL, total - shown))} more` : '');
 

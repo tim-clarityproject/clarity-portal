@@ -60,7 +60,8 @@ const path = (page) => new URL(page.url()).pathname;
 const squash = (t) => String(t || '').replace(/\s+/g, ' ').trim();
 const flat = (lines) => (Array.isArray(lines) ? lines.join(' ') : String(lines));
 const words = (page, sel = '.si-col') => page.locator(sel).first().innerText().then(squash).catch(() => '');
-const message = (page) => page.locator('.si-err').first().innerText().then((t) => squash(t).replace(/^! /, '')).catch(() => '');
+// The mistake line: .si-err, or the code squares' own line (.si-code-msg, Polish 1: the six squares' message under them).
+const message = (page) => page.locator('.si-err, .si-code-msg:not(:empty)').first().innerText().then((t) => squash(t).replace(/^! /, '')).catch(() => '');
 const codeBox = (page) => page.getByRole('textbox', { name: 'Code', exact: true });
 const recBox = (page) => page.getByRole('textbox', { name: 'Recovery code' });
 const press = (page, name) => page.getByRole('button', { name, exact: true }).click();
@@ -75,7 +76,7 @@ async function waitPath(page, re, timeout = 20000) {
   return path(page);
 }
 async function waitMessage(page, timeout = 10000) {
-  await page.waitForSelector('.si-err', { timeout }).catch(() => null);
+  await page.waitForSelector('.si-err, .si-code-msg:not(:empty)', { timeout }).catch(() => null);
   return message(page);
 }
 
@@ -116,7 +117,10 @@ async function signIn(page, world, at = '/coach/sign-in') {
 async function giveCode(page, key, button = 'Sign in') {
   await codeBox(page).waitFor({ timeout: 15000 });
   await codeBox(page).fill(totp(key));
-  await press(page, button);
+  // Polish 1 (sign-in rule 24's note): the sixth digit sends the code, on Enter your code (no Sign in button any more),
+  // Set up and Sign-in security alike, so nothing is pressed after it (pressing again would send the emptied squares).
+  // `button` is kept for the callers' reading: the button the code once went with.
+  void button;
 }
 async function keyOnPage(page) {
   await page.waitForFunction(() => /[A-Z2-7]{4}/.test(document.querySelector('.si-key')?.textContent || ''), null, { timeout: 15000 }).catch(() => null);
@@ -483,7 +487,8 @@ if (PARTS.includes('offline')) {
     await waitPath(d.page, /\/code$/);
     await goOff(d, world);
     await giveCode(d.page, M26_KEY);
-    pass('Offline, Enter your code: one calm line', (await waitMessage(d.page)) === offLine('Signing in'));
+    const said = await waitMessage(d.page);
+    pass('Offline, Enter your code: one calm line', said === offLine('Signing in'), said);
     pass('Offline, Enter your code: a press with no connection isn\'t counted as a wrong code', (await d.page.evaluate(() => localStorage.getItem('clarity-sign-in-code-tries'))) === null);
     await goOn(d, world);
     await giveCode(d.page, M26_KEY);
@@ -564,7 +569,8 @@ if (PARTS.includes('offline')) {
     await d.page.getByRole('button', { name: 'Make new codes' }).click();
     await goOff(d, world);
     await giveCode(d.page, M26_KEY, 'Carry on');
-    pass('Offline, Sign-in security: one calm line, nothing made', (await waitMessage(d.page)) === offLine('Sign-in security') && world.madeSets === 0);
+    const said = await waitMessage(d.page);
+    pass('Offline, Sign-in security: one calm line, nothing made', said === offLine('Sign-in security') && world.madeSets === 0, `${said} ${world.madeSets}`);
     await goOn(d, world);
     await giveCode(d.page, M26_KEY, 'Carry on');
     pass('Back online, Sign-in security: the same press makes the codes', (await waitPath(d.page, /recovery-codes$/)) === '/coach/sign-in/recovery-codes' && world.madeSets === 1, path(d.page));
@@ -932,8 +938,9 @@ if (PARTS.includes('text')) {
       const mb = main?.getBoundingClientRect();
       return { sideways, out: out.slice(0, 4), main: mb ? Math.round(mb.height) : 0, size: parseFloat(getComputedStyle(document.documentElement).fontSize) };
     });
-    // (Sign-in security's rows have no main button until a step opens.)
-    pass(`Twice the text size, ${label}: no sideways scroll, nothing off the screen or cut off, the main button at least 44px`, r.size >= 32 && r.sideways <= 0 && r.out.length === 0 && (r.main >= 44 || (label.startsWith('Sign-in security,') && r.main === 0)), JSON.stringify(r));
+    // (Sign-in security's rows have no main button until a step opens; Enter your code has none since Polish 1: the sixth
+    // digit sends it, sign-in rule 24's note.)
+    pass(`Twice the text size, ${label}: no sideways scroll, nothing off the screen or cut off, the main button at least 44px`, r.size >= 32 && r.sideways <= 0 && r.out.length === 0 && (r.main >= 44 || ((label.startsWith('Sign-in security,') || label.startsWith('Enter your code,')) && r.main === 0)), JSON.stringify(r));
   };
   for (const width of [1440, 400]) {
     const mode = width < 700 ? 'light' : 'dark';

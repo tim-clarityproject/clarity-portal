@@ -242,7 +242,7 @@ async function sprintScoreMatches(day, tag) {
 
 // ---------------------------------------------------------------- Daily plan
 // picks: the names to choose on "What will you do today?"; lastNight: the
-// names that must be first, carried over "From Daily review" (Phase 4, M19).
+// names that must be first, carried over "From your daily review" (Phase 4, M19).
 async function planDay(day, i, { picks, lastNight = [], panel = false }) {
   const tag = `${day} plan`;
   await at(day, '07:30');
@@ -259,7 +259,7 @@ async function planDay(day, i, { picks, lastNight = [], panel = false }) {
   pass(`${tag}: Do`, (await heading()) === 'What will you do today?', await heading());
   const shown = await page.locator('.ds-answer--pick').allInnerTexts();
   lastNight.forEach((name, n) => {
-    pass(`${tag}: last night's "${name}" is on the list, in order, tagged`, (shown[n] || '').includes(name) && shown[n].includes('From Daily review'), shown.slice(0, 4).join(' | '));
+    pass(`${tag}: last night's "${name}" is on the list, in order, tagged`, (shown[n] || '').includes(name) && shown[n].includes('From your daily review'), shown.slice(0, 4).join(' | '));
   });
   for (const name of picks) {
     const pick = page.locator('.ds-answer--pick', { hasText: name }).first();
@@ -333,7 +333,7 @@ async function reviewDay(day, i, { ticks, win = false, tomorrow = [] }) {
     await p.locator('textarea').first().fill(WIN);
     await p.getByRole('button', { name: 'Grow through referrals' }).click();
     await p.getByRole('button', { name: 'Add my win' }).click();
-    pass(`${tag}: the win's toast names Confidence Bank`, Boolean(await until(async () => (await page.getByText('Win added to Grow through referrals and your Confidence Bank.').count()) > 0, 10000)));
+    pass(`${tag}: the win's toast names Confidence Bank`, Boolean(await until(async () => (await page.getByText('Win added to Grow through referrals and your confidence bank.').count()) > 0, 10000)));
   }
   await next();
   await body().locator('textarea').first().fill('Leave time between calls.');

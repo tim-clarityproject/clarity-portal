@@ -1,8 +1,8 @@
 // Phase 5 end-to-end functionality checks (step 5c), TEST database only.
 //   node --import ./tests/scores/register.mjs tests/phase5/functional.mjs   (ONLY=N,C,D,H,R)
-// N  a new person (the org client, no sprint): dashboard, check-in opening, My Plans/Reviews search
+// N  a new person (the org client, no sprint): dashboard, check-in opening, My plans/Reviews search
 // C  a monthly review with Health lowest: results against src/lib/scores/m13.js directly,
-//    Add to my sprint as a to-do (source other_tool), saved, My Reviews row, saved results page
+//    Add to my sprint as a to-do (source other_tool), saved, My reviews row, saved results page
 // D  closing a dashboard section is remembered on a second device (page_preferences.dashboard)
 // H  where Review its Strategies and Make it easier this week land
 // R  Recovery (seed --reset --recovery, then seed --reset): no numbers asked for, the calm lines
@@ -185,7 +185,7 @@ if (part('C')) {
     await open(page, '/my-reviews');
     const name = `${monthName(CUR)} review`;
     const row = page.locator('.hlist-row', { hasText: name });
-    pass(`C My Reviews has "${name}"`, Boolean(await until(async () => (await row.count()) === 1, 15000)));
+    pass(`C My reviews has "${name}"`, Boolean(await until(async () => (await row.count()) === 1, 15000)));
     await row.locator('a, button').first().click();
     await until(async () => (await page.locator('.ck-scores .ds-stat').count()) >= 2, 15000);
     const saved = (await page.locator('.ck-scores .ds-stat').allInnerTexts()).map((s) => s.replace(/\s+/g, ' '));

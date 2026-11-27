@@ -487,6 +487,9 @@
   color: var(--text-2);
 }
 
+/* An email address is one long "word": it may break anywhere rather than run past a phone's column (Stage D, DG item 6). */
+.ui-root .ds-address { overflow-wrap: anywhere; }
+
 .ui-root .ds-li-value {
   flex: none;
   display: inline-flex;

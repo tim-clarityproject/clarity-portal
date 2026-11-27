@@ -116,7 +116,7 @@ export default function PlanMyDayStep1() {
   }, [decisionId, user?.id]);
 
   const buildTitle = () =>
-    `Daily Plan - ${new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}`;
+    `Daily plan - ${new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}`;
 
   const persist = async (draft) => {
     const payload = {

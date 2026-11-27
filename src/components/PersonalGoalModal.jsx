@@ -38,7 +38,7 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
     <Popup
       open={isOpen}
       onClose={onClose}
-      title="Edit Your Mission"
+      title="Edit your Mission"
       footer={(
         <>
           <Button onClick={onClose}>Cancel</Button>

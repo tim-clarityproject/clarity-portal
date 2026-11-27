@@ -445,7 +445,7 @@ function RecoverySleep({ recovery, grow }) {
       <div className="rec-sleep-act">
         {action?.lines.map((line) => <p key={line} className="rec-sleep-line">{line}</p>)}
         <div className="rec-sleep-links">
-          {action?.windDown && <Button variant="text" onClick={() => navigate('/sleep-wind-down')}>Open Sleep wind down</Button>}
+          {action?.windDown && <Button variant="text" onClick={() => navigate('/sleep-wind-down')}>Open sleep wind down</Button>}
           <SleepTargetLink open={editing} onToggle={() => setEditing((v) => !v)} controls="rec-sleep-target" />
         </div>
         {editing && <SleepTargetEditor id="rec-sleep-target" target={target} onChange={changeTarget} />}

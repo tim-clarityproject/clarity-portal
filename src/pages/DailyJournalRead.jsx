@@ -58,7 +58,7 @@ export default function DailyJournalRead() {
       <div className="ui-root">
         <DesignHeader />
         <div className="plan-page cp-page cp-page">
-          <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/daily-journals')} label="Back to My Journals" /></div>
+          <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/daily-journals')} label="Back to My journals" /></div>
           <p className="ui-subtitle">Journal not found.</p>
         </div>
       </div>
@@ -73,7 +73,7 @@ export default function DailyJournalRead() {
       <DesignHeader />
 
       <div className="plan-page cp-page cp-page">
-        <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/daily-journals')} label="Back to My Journals" /></div>
+        <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/daily-journals')} label="Back to My journals" /></div>
 
         {/* Polish 1: the title is the page's name; the date is its small grey label. */}
         <PageOpening
@@ -112,7 +112,7 @@ export default function DailyJournalRead() {
       <DeleteDialog
         open={deleteOpen}
         title="Delete this journal?"
-        body="It will be deleted for good and removed from My Reviews. This cannot be undone."
+        body="It will be deleted for good and removed from My reviews. This cannot be undone."
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
       />

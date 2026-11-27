@@ -55,7 +55,7 @@ import './getUnstuck.css';
 //   pdf                “Download my PDF”, the quiet link at Your plan's bottom bar (signed in)
 //   onEdited           “Save my edit” went back to Your plan: the page saves
 //                      the plan as it stands and says so (“Saved”)
-//   actions            “Delete”, for a plan opened from My Plans: under Your plan,
+//   actions            “Delete”, for a plan opened from My plans: under Your plan,
 //                      and under the first question while it is still a draft
 //                      (`actionsFirst`), which opens there
 //   draftKey, initialStep, onClose, onFinish   as GuidedTool's

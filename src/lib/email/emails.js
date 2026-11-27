@@ -24,6 +24,7 @@
 // time too (draft-2, 23 Nov, which is newer than the 10 Nov note that it
 // never did), worked out in the reader's own zone.
 import { EMAIL_SIGN_OFF, oneLine } from './template.js';
+import { shownCallName } from '../callNames.js';
 import { sessionWhenWords, timeWords, relativeDayWords, dayWords } from '../time/index.js';
 
 const possessive = (name) => `${name}’s`;
@@ -712,7 +713,7 @@ export function inviteEmail({ link }) {
 // no prep is offered). Sent only by api/_routes/booking-email.js, from the live
 // site, once for each time booked.
 /** "coaching session" for a coaching session, otherwise the call's own name, or "call". */
-const callWords = (callName) => { const c = oneLine(callName); return !c ? 'call' : /^coaching session$/i.test(c) ? 'coaching session' : c; };
+const callWords = (callName) => { const c = oneLine(shownCallName(callName)); return !c ? 'call' : /^coaching session$/i.test(c) ? 'coaching session' : c; };
 const bookedFooter = (call) => [`You get this because you booked ${call === 'call' ? 'a call' : call}.`, EMAIL_SIGN_OFF];
 
 /**

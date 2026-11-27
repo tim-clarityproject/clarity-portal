@@ -202,7 +202,7 @@ async function run() {
         pass(`${tag}: Undo shows it again`, (await words(page)).includes('Ruth replied: Can we start in January?'));
         // A lead a booking made, with nothing written on its timeline yet (before 052), still shows its booking.
         await go(page, `/coach/leads/${CAL.leadNadia}`);
-        pass(`${tag}: a booking-made lead shows its booking on the timeline`, (await words(page)).includes('Booked a Connection Call') && (await words(page)).includes('From your Connection Call page.'));
+        pass(`${tag}: a booking-made lead shows its booking on the timeline`, (await words(page)).includes('Booked a Connection call') && (await words(page)).includes('From your Connection call page.'));
         await a.close();
       }
 

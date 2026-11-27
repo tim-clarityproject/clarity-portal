@@ -8,7 +8,7 @@ import { ANSWERS_ON_DEVICE } from './performance/sprintReviewAnswers';
 import { loadToolAnswers } from './toolAnswers';
 import { travelPlansOf } from './travel/store';
 
-// Reads every saved plan and review for My Plans, My Reviews and the hubs'
+// Reads every saved plan and review for My plans, My reviews and the hubs'
 // recent lists (Phase 4 step 4); savedItems.js names them. Each part is
 // read on its own, so a table a database doesn't have yet (an older
 // migration not run) leaves its rows out instead of the whole list. The

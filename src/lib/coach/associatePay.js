@@ -246,7 +246,7 @@ export function renewalsLine(data) {
 export const REPORT_PERIOD = 'Last 12 months';
 export const REPORT_LIKELY_NOTE = 'Likely counts each deal at its stage’s chance of winning, which you set in Edit stages.';
 const SOURCE_NAMES = {
-  referral: 'Referrals', chemistry_page: 'Discovery calls', connection_page: 'Connection Calls', booking_page: 'Booking pages', single_use_link: 'Booking links',
+  referral: 'Referrals', chemistry_page: 'Discovery calls', connection_page: 'Connection calls', booking_page: 'Booking pages', single_use_link: 'Booking links',
   manual: 'Added by you', import: 'A spreadsheet', email: 'Email', network: 'Network', other: 'Somewhere else',
 };
 const dayOf = (at) => String(at || '').slice(0, 10);

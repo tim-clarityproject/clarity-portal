@@ -527,7 +527,7 @@ function AppContent() {
     const claim = () => {
       if (!live) return;
       claimOutsideWork(claimFor).then((moved) => {
-        if (moved.guest > 0) toast.show('Your plan has moved into My Plans.');
+        if (moved.guest > 0) toast.show('Your plan has moved into My plans.');
         if (moved.healthChecks > 0) window.dispatchEvent(new window.Event(HEALTH_CHECKS_MOVED));
       });
     };

@@ -265,11 +265,11 @@ async function signedIn(browser, width) {
   pass(`${tag}: back online, it is sent`, Boolean(done) && done.title === `${M9.goal}, for good`, done?.title);
   pass(`${tag}: the new to-do is on This week`, await until(async () => (await page.locator('body').innerText()).includes(M9.acts[0].replace(/\.$/, '')), 15000));
 
-  // ---- My Plans opens it on Your plan
+  // ---- My plans opens it on Your plan
   await page.goto(`${APP}/my-plans`);
   const row = page.locator('.ui-root').getByText(`${M9.goal}, for good`).first();
   await row.waitFor({ timeout: 20000 });
-  pass(`${tag}: My Plans lists it under Get unstuck`, /get unstuck/i.test(await page.locator('.ui-root').first().innerText()));
+  pass(`${tag}: My plans lists it under Get unstuck`, /get unstuck/i.test(await page.locator('.ui-root').first().innerText()));
   await row.click();
   pass(`${tag}: a saved plan opens on Your plan`, Boolean(await until(() => /\/get-unstuck$/.test(new URL(page.url()).pathname))) && Boolean(await onQuestion(page, 'Here’s your plan')), `${new URL(page.url()).pathname}: ${(await questionText(page)).slice(0, 80)}`);
   await page.locator('.ds-guide-close').click();

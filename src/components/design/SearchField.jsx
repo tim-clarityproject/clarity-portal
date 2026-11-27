@@ -2,7 +2,7 @@ import { forwardRef, useRef } from 'react';
 import { IconButton } from './Button';
 import './design.css';
 
-// A search box (Phase 5 step 4: My Plans and My Reviews). The shared field
+// A search box (Phase 5 step 4: My plans and My reviews). The shared field
 // look (TextField's .ds-field: box colour, coral edge on focus, 17px, never
 // under 16px), with the 45 degree crosshair (IconButton) at its right end
 // once something is typed, which clears it and puts the cursor back in the

@@ -319,7 +319,7 @@ async function run() {
         await go(page, '/coach/todos'); await settle(page, 4500);
         got = await made();
         pass(`${tag}: opened again, each is still there once`, JSON.stringify(got) === JSON.stringify(want), JSON.stringify(got));
-        pass(`${tag}: a lead quiet for 12 days, a cold lead and a Connection Call set nothing off`, !(await a.rowsNow('coach_todos')).some((t) => t.automation_id && [CRM.chrisDoyle, CRM.coldLead, CAL.leadNadia].includes(t.lead_id)));
+        pass(`${tag}: a lead quiet for 12 days, a cold lead and a Connection call set nothing off`, !(await a.rowsNow('coach_todos')).some((t) => t.automation_id && [CRM.chrisDoyle, CRM.coldLead, CAL.leadNadia].includes(t.lead_id)));
         pass(`${tag}: the to-dos are on To-dos, for today`, has(await words(page), ['Check in', 'Call while the proposal is fresh']));
         await a.close();
       }

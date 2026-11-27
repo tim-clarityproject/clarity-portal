@@ -168,7 +168,7 @@ export function recoverySleepView({ recovery, nights = [], today, target = SLEEP
  * answered yet).
  */
 export function sleepAction(hours, target, night = 'Last night') {
-  if (hours < target.from) return { state: 'below', lines: [`${night} was under your target range.`, 'Tonight, Sleep wind down could help.'], windDown: true };
+  if (hours < target.from) return { state: 'below', lines: [`${night} was under your target range.`, 'Tonight, a sleep wind down could help.'], windDown: true };
   if (hours > target.to) return { state: 'above', lines: [`${night} was above your target range.`, 'Keep doing what’s working.'], windDown: false };
   return { state: 'inside', lines: [`${night} was inside your target range.`, 'Keep doing what’s working.'], windDown: false };
 }

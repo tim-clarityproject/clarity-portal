@@ -100,7 +100,7 @@ export const BOOKING = Object.freeze({
 // and pay. One line each, what the page is for, in the portal's voice.
 
 /** Finances (every tab): what the page is for, with the financial year's first month ("April"). */
-export const financesLine = (startMonth) => `Here is what’s come in, what’s due and what’s ahead, for the year from 1 ${startMonth}.`;
+export const financesLine = (startMonth) => `Here’s what’s come in, what’s due and what’s ahead, for the year from 1 ${startMonth}.`;
 
 export const FINANCES = Object.freeze({
   newInvoice: 'New invoice',
@@ -164,7 +164,7 @@ export const PEOPLE = Object.freeze({
   reportsTitle: 'Lead reports',
   reportsLine: 'See where your clients come from, and how many of your leads become clients.',
   networkTitle: 'Network',
-  networkLine: 'Here are the people you keep in touch with, and who is due a catch-up.',
+  networkLine: 'Here are the people you keep in touch with, and who’s due a catch-up.',
   orgLine: 'Here are the people you coach there, and what you know about the organisation.',
   groupLine: 'Here are the people in this group and its coaching sessions.',
 });
@@ -246,7 +246,7 @@ export const MONEY_LINES = Object.freeze({
   newInvoice: 'From the coaching sessions logged since the last invoice. Untick any to leave off.',
   // Who sees the balance is the eye's to say, never the line's (5e rule 10; FX7): the line says what the page is for.
   hours: () => 'Each entry here comes off the block, and the balance shows what’s left.',
-  invoiceSent: 'Here is where it went, when it’s due and whether it’s settled.',
+  invoiceSent: 'Here’s where it went, when it’s due and whether it’s settled.',
 });
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -258,7 +258,7 @@ export const BUILDER_LINES = Object.freeze({
   solicitor: 'Have a solicitor check any change before you use it with a client.',
   clauses: (first) => `Every clause is here in order, and you can edit any of them for ${first} or for everyone.`,
   clausesAssociate: (first) => `Every clause is here in order, and you can edit any of them for ${first}.`,
-  check: (first) => `Here is every way this agreement differs from your standard, then what ${first} will see first.`,
+  check: (first) => `Here’s every way this agreement differs from your standard, then what ${first} will see first.`,
   sign: (first) => `You sign first, then ${first} gets an email from you to read and sign it in the portal.`,
   start: (first) => `An agreement is with a client, so ${first} becomes your client first, and you can undo it.`,
 });

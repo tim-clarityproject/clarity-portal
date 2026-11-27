@@ -41,7 +41,7 @@ export default function Plan() {
             {PLANS.map((p) => (
               <div key={p.level} className="cl-plan">
                 <h2 className="cl-plan-name">{p.name}</h2>
-                <p className="cl-plan-price">{p.price}</p>
+                <p className="cl-plan-price" data-price="">{p.price}</p>
                 <p className="cl-plan-line">{p.line}</p>
                 {level === p.level ? <p className="cl-plan-cur">{PLAN_WORDS.current}</p>
                   : p.level === 'free' ? <p className="cl-plan-cur" aria-hidden="true" />

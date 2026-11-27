@@ -23,6 +23,7 @@ import { clean, cut, firstName, minutesWords, parseHours as parseHoursTyped, par
 import { SENT_LINE, SESSION_KINDS, SESSION_LENGTHS, WEEK_KEYS, isLateCancellation, isLink, newSession, parseQuickAdd, workingDay } from './day.js';
 import { countFigure, countWords } from './numbers.js';
 import { futureSessionRows } from '../agreements/coolingOff.js';
+import { shownCallName } from '../callNames.js';
 
 const MIN = 60000;
 const HOUR = 3600000;
@@ -385,7 +386,7 @@ export function calendarEntries({ items = [], sessions = [], todos = [], openBlo
     const sub = i.kind === 'hold' ? 'Held for a poll'
       : colour === 'life' ? (i.calendar === 'family' ? 'Family' : 'Personal')
         : i.group_id ? 'Group'
-          : type ? type.name
+          : type ? shownCallName(type.name)
             : isCall ? placeWord(i.place_kind || 'zoom')
               : i.kind === 'own_time' || i.kind === 'admin' || i.kind === 'writing' || i.kind === 'travel' ? '' : (placeWord(i.place_kind) || ITEM_KINDS[i.kind]?.label || '');
     out.push(entry({
@@ -2341,13 +2342,17 @@ export const isBookingKey = (key) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-
 /** A page's whole address, from the page's own origin (never written out). */
 export const publicLink = (origin, path) => `${String(origin || '').replace(/\/+$/, '')}${path}`;
 
-/** The two call types every coach starts with, for a device that has none yet (as 051's coach_call_types_start()). */
+/**
+ * The two call types every coach starts with, for a device that has none yet (as 051's coach_call_types_start()).
+ * The second is the "Connection call" (Tim, 27 Nov), where 051 and 066 still save 'Connection Call': that one
+ * reads through shownCallName.
+ */
 export function startingCallTypes({ coachId, newId, have = [] }) {
   const type = (key, name, notice, ahead, position) => ({
     id: newId(), coach_id: coachId, key, name, description: null, minutes: 30, gap_before: 15, gap_after: 15, notice_hours: notice, ahead_weeks: ahead, day_limit: MAX_CALLS_A_DAY,
     questions: [], place_kind: 'zoom', page_key: newId(), active: true, makes_lead: true, position,
   });
-  return [type('chemistry', 'Discovery call', 24, 4, 0), type('connection', 'Connection Call', 48, 2, 1)].filter((t) => !have.some((x) => x.key === t.key));
+  return [type('chemistry', 'Discovery call', 24, 4, 0), type('connection', 'Connection call', 48, 2, 1)].filter((t) => !have.some((x) => x.key === t.key));
 }
 
 /** What a call type's Edit asks, each with its bounds (as 051 checks them). */

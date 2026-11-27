@@ -143,21 +143,21 @@ export function SavedItemsDemo() {
         <HubTile name="Strategic Alignment Health Check" line="Identify how much your team’s daily work contributes to its objective." time="~15 minutes" href="#hc" onClick={(e) => { e.preventDefault(); say('Opens the Health Check.'); }} />
         <HubTeams
           teams={[
-            { key: 'lead', team: 'Leadership team', line: '3 versions, latest Mon 12 Oct', onClick: open('the Leadership team’s versions in My Plans') },
-            { key: 'product', team: 'Product team', line: '1 version, Wed 2 Sep', onClick: open('the Product team’s version in My Plans') },
+            { key: 'lead', team: 'Leadership team', line: '3 versions, latest Mon 12 Oct', onClick: open('the Leadership team’s versions in My plans') },
+            { key: 'product', team: 'Product team', line: '1 version, Wed 2 Sep', onClick: open('the Product team’s version in My plans') },
           ]}
         />
         <Button className="ds-hub-new" onClick={() => say('Starts a new Health Check.')}>Start a new Health Check</Button>
       </HubAnchor>
       <HubRecent
-        title="My Plans"
+        title="My plans"
         items={[
           { key: 'a', title: 'Today’s plan', type: 'Daily plan', date: 'Today', onClick: open('today’s plan') },
           { key: 'b', title: 'Referral pipeline', type: 'Get unstuck', date: 'Mon 19 Oct', onClick: open('Referral pipeline') },
           { key: 'c', title: 'Harbour proposal', type: 'Pre-mortem', date: 'Wed 14 Oct', onClick: open('Harbour proposal') },
         ]}
-        linkLabel="Open My Plans"
-        onOpenAll={() => say('Opens My Plans, filtered to Personal.')}
+        linkLabel="Open My plans"
+        onOpenAll={() => say('Opens My plans, filtered to Personal.')}
       />
     </>
   );

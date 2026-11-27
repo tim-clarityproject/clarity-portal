@@ -10,6 +10,7 @@ import { Back, TextLink } from './parts';
 import { CalGrid, useCalendar } from './calendarParts';
 import { useSecondZone } from './calendarPanels';
 import { useStartCallTypes } from './BookCall';
+import { shownCallName } from '../../lib/callNames.js';
 import './booking.css';
 
 // Open for calls (Phase 6a run 3; M11's "open"): the times people outside
@@ -73,7 +74,7 @@ export default function OpenForCalls() {
     if (ok) setEdit(null);
   };
   const remove = async () => { if (busy.current) return; busy.current = true; const ok = await cal.run(removeOpenPlan(edit.block, { data: cal.data })); busy.current = false; if (ok) setEdit(null); };
-  const types = [{ value: EVERY, label: 'Every kind of call' }, ...cal.callTypes.map((t) => ({ value: t.id, label: t.name }))];
+  const types = [{ value: EVERY, label: 'Every kind of call' }, ...cal.callTypes.map((t) => ({ value: t.id, label: shownCallName(t.name) }))];
 
   return (
     <div className="cc-page">

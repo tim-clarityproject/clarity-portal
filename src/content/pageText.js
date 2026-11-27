@@ -12,9 +12,9 @@ export const pageText = {
   performanceYear: 'Each bar is one week of your year, with your sprints and Recovery marked.',
   performancePlanHistory: 'A version is kept each time your plan changes. Open one to see what your plan said then.',
   personalOperatingPlanHistory: 'Every time you save a change, a copy is kept. Look back at any earlier Version of your plan, or restore it.',
-  personalOperatingPlanArchived: 'Plans you have archived. Open one to read it, or restore it as your current plan. Their Versions and reviews are kept.',
+  personalOperatingPlanArchived: 'Plans you have archived. Open one to read it, or restore it as your current plan. Their versions and reviews are kept.',
   personalOperatingPlanReview: 'Tick what you have done and update your numbers.',
-  personalOperatingPlanReviewEmpty: 'You do not have a personal operating plan yet.',
+  personalOperatingPlanReviewEmpty: 'You don’t have an Individual Performance Plan yet.',
   planMyDayStep1: 'Make sure your day aligns with your Mission.',
   planMeeting: "Bad meetings kill team morale. Let's get it right.",
   myPlans: 'Every plan and decision you have made, in one history.',
@@ -25,7 +25,7 @@ export const pageText = {
   toughConversationStep1Feedback: 'Frame your feedback clearly and compassionately.',
   toughConversationStep2Coaching: 'Plan your coaching and follow-up questions.',
   myReviews: 'Every review and journal you have written, in one history.',
-  dailyJournals: 'Every day you have written, in one history. Saved journals also appear in My Reviews.',
+  dailyJournals: 'Every day you have written, in one history. Saved journals also appear in My reviews.',
   wheelOfLife: 'See how satisfied you are across the areas of your life right now, and how that changes over time.',
   wheelOfLifeAreas: 'Remove any area that doesn’t fit your life right now, and add as many of your own as you like. Removed areas keep their past scores, and you can bring them back at any time.',
   wheelOfLifeTargets: 'Not every area needs to be a 10. Choose the score you’d be happy with in each area. There’s no deadline, and you can change your targets at any time.',
@@ -55,7 +55,7 @@ export const pageText = {
   // it is, in one full sentence (Tim, 2 Nov), then the glossary's words
   // (writing rule 40), one sentence per line.
   checkIn: [
-    'The Monthly Hardware and Software review is a look at your body and mind each month, in ~3 minutes.',
+    'The monthly Hardware and Software review is a look at your body and mind each month, in ~3 minutes.',
     'Hardware is your body’s physiology.',
     'Software is your decision-making, emotional control and communication.',
     'Software relies on hardware being maintained, so we look after both.',

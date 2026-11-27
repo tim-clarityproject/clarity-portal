@@ -8,7 +8,7 @@
 //
 // What it does, in one browser, one size, light mode:
 //   - signs in as the invented test client (the accounts file, never printed);
-//   - opens one page per area: Home, Personal, Interpersonal, Strategic, My Plans,
+//   - opens one page per area: Home, Personal, Interpersonal, Strategic, My plans,
 //     This week, My Account;
 //   - makes one PDF (the first saved meeting plan's Download PDF, light) when
 //     the client has one, without saving it anywhere;
@@ -37,7 +37,7 @@ const AREAS = [
   ['Personal', '/personal'],
   ['Interpersonal', '/interpersonal'],
   ['Strategic', '/strategic'],
-  ['My Plans', '/my-plans'],
+  ['My plans', '/my-plans'],
   ['This week', '/performance-sprint'],
   ['My Account', '/my-account'],
 ];

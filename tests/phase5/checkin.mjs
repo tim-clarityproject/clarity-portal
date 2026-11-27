@@ -11,7 +11,7 @@
 //    results against the seeded last month (every figure checked against
 //    src/lib/scores through checkin.js), the graph and Show as a table, Add
 //    to my sprint (as a habit, in the database), Finish, Home's line gone,
-//    My Reviews' row, and the saved results page.
+//    My reviews' row, and the saved results page.
 // D  Measured against M12's frames at 1280, 390 and 360px, dark and light:
 //    one coral button, 44px taps, no coral data marks, mint for rises, no
 //    keys, no sideways scrolling, the writing rules, M12's words verbatim,
@@ -489,7 +489,7 @@ if (part('A')) {
     pass('Home: the line has gone once done', (await page.locator('.ds-quiet-row', { hasText: 'check-in' }).count()) === 0);
     await page.goto(`${APP}/my-reviews`);
     const name = `${monthName(CUR)} review`;
-    pass(`My Reviews: "${name}", Monthly Hardware and Software review`, Boolean(await until(async () => (await page.locator('.hlist-row', { hasText: name }).filter({ hasText: 'Monthly Hardware and Software review' }).count()) === 1, 15000)));
+    pass(`My reviews: "${name}", Monthly Hardware and Software review`, Boolean(await until(async () => (await page.locator('.hlist-row', { hasText: name }).filter({ hasText: 'Monthly Hardware and Software review' }).count()) === 1, 15000)));
     await page.goto(`${APP}/monthly-review`);
     pass('a finished month opens its results page', Boolean(await until(async () => path(page) === CUR_PATH)));
     await page.waitForSelector('.ck-results', { timeout: 15000 });

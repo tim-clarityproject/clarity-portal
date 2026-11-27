@@ -38,7 +38,9 @@ async function device(world, { aal = 'aal1', signedOut = false, fromBeforeReset 
   const ctx = await browser.newContext({ viewport: { width: size, height: size > 600 ? 1000 : 844 }, colorScheme: 'dark', locale: 'en-GB', timezoneId: 'Europe/London', serviceWorkers: 'block' });
   await ctx.addInitScript(() => {
     window.__coachShown = 0;
-    const look = () => { if (document.querySelector('[class^="cc-"], [class*=" cc-"]')) window.__coachShown += 1; };
+    // The coach portal's own parts. Not App.jsx's .cc-client-wait (Polish 1, Stage B): a plain Loading cover shown while
+    // it is asked whether a coach address's visitor is a coach; it holds no coach part and no coach data.
+    const look = () => { if ([...document.querySelectorAll('[class^="cc-"], [class*=" cc-"]')].some((e) => !e.closest('.cc-client-wait'))) window.__coachShown += 1; };
     new MutationObserver(look).observe(document, { childList: true, subtree: true });
   });
   await world.attach(ctx, { signedOut, aal, fromBeforeReset });

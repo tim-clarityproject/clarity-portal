@@ -45,7 +45,7 @@ async function makePlan() {
   if (error) throw new Error(`could not make the plan: ${error.code}`);
 }
 
-// Opens the plan from My Plans in this page: the address carries the row, as the list hands it over.
+// Opens the plan from My plans in this page: the address carries the row, as the list hands it over.
 async function openFromList(page) {
   await page.goto(`${APP}/my-plans?area=personal`);
   const r = page.locator('.ui-root').getByText(GOAL).first();
@@ -65,7 +65,7 @@ try {
   await makePlan();
 
   // ---- 1. a second tab never brings a deleted plan back
-  pass('1 the plan opens from My Plans in tab A', Boolean(await openFromList(a)));
+  pass('1 the plan opens from My plans in tab A', Boolean(await openFromList(a)));
   const b = await ctx.newPage();
   b.on('pageerror', (e) => errors.push(e.message.slice(0, 200)));
   pass('1 … and in tab B', Boolean(await openFromList(b)));

@@ -16,7 +16,7 @@ import { ErrorMessage, LoadError, Loading, clearGuideDraft, useToast } from '../
 // One guided tool saved as a row in `decisions` (Polish 1, Stage D item 1:
 // the Pre-mortem, Pressure plan and Meeting planner rebuilt to Draft 6 on
 // GuidedTool, in focus mode). The page around the tool: it opens a saved
-// item (its id in the page's state, as My Plans and the summaries hand it,
+// item (its id in the page's state, as My plans and the summaries hand it,
 // or ?id=…), keeps what's typed on the device as before (useDraft: "Draft
 // restored"), saves the same row every time through the offline queue
 // (× part-way keeps it as a draft, as Save as draft did; the summary's
@@ -118,7 +118,7 @@ function Shell({ children }) {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="My Plans" /></div>
+        <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="My plans" /></div>
         {children}
       </div>
     </div>

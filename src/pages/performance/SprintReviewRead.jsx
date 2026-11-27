@@ -13,7 +13,7 @@ import { B2_LINES } from '../../content/pageLines/client';
 import './performance.css';
 
 // A finished end-of-sprint review, read only (Phase 4 step 4; not mocked):
-// how My Reviews opens one. Its written answers, in the review's own words,
+// how My reviews opens one. Its written answers, in the review's own words,
 // from sprint_reviews once migration 038 is there, otherwise from this
 // device, where the review keeps them until then. The figures it showed
 // are the sprint's, on View your year; the plan changes are in the plan's
@@ -60,7 +60,7 @@ export default function SprintReviewRead() {
   } else if (!sprint || !answers) {
     body = (
       <div className="ipp-gap">
-        <EmptyState question="That review isn’t saved on this device or in your account." action={{ label: 'Open My Reviews', onClick: back, variant: 'outline' }} />
+        <EmptyState question="That review isn’t saved on this device or in your account." action={{ label: 'Open My reviews', onClick: back, variant: 'outline' }} />
       </div>
     );
   } else {
@@ -88,7 +88,7 @@ export default function SprintReviewRead() {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page">
-        <div className="plan-back-row"><BackLink onClick={back} label="My Reviews" /></div>
+        <div className="plan-back-row"><BackLink onClick={back} label="My reviews" /></div>
         <PageOpening label={meta.join(', ') || undefined} title="End-of-sprint review" line={B2_LINES.sprintReviewRead} />
         {body}
       </div>

@@ -1,7 +1,7 @@
 // Phase 5 step 4, the Phase 4 follow-ups (logic only; the browser side is
 // tests/phase5/followups.mjs): Daily plan and Daily review know a
 // Recovery is open on their day, so they say Recovery's calm line instead
-// of "No sprint is running"; and the search in My Plans and My Reviews
+// of "No sprint is running"; and the search in My plans and My reviews
 // (src/lib/savedItems.js searchRows), on the rows already on the device.
 // Run with npm run test:performance.
 import test from 'node:test';
@@ -142,7 +142,7 @@ test('search works with the area filter: both apply together', () => {
   assert.deepEqual(ids(searchRows(rows.filter(strategic.match), 'harbour')), []);
 });
 
-test('search: My Reviews too, by name and by tool', () => {
+test('search: My reviews too, by name and by tool', () => {
   const rows = reviewRows({
     entries: [
       { id: 'e2', review_type: 'plan-review', title: 'Harbour introduction call', content: JSON.stringify({ planKind: 'plan_meeting', planId: 'd2' }), created_at: at('2026-10-15') },

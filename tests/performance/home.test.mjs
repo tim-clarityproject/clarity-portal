@@ -85,7 +85,7 @@ test('the three day states: not planned, planned, then reviewed or closed until 
   assert.equal(done.key, 'done');
   assert.equal(done.label, 'Priorities for tomorrow');
   assert.deepEqual(done.list, ['Send the Q3 numbers', 'Book the physio', 'Call Jo']);
-  assert.deepEqual(done.lines, ['They’re waiting in tomorrow’s Daily plan.']);
+  assert.deepEqual(done.lines, ['They’re waiting in tomorrow’s daily plan.'] /* Stage D, item 6 */);
   assert.equal(done.action, null); // no Daily plan, no coral button
   assert.equal(done.link.label, 'Edit my review');
   assert.deepEqual(homeSuggestion(base({ hour: 18, reviewed: true })).lines, ['Nothing is set for tomorrow yet.']);

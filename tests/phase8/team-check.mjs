@@ -170,7 +170,7 @@ async function run(browser, width) {
   const checkId = records[0]?.id;
   await page.goto(`${APP}/my-plans?area=interpersonal`);
   const draftRow = page.locator('li, .hl-row, [class*=row]').filter({ hasText: `${MONTH} team check` }).first();
-  pass(`${tag}: My Plans lists it by its name, as a draft of the tool`, await until(async () => { const t = (await draftRow.innerText().catch(() => '')).replace(/\s+/g, ' '); return /team check/.test(t) && /Team performance check/i.test(t) && /Draft/i.test(t); }, 15000), (await draftRow.innerText().catch(() => 'not found')).slice(0, 200));
+  pass(`${tag}: My plans lists it by its name, as a draft of the tool`, await until(async () => { const t = (await draftRow.innerText().catch(() => '')).replace(/\s+/g, ' '); return /team check/.test(t) && /Team performance check/i.test(t) && /Draft/i.test(t); }, 15000), (await draftRow.innerText().catch(() => 'not found')).slice(0, 200));
   await page.goto(`${APP}/welcome`);
   pass(`${tag}: Home offers to carry on`, await until(async () => (await page.getByText('Team performance check').count()) > 0, 15000));
 
@@ -434,7 +434,7 @@ async function run(browser, width) {
     const inTable = async () => ((await db.from('tool_answers').select('id').eq('user_id', me).eq('id', savedId)).data || []).length;
     await page.locator('.ds-guide-delete button, .saved-item-actions button').filter({ hasText: /^Delete$/ }).first().click();
     pass(`${tag}: Delete asks nothing`, (await page.locator('[role=alertdialog]').count()) === 0 && !(await page.getByText('Delete this?').count()));
-    pass(`${tag}: … goes back to My Plans with “Deleted” and Undo`, await until(async () => /\/my-plans/.test(page.url()), 10000) && await sawToast(page, 'Deleted') && (await page.locator('.ds-toast').last().getByRole('button', { name: 'Undo' }).count()) === 1);
+    pass(`${tag}: … goes back to My plans with “Deleted” and Undo`, await until(async () => /\/my-plans/.test(page.url()), 10000) && await sawToast(page, 'Deleted') && (await page.locator('.ds-toast').last().getByRole('button', { name: 'Undo' }).count()) === 1);
     pass(`${tag}: … and the check has gone, from the list and the database`, await until(async () => (await page.getByText(`${MONTH} team check`).count()) === 0 && (await inTable()) === 0, 10000));
     await page.locator('.ds-toast').last().getByRole('button', { name: 'Undo' }).click();
     pass(`${tag}: Undo puts it back, with its own id, in the list and the database`, await until(async () => (await page.getByText(`${MONTH} team check`).count()) > 0 && (await inTable()) === 1, 15000));

@@ -1,4 +1,4 @@
-// Phase 4 step 4: My Plans and My Reviews in the running app, signed in as
+// Phase 4 step 4: My plans and My reviews in the running app, signed in as
 // the invented test client on the TEST database only (every other host and
 // every email call is blocked).
 //
@@ -178,12 +178,12 @@ async function seed() {
   expectPlans.push({ title: `Sprint ${sprint.number}`, tool: 'Performance Sprint', date: dayLabel(sprint.start_on), path: '/performance-sprint', area: 'personal' });
 
   const [mission] = await insert('missions', { user_id: me, title: `${STAMP}: Grow the studio`, archived_at: '2026-09-01T09:00:00Z', created_at: '2026-06-01T09:00:00Z', updated_at: '2026-09-01T09:00:00Z' }, 'missions');
-  expectPlans.push({ title: `${STAMP}: Grow the studio`, tool: 'Personal Operating Plan', date: 'Tue 1 Sep', path: `/personal-operating-plan-archived/${mission.id}`, area: 'personal' });
+  expectPlans.push({ title: `${STAMP}: Grow the studio`, tool: 'Individual Performance Plan', date: 'Tue 1 Sep', path: `/personal-operating-plan-archived/${mission.id}`, area: 'personal' });
   await insert('mission_progress_reviews', {
     user_id: me, mission_id: mission.id, status: 'final', created_at: '2026-08-03T17:00:00Z', updated_at: '2026-08-03T17:00:00Z',
     review_data: { mission_title: `${STAMP}: Grow the studio`, strategies: [{ id: 's1', name: 'Grow through referrals', description: '', tactics: [{ id: 't1', action: 'Ask three clients for an introduction', type: 'tickable', reviewed_is_done: true, reviewed_note: 'Two asked.' }] }] },
   }, 'popReviews');
-  expectReviews.push({ title: `${STAMP}: Grow the studio`, tool: 'POP review', date: 'Mon 3 Aug', path: '/mission-progress-review', area: 'personal' });
+  expectReviews.push({ title: `${STAMP}: Grow the studio`, tool: 'Individual Performance Plan review', date: 'Mon 3 Aug', path: '/mission-progress-review', area: 'personal' });
 
   const entry = (type, title, day, content) => ({ user_id: me, review_type: type, entry_date: day, title, status: 'final', content: JSON.stringify({ ...content, reviewType: type }), created_at: `${day}T17:00:00Z` });
   await insert('journal_entries', [
@@ -380,9 +380,9 @@ const TAPS = '.hlist-row-main, .hlist-icon-btn, .hlist-continue-btn, .hlist-revi
 async function checkHubs(page, tag) {
   for (const [hub, title, link, linkTo] of [
     // Polish 1 (B1): the recent items are one card, its "View all" beside the label.
-    ['/personal/plan', 'My Plans', 'View all', '/my-plans?area=personal'],
-    ['/personal/review', 'My Reviews', 'View all', '/my-reviews?area=personal'],
-    ['/interpersonal', 'My Plans', 'View all', '/my-plans?area=interpersonal'],
+    ['/personal/plan', 'My plans', 'View all', '/my-plans?area=personal'],
+    ['/personal/review', 'My reviews', 'View all', '/my-reviews?area=personal'],
+    ['/interpersonal', 'My plans', 'View all', '/my-plans?area=interpersonal'],
   ]) {
     await page.goto(`${APP}${hub}`);
     const ok = await until(async () => (await page.locator('.ds-hub-recent .ds-li').count()) > 0, 20000);
@@ -421,7 +421,7 @@ async function checkHubs(page, tag) {
   pass(`${tag}: …with "2 versions, latest Mon 12 Oct"`, (await team.locator('.ds-li-sub').innerText()) === '2 versions, latest Mon 12 Oct', await team.innerText());
   await shot(page, `${tag}-strategic`);
   await team.click();
-  // The team opens its newest version in the Health Check itself (M7); My Plans still filters by team.
+  // The team opens its newest version in the Health Check itself (M7); My plans still filters by team.
   pass(`${tag}: the team opens its newest version`, Boolean(await landsOn(page, /^\/strategic-alignment\/version\/[0-9a-f-]{36}$/)), page.url());
   await page.goto(`${APP}/my-plans?area=strategic&team=${encodeURIComponent(TEAM)}`);
   await until(async () => (await page.locator('.ds-filter-line span').count()) > 0, 15000);
@@ -441,17 +441,17 @@ async function checkOldRoutes(page, tag) {
     window.history.pushState({ usr: { toast: 'Discarded.' }, key: `t${Date.now()}`, idx: (window.history.state?.idx ?? 0) + 1 }, '', '/decision-history');
     window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
   });
-  pass(`${tag}: /decision-history goes to My Plans`, Boolean(await landsOn(page, '/my-plans')), path(page));
+  pass(`${tag}: /decision-history goes to My plans`, Boolean(await landsOn(page, '/my-plans')), path(page));
   pass(`${tag}: …with its toast`, Boolean(await until(async () => (await page.locator('text=Discarded.').count()) > 0, 10000)));
   await page.goto(`${APP}/decision-history?area=strategic`);
   pass(`${tag}: /decision-history keeps its query`, Boolean(await until(async () => new URL(page.url()).pathname === '/my-plans' && new URL(page.url()).search === '?area=strategic')), page.url());
-  for (const [to, title] of [['/my-plans', 'My Plans'], ['/my-reviews', 'My Reviews'], ['/daily-journals', 'My Journals']]) {
+  for (const [to, title] of [['/my-plans', 'My plans'], ['/my-reviews', 'My reviews'], ['/daily-journals', 'My journals']]) {
     await page.goto(`${APP}${to}`);
     const ok = await until(async () => (await page.locator('.hlist-row').count()) > 0, 20000);
     pass(`${tag}: ${to} still opens ${title}`, Boolean(ok) && path(page) === to, path(page));
   }
   const journals = await listRows(page);
-  pass(`${tag}: My Journals names its rows in words`, journals.length > 0 && journals.every((r) => r.title === 'Journal entry' && r.tool === 'Journal' && r.date), JSON.stringify(journals.slice(0, 3)));
+  pass(`${tag}: My journals names its rows in words`, journals.length > 0 && journals.every((r) => r.title === 'Journal entry' && r.tool === 'Journal' && r.date), JSON.stringify(journals.slice(0, 3)));
   await page.goto(`${APP}/planning-tools`);
   pass(`${tag}: /planning-tools still goes to Plan`, Boolean(await landsOn(page, '/personal/plan')), path(page));
 }
@@ -475,14 +475,14 @@ try {
   {
     const { context, page, errors } = await signedIn({ width: 1280, mode: 'dark' });
     try {
-      await checkList(page, 'desktop dark My Plans', '/my-plans', expectPlans);
+      await checkList(page, 'desktop dark My plans', '/my-plans', expectPlans);
       await shot(page, 'desktop-dark-my-plans');
-      await checkList(page, 'desktop dark My Reviews', '/my-reviews', expectReviews);
+      await checkList(page, 'desktop dark My reviews', '/my-reviews', expectReviews);
       await shot(page, 'desktop-dark-my-reviews');
-      await checkFilter(page, 'desktop dark My Plans', '/my-plans', 'interpersonal', 'Interpersonal');
-      await checkFilter(page, 'desktop dark My Reviews', '/my-reviews', 'interpersonal', 'Interpersonal');
-      await checkOpens(page, 'desktop dark My Plans', '/my-plans', expectPlans);
-      await checkOpens(page, 'desktop dark My Reviews', '/my-reviews', expectReviews);
+      await checkFilter(page, 'desktop dark My plans', '/my-plans', 'interpersonal', 'Interpersonal');
+      await checkFilter(page, 'desktop dark My reviews', '/my-reviews', 'interpersonal', 'Interpersonal');
+      await checkOpens(page, 'desktop dark My plans', '/my-plans', expectPlans);
+      await checkOpens(page, 'desktop dark My reviews', '/my-reviews', expectReviews);
       await checkHubs(page, 'desktop dark');
       await checkOldRoutes(page, 'desktop dark');
       await checkMode(page, 'desktop dark', 'dark');
@@ -504,9 +504,9 @@ try {
         pass(`360 light: ${to} taps are 44px or more`, small.length === 0, JSON.stringify(small.slice(0, 4)));
         await shot(page, `phone-light${to.replace(/\//g, '-')}`);
       }
-      await checkList(page, '360 light My Plans', '/my-plans', expectPlans);
-      await checkList(page, '360 light My Reviews', '/my-reviews', expectReviews);
-      await checkFilter(page, '360 light My Reviews', '/my-reviews', 'interpersonal', 'Interpersonal');
+      await checkList(page, '360 light My plans', '/my-plans', expectPlans);
+      await checkList(page, '360 light My reviews', '/my-reviews', expectReviews);
+      await checkFilter(page, '360 light My reviews', '/my-reviews', 'interpersonal', 'Interpersonal');
       // The filter's panel open: its controls fit and are tappable too.
       await openList(page, '/my-plans');
       await page.locator('.ds-filter > button').click();
@@ -521,7 +521,7 @@ try {
         pass(`360 light: ${hub} taps are 44px or more`, small.length === 0, JSON.stringify(small.slice(0, 4)));
         await shot(page, `phone-light${hub.replace(/\//g, '-')}`);
       }
-      await checkOpens(page, '360 light My Reviews', '/my-reviews', expectReviews.filter((x) => x.tool === 'End-of-sprint review' || x.tool === 'Weekly performance debrief'));
+      await checkOpens(page, '360 light My reviews', '/my-reviews', expectReviews.filter((x) => x.tool === 'End-of-sprint review' || x.tool === 'Weekly performance debrief'));
       await checkMode(page, '360 light', 'light');
       pass('360 light: no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
     } finally {

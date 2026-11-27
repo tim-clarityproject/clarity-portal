@@ -208,7 +208,7 @@ test('the goals, the toasts and the words around them', () => {
   assert.equal(whyLines('health', 'Tim')[2], 'Tim uses this to help, never to judge.');
 });
 
-test('My Reviews: finished check-ins named in words, and only this month’s draft', () => {
+test('My reviews: finished check-ins named in words, and only this month’s draft', () => {
   const rows = reviewRows({
     hsCheckins: [
       { id: 'a', kind: 'first', month: '2026-09-01', status: 'finished', finished_at: '2026-09-12 08:00:00' },

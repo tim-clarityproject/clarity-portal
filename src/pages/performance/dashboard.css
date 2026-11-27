@@ -618,6 +618,14 @@
   color: var(--text-2);
 }
 
+/* The family's hover for a fold (as .ds-collapse-head, design.css): the chevron, resting in the secondary grey, turns the
+   text colour under the pointer or keyboard focus (--coral-text is the text colour since Polish 1, so the title's own
+   hover showed nothing; Stage D, DG item 7). */
+@media (hover: hover) {
+  .ui-root .dash-fold-h:hover .dash-fold-mark { color: var(--text); }
+}
+.ui-root .dash-fold-h:focus-visible .dash-fold-mark { color: var(--text); }
+
 /* The arrow is centred on the fold's name: its line takes the name's font
    and line height, so the two stand on one baseline (Tim, 11 Nov). */
 /* A fold with a line under its name: the arrow is centred on the two together (design.css, .ds-chevron--block). */

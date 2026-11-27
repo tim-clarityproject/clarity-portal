@@ -7,7 +7,7 @@ import { discardReviewDraft, discardPlanReviewDraft, discardMissionReviewDraft }
 import { deleteCheckin } from './wheelOfLifeApi';
 import { deleteToolAnswers, loadToolAnswer, saveToolAnswers } from './toolAnswers';
 
-// Deleting one saved item (a row of My Plans or My Reviews), in one place
+// Deleting one saved item (a row of My plans or My reviews), in one place
 // (Tim, 5 Nov): the lists' rows no longer carry a bin, so the opened item
 // deletes itself with this, the same way the lists always did. A draft
 // goes through the draft-only helpers, so a bug here can never take a

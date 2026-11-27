@@ -318,7 +318,7 @@ test('what’s behind: wins, streaks, sleep (Recovery’s chart and range), stre
   assert.equal(by.sleep.slots.length, 56);
   assert.equal(by.sleep.slots.find((s) => s.last).axis, 'Last night');
   // Last night (day 31) was 6.5 hours, under the suggested 7 to 9.
-  assert.deepEqual(by.sleep.action.lines, ['Last night was under your target range.', 'Tonight, Sleep wind down could help.']);
+  assert.deepEqual(by.sleep.action.lines, ['Last night was under your target range.', 'Tonight, a sleep wind down could help.']);
   assert.equal(by.stress.line, 'These are the weeks you answered “Not at all” or “A little”.');
   assert.equal(by.stress.dots[1].good, false);
   // An average of 7 on the saved 1 to 10 reads as its word, with no unit (Tim, 10 Nov, 23:22).

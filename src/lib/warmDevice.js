@@ -4,7 +4,7 @@ import { changesMade, readQuietly, waitingToSend, whenSent } from './syncQueue';
 
 // The key pages are on the device before they are needed (Phase 4 step 8,
 // "Works on a flight"): Today, the plan, the sprint, Daily plan, Review
-// my day, this week's debrief, My Plans, My Reviews, the check-in and the
+// my day, this week's debrief, My plans, My reviews, the check-in and the
 // dashboard (Phase 5) show everything
 // as last seen even if they weren't opened recently. Once per visit, a
 // few seconds after the app opens signed in (or after signing in), each

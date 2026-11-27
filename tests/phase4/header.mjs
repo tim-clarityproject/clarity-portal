@@ -7,15 +7,19 @@
 //
 //   node --import ./tests/scores/register.mjs tests/phase4/header.mjs [folder for screenshots]
 //
-// 1. My Mission at 320, 360, 390 and 1280 wide, with the real mission, a
+// 1. My Mission at 320, 360 and 390 wide, with the real mission, a
 //    1,000-character one and none. Since Polish 1 (25 Nov reference .mission;
 //    replaces the two-line pill) it is one 40px box with a thin line in the
-//    frame's header: "My Mission" then the Mission on one line, ending with
+//    phone header: "My Mission" then the Mission on one line, ending with
 //    an ellipsis when it doesn't fit (the reference's own text-overflow), no
-//    sideways scroll, and it opens the full text. With no mission: grey
-//    "Add your Mission when you’re ready".
-// 2. With no mission, the pill opens the new plan's mission step, on a
-//    phone and on desktop, never the old Personal Operating Plan page.
+//    sideways scroll. With no mission: grey "Add your Mission when you’re
+//    ready". Since Tim's walk fixes (27 Nov, item 5) a laptop has no box: at
+//    1280 Home shows the Mission line under the title instead (one line, "…"),
+//    and the box and the line open the Individual Performance Plan at its My
+//    Mission card (/performance-plan#my-mission, missionPlace.js).
+// 2. With no mission, the box (390) and the Mission line (1280) open the same
+//    place, the plan's My Mission card, never the old Personal Operating Plan
+//    page (the plan's own Mission step only when there is no plan at all).
 // 3. The notch: safe-area insets emulated through Chromium's DevTools
 //    (Emulation.setSafeAreaInsetsOverride), as Safari and as a Home Screen
 //    app (display-mode: standalone emulated), portrait and landscape, with
@@ -207,6 +211,38 @@ if (part(1)) {
   for (const width of [320, 360, 390, 1280]) {
     for (const [kind, mission] of [['saved', undefined], ['1,000 characters', LONG], ['none', null]]) {
       const { context, page } = await newContext({ width, mission });
+      // A laptop (walk fixes, 27 Nov, item 5): no My Mission box in the header; the Mission line under Home's title.
+      if (width >= 1024) {
+        try {
+          await open(page);
+          const at = `${width}px, ${kind}`;
+          await page.waitForSelector('.ds-mline', { timeout: 15000 });
+          if (mission === null) await until(async () => (await page.locator('.ds-mline-v').innerText()).includes(NO_MISSION), 10000);
+          if (mission === LONG) await until(async () => (await page.locator('.ds-mline-v').textContent()) === LONG, 10000);
+          const l = await page.evaluate(() => {
+            const box = document.querySelector('.hdr-frame .hdr-mbox');
+            const v = document.querySelector('.ds-mline-v');
+            const cs = getComputedStyle(v);
+            return {
+              boxShown: Boolean(box) && box.getBoundingClientRect().width > 0 && getComputedStyle(box).display !== 'none',
+              text: v.textContent,
+              oneLine: v.getBoundingClientRect().height < parseFloat(cs.lineHeight) * 1.5,
+              cut: v.scrollWidth > v.clientWidth + 1,
+              ellipsis: cs.textOverflow === 'ellipsis',
+              sideways: document.documentElement.scrollWidth > window.innerWidth,
+            };
+          });
+          pass(`My Mission ${at}: no box in the header on a laptop (walk fixes, item 5)`, !l.boxShown, JSON.stringify(l));
+          pass(`My Mission ${at}: the Mission line on one line, ending with "…" when it doesn't fit`, l.oneLine && (!l.cut || l.ellipsis) && !l.sideways, JSON.stringify(l));
+          if (mission === null) pass(`My Mission ${at}: "${NO_MISSION}" shows`, l.text === NO_MISSION, l.text);
+          else if (mission === LONG) pass(`My Mission ${at}: the long Mission is cut with "…"`, l.cut && l.ellipsis, JSON.stringify(l));
+          else pass(`My Mission ${at}: the Mission shows`, l.text.length > 0, l.text);
+          await shot(page, `mline-${width}-${kind.replace(/\W+/g, '')}`);
+        } finally {
+          await context.close();
+        }
+        continue;
+      }
       try {
         await open(page);
         const sel = pillSel(width);
@@ -230,14 +266,11 @@ if (part(1)) {
         }
         await shot(page, `pill-${width}-${kind.replace(/\W+/g, '')}`);
 
-        // It opens the full text.
-        if (mission === LONG && (width === 390 || width === 1280)) {
+        // It opens the plan at its My Mission card (walk fixes, 27 Nov, item 5; missionPlace.js), where the Mission is in full.
+        if (mission === LONG && width === 390) {
           await page.locator(sel).click();
-          const full = await until(async () => {
-            const d = page.locator('[role=dialog]').filter({ hasText: LONG.slice(0, 40) });
-            return (await d.count()) ? (await d.first().innerText()).replace(/\s+/g, ' ').includes(LONG.slice(-60).trim()) : false;
-          }, 15000);
-          pass(`pill ${at}: tapping it opens the full mission`, Boolean(full));
+          const landed = await until(async () => path(page) === '/performance-plan' && new URL(page.url()).hash === '#my-mission', 15000);
+          pass(`pill ${at}: tapping it opens the plan at My Mission (/performance-plan#my-mission)`, Boolean(landed), page.url());
           await shot(page, `pill-${width}-long-open`);
         }
       } finally {
@@ -253,16 +286,20 @@ if (part(2)) {
     const { context, page } = await newContext({ width, mission: null });
     try {
       await open(page);
-      const sel = pillSel(width);
+      // The box on a phone, the Mission line under Home's title on a laptop (walk fixes, 27 Nov, item 5).
+      const sel = width >= 1024 ? '.ds-mline' : pillSel(width);
       await until(async () => (await page.locator(sel).innerText()).includes(NO_MISSION), 10000);
       await page.locator(sel).click();
-      const landed = await until(async () => /^\/performance-plan\/(build|edit)$/.test(path(page)) && new URL(page.url()).search === '?step=mission', 20000);
-      pass(`no mission ${width}px: opens /performance-plan/…?step=mission`, Boolean(landed), page.url());
-      const question = await until(async () => {
-        const q = page.locator('.ds-guide-question');
-        return (await q.count()) && (await q.first().innerText()).includes('What’s your Mission?');
-      }, 20000);
-      pass(`no mission ${width}px: the mission step ("What’s your Mission?")`, Boolean(question));
+      // The test client has a plan, so it opens the plan's My Mission card, where the Mission is added (missionPlace.js).
+      const landed = await until(async () => path(page) === '/performance-plan' && new URL(page.url()).hash === '#my-mission', 20000);
+      pass(`no mission ${width}px: opens the plan at My Mission (/performance-plan#my-mission)`, Boolean(landed), page.url());
+      const card = await until(async () => page.evaluate(() => {
+        const el = document.getElementById('my-mission');
+        if (!el) return false;
+        const b = el.getBoundingClientRect();
+        return b.top < window.innerHeight && b.bottom > 0;
+      }), 20000);
+      pass(`no mission ${width}px: the My Mission card is in view`, Boolean(card));
       pass(`no mission ${width}px: never the old Personal Operating Plan page`, !path(page).startsWith('/personal-operating-plan'));
       await shot(page, `no-mission-step-${width}`);
     } finally {
@@ -532,7 +569,8 @@ if (part(6)) {
 
 // ---------------------------------------------------------------- 7: against the 25 Nov reference
 if (part(7)) {
-  for (const [width, mode] of [[1280, 'dark'], [1280, 'light'], [390, 'dark'], [390, 'light']]) {
+  // The box is the phone header's only (walk fixes, 27 Nov, item 5): a laptop has the Mission line instead (part 1).
+  for (const [width, mode] of [[390, 'dark'], [390, 'light']]) {
     const { context, page } = await newContext({ width, mode, coach: { name: 'Tim', ways: ['whatsapp'] } });
     try {
       await open(page);

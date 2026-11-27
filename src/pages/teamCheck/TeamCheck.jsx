@@ -45,7 +45,7 @@ import { TOOL_CLOSED } from '../../content/pageLines/client';
 // nothing answered, and keeps that check's answers as "your last check",
 // for the chart's dashed rings and "At your last check, in October".
 //
-// A saved check opens with its id in the page's state (My Plans) or as
+// A saved check opens with its id in the page's state (My plans) or as
 // ?id=…; with neither, the tool carries on the unfinished one on this
 // device, or starts a new one.
 
@@ -130,7 +130,7 @@ function Shell({ children }) {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="My Plans" /></div>
+        <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="My plans" /></div>
         <PageOpening title={TOOL_NAME} line={B3_LINES.teamCheck} />
         {children}
       </div>
@@ -218,7 +218,7 @@ function Flow({ userId, user, asked, start }) {
     draft.clear();
     clearGuideDraft(stepDraftKey(userId, asked));
   };
-  // Deleted (the quiet "Delete" of a check opened from My Plans): nothing
+  // Deleted (the quiet "Delete" of a check opened from My plans): nothing
   // of it stays on this device, the copy the tool's own address carries on
   // included, so Home never offers a deleted check to carry on.
   const deleted = () => {
@@ -253,7 +253,7 @@ function Flow({ userId, user, asked, start }) {
   const statusOf = (now) => (isComplete(now.check) ? 'completed' : 'draft');
   const unchanged = (now, status) => lastSaved.current === JSON.stringify([status, savedAnswers(now.check), now.check.shared]);
 
-  // Back to where they came from: My Plans for a saved check, otherwise the hub.
+  // Back to where they came from: My plans for a saved check, otherwise the hub.
   const leave = () => navigate(asked ? '/my-plans' : '/interpersonal', { replace: true });
 
   const close = async () => {
@@ -277,7 +277,7 @@ function Flow({ userId, user, asked, start }) {
     try {
       const own = mine(now);
       const status = statusOf(own);
-      // A finished check, or one opened from My Plans, is in the list: the
+      // A finished check, or one opened from My plans, is in the list: the
       // next visit starts a new one. An unfinished new one keeps its place
       // on this device, so the tool carries on from here.
       const leaves = Boolean(asked) || status === 'completed';

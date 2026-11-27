@@ -13,7 +13,7 @@ export const LEVELS = Object.freeze(['free', 'individual', 'executive']);
 
 /** M28's three plans (s-levels), with the daily tools' names of CLAUDE.md rule 26a. Prices are M28's until Tim sets them. */
 export const PLANS = Object.freeze([
-  { level: 'free', name: 'Free', price: '£0', line: 'It has the Daily plan, the Daily review, the Confidence Bank, and Breathe and Reset.' },
+  { level: 'free', name: 'Free', price: '£0', line: 'It has the daily plan, the daily review, the confidence bank, and Breathe and Reset.' },
   { level: 'individual', name: 'Individual', price: '£16/month', line: 'Everything for your own performance, from your plan and sprints to the dashboard and the tools.' },
   { level: 'executive', name: 'Executive', price: '£40/month', line: 'Everything in Individual, plus the strategy tools for leading teams.' },
 ]);

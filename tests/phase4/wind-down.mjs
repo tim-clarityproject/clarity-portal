@@ -86,9 +86,9 @@ async function until(fn, ms = 15000) {
 const REVIEW = ['Call Evan before 09:00 about the referral', 'Finish the Harbour case study', 'Reply to Max about the workshop'];
 const THOUGHTS = ['call evan before 09:00 about the referral', 'Finish the Harbour case study!', 'Book a day off for the half term'];
 const CARRIED = [
-  ['Call Evan before 09:00 about the referral', 'From Daily review and last night’s sleep wind down'],
-  ['Finish the Harbour case study', 'From Daily review and last night’s sleep wind down'],
-  ['Reply to Max about the workshop', 'From Daily review'],
+  ['Call Evan before 09:00 about the referral', 'From your daily review and last night’s sleep wind down'],
+  ['Finish the Harbour case study', 'From your daily review and last night’s sleep wind down'],
+  ['Reply to Max about the workshop', 'From your daily review'],
   ['Book a day off for the half term', 'From last night’s sleep wind down'],
 ];
 
@@ -160,7 +160,8 @@ const at = (page, day, time) => page.clock.setSystemTime(londonInstant(day, time
 async function shot(page, name) {
   if (out) await page.screenshot({ path: join(out, `${name}.png`), fullPage: false });
 }
-const heading = async (page) => ((await page.locator('.ds-guide-question, .ds-end-title').first().textContent().catch(() => '')) || '').trim();
+// The guided tools' question (.ds-guide-question) or a focus-mode tool's (.ds-tool-q: the Daily plan since Polish 1, Stage A).
+const heading = async (page) => ((await page.locator('.ds-guide-question, .ds-tool-q, .ds-end-title').first().textContent().catch(() => '')) || '').trim();
 const nightKeys = (page) => page.evaluate(() => {
   const k = Object.keys(localStorage).find((x) => x.endsWith(':wind-down-nights'));
   return k ? JSON.parse(localStorage.getItem(k)) : {};
@@ -214,10 +215,11 @@ const orbR = (page) => page.evaluate(() => {
 
 async function toDoStep(page) {
   await page.goto(`${APP}/daily-plan`);
-  await page.locator('.ds-guide-question').waitFor({ timeout: 20000 });
-  for (let i = 0; i < 6 && (await heading(page)) !== 'What will you do today?'; i += 1) {
+  // The Daily plan runs in focus mode on ToolFrame (Polish 1, Stage A): its question .ds-tool-q, its Skip .ds-tool-skip.
+  await page.locator('.ds-guide-question, .ds-tool-q').first().waitFor({ timeout: 20000 });
+  for (let i = 0; i < 8 && (await heading(page)) !== 'What will you do today?'; i += 1) {
     const before = await heading(page);
-    await page.locator('.ds-guide-skip, .ds-guide-next').first().click();
+    await page.locator('.ds-guide-skip, .ds-tool-skip, .ds-guide-next').first().click();
     await until(async () => (await heading(page)) !== before, 5000);
     await sleep(450);
   }
@@ -245,7 +247,8 @@ if (part(1)) {
     await until(async () => (await heading(page)) === 'Ready to close the day?', 8000);
     pass('review: Close the day asks "Ready to close the day?"', (await heading(page)) === 'Ready to close the day?', await heading(page));
     // No ⓘ: the list headed "Moving to tomorrow" already says it (5e rule 1; Tim, 16 Nov, 23:31).
-    pass('review: "Check what moves to tomorrow." with no ⓘ (the list below says it)', (await page.locator('.ds-guide-nudge').innerText()).trim() === 'Check what moves to tomorrow.' && (await page.locator('.ds-guide-nudge .ds-guide-i').count()) === 0);
+    // Nothing sits under a question (Stage D, question-rules.md; Draft 11 dropped "Check what moves to tomorrow."), and no ⓘ.
+    pass('review: nothing under the question, and no ⓘ (the list below says it)', (await page.locator('.ds-guide-nudge').count()) === 0 && (await page.locator('.ds-guide-i').count()) === 0);
     const lists = await seen(page, '.ds-guide-body');
     pass('review: Moving to tomorrow lists the open to-do', openTodo ? lists.includes('Moving to tomorrow') && lists.includes(openTodo.text) : true, lists);
     pass('review: Tomorrow starts with the first thing for tomorrow', lists.includes('Tomorrow starts with') && lists.includes(REVIEW[0]), lists);
@@ -278,13 +281,16 @@ if (part(2)) {
   const { context, page } = await signedIn({ time: '22:30' });
   try {
     // Home offers it at 22:30.
-    await page.locator('.ds-suggest-question').waitFor({ timeout: 20000 });
-    pass('Home at 22:30 offers the wind-down', (await page.locator('.ds-suggest-question').innerText()).trim() === 'Ready to wind down?');
-    await page.locator('.ds-suggest .ds-btn--primary').click();
+    // Polish 1 (25 Nov example "Client Home"): the suggestion for now is the opening's one main button, no card or question.
+    const offer = page.locator('.home-act .ds-btn--primary');
+    await offer.waitFor({ timeout: 20000 });
+    pass('Home at 22:30 offers the wind-down (its one main button)', (await offer.innerText()).trim() === 'Start my wind down', await offer.innerText());
+    await offer.click();
     await page.getByRole('heading', { name: 'What’s on your mind for tomorrow?' }).waitFor({ timeout: 20000 });
     pass('wind-down: Home’s button opens /sleep-wind-down', new URL(page.url()).pathname === '/sleep-wind-down');
-    pass('wind-down: the nudges', (await page.locator('.ds-guide-nudge').allInnerTexts()).join('|') === 'Write a few quick lines, then let them go.|They’ll wait for you in tomorrow’s Daily plan.');
-    pass('wind-down: the % bar starts at 0%', (await page.locator('.ds-guide-pct-text').innerText()).trim() === '0%');
+    pass('wind-down: the nudges', (await page.locator('.ds-guide-nudge').allInnerTexts()).join('|') === 'Write a few quick lines, then let them go.|They’ll wait for you in tomorrow’s daily plan.');
+    // Focus mode (Polish 1, Stage B, rule 29o's note): "Step 1 of 3" at the top right and the progress line, no "0%" words.
+    pass('wind-down: "Step 1 of 3" and the progress line', (await page.locator('.ds-guide-where').innerText()).trim() === 'Step 1 of 3' && (await page.locator('.ds-guide-pct').count()) === 1, await page.locator('.ds-guide-where').innerText());
     // The eye alone, its words for screen readers (rules of 5 Nov).
     pass('wind-down: the eye says Only you', ((await page.locator('.ds-guide .ds-who').first().getAttribute('aria-label')) || '').includes('Only you'), await page.locator('.ds-guide .ds-who').first().getAttribute('aria-label').catch(() => 'no eye'));
     await page.getByRole('button', { name: 'Why write it down' }).click();
@@ -346,9 +352,10 @@ if (part(2)) {
     pass('wind-down: the breathing ends by itself after 5 minutes', Boolean(await until(async () => (await heading(page)) === 'Sleep well', 10000)), await heading(page));
     pass('wind-down: Sleep well uses the night colours', await page.locator('.ds-guide').evaluate((e) => e.classList.contains('ds-night')));
     const end = await seen(page, '.ds-guide-scroll');
-    pass('wind-down: Sleep well shows exactly its three lines and Back to Home', end === 'Sleep well Your thoughts are saved for the morning. Your Daily plan will have them ready. Back to Home', end);
-    pass('wind-down: no list and nothing to act on', (await page.locator('.ds-guide-scroll :is(ul, ol, li, input, textarea, [role=checkbox], a)').count()) === 0
-      && (await page.locator('.ds-guide-scroll button').count()) === 1);
+    pass('wind-down: Sleep well shows exactly its three lines and Back to Home', end === 'Sleep well Your thoughts are saved for the morning. Your daily plan will have them ready. Back to Home', end);
+    // The focus-mode bar's × (Polish 1, Stage B: the tool's own close, inside the tool's column) is not on the screen's words.
+    pass('wind-down: no list and nothing to act on', (await page.locator('.ds-guide-scroll :is(ul, ol, li, input, textarea, [role=checkbox], a):not(.ds-tool-bar *)').count()) === 0
+      && (await page.locator('.ds-guide-scroll button:not(.ds-tool-bar *)').count()) === 1, await page.evaluate(() => [...document.querySelectorAll('.ds-guide-scroll :is(ul, ol, li, input, textarea, [role=checkbox], a, button)')].map((e) => `${e.tagName}.${e.className} ${(e.innerText || e.getAttribute('aria-label') || '').trim().slice(0, 30)}`).join('; ')));
     const back = page.locator('.ds-end-action button');
     pass('wind-down: Back to Home is outlined, not coral', /ds-btn--outline/.test(await back.getAttribute('class')) && !/255, 111, 92|194, 65, 46/.test(await back.evaluate((b) => getComputedStyle(b).backgroundColor)));
     pass('wind-down: Wednesday night is marked as used', Boolean((await nightKeys(page))[WED]?.finishedAt));
@@ -357,7 +364,7 @@ if (part(2)) {
     await until(async () => new URL(page.url()).pathname === '/welcome', 10000);
     await page.locator('.home-page .ds-page-title').waitFor({ timeout: 20000 });
     await sleep(800);
-    pass('Home stops offering the wind-down once used', !((await page.locator('.ds-suggest-question').allInnerTexts()).join() || '').includes('Ready to wind down?'));
+    pass('Home stops offering the wind-down once used', !((await page.locator('.home-act .ds-btn--primary').allInnerTexts()).join() || '').includes('Start my wind down'));
 
     // 3. The next morning.
     if (part(3)) {
@@ -496,7 +503,7 @@ if (part(6)) {
       await page.locator('.ds-guide-next').click();
       await page.locator('.ds-night-breathe .ds-borb').waitFor({ timeout: 8000 });
       const night = await page.locator('.ds-guide').evaluate((e) => ({ bg: getComputedStyle(e).backgroundColor, fg: getComputedStyle(e).color }));
-      const want = mode === 'dark' ? { bg: 'rgb(0, 0, 0)', fg: 'rgb(163, 163, 160)' } : { bg: 'rgb(239, 237, 232)', fg: 'rgb(74, 74, 73)' };
+      const want = mode === 'dark' ? { bg: 'rgb(0, 0, 0)', fg: 'rgb(163, 163, 160)' } : { bg: 'rgb(239, 237, 232)', fg: 'rgb(90, 90, 88)' }; // light: --text-2, #5A5A58 since Polish 1 Stage B (was #4A4A49);
       pass(`360 ${mode}: the night colours are the mode's own, one step quieter`, night.bg === want.bg && night.fg === want.fg, `${JSON.stringify(night)} (day ${bg})`);
       pass(`360 ${mode}: the breathing has no sideways scrolling`, await noSideways(page));
       pass(`360 ${mode}: the orb is 240px on a phone`, Math.round((await page.locator('.ds-night-breathe .ds-borb').boundingBox()).width) === 240);
@@ -542,7 +549,8 @@ if (part(7)) {
     pass('offline: the next morning has the thought once', carried.filter((r) => r.name === 'Offline thought one').length === 1, carried.map((r) => r.name).join(' | '));
     await context.setOffline(true);
     await page.locator('.ds-pick-group').first().locator('.ds-answer--pick', { hasText: 'Offline thought one' }).click();
-    pass('offline: chosen with no connection, it will sync', Boolean(await until(async () => (await page.locator('.ds-guide-bar').innerText()).includes('Will sync'), 10000)));
+    // The Daily plan's bar is ToolFrame's (.ds-tool-bar) since Polish 1, Stage A.
+    pass('offline: chosen with no connection, it will sync', Boolean(await until(async () => (await page.locator('.ds-guide-bar, .ds-tool-bar').first().innerText()).includes('Will sync'), 10000)));
     await context.setOffline(false);
     const sent = await until(async () => {
       const r = (await db.from('todos').select('id, source').eq('user_id', me).eq('text', 'Offline thought one').is('deleted_at', null)).data || [];
@@ -570,19 +578,27 @@ const MEASURE = (sel) => {
   return { w: Math.round(r.width), h: Math.round(r.height), fs: parseFloat(s.fontSize), ls: parseFloat(s.letterSpacing) || 0, ff: s.fontFamily.split(',')[0].replace(/["']/g, ''), color: s.color, bg: s.backgroundColor, tt: s.textTransform, ta: s.textAlign };
 };
 // [what, screen, mock selector in the frame, app selector, fields, known difference]
+const REF = 'The 25 Nov design reference (Polish 1) wins over M19: titles 24px (22 on a phone), lines 16px, small grey words 13px in --text-2, the main button black in light and white in dark, 40px (44 on a phone).';
 const PARTS = [
-  ['Sleep well title', 'night', '.gn h2', '.ds-end-title', ['fs', 'ls', 'ff', 'tt', 'ta', 'color']],
-  ['Sleep well line', 'night', '.gn p', '.ds-end-line', ['fs', 'ff', 'color']],
+  ['Sleep well title', 'night', '.gn h2', '.ds-end-title', ['ff', 'tt', 'ta']],
+  ['Sleep well title size and colour', 'night', '.gn h2', '.ds-end-title', ['fs', 'ls', 'color'], REF],
+  ['Sleep well line', 'night', '.gn p', '.ds-end-line', ['fs', 'ff']],
+  ['Sleep well line colour', 'night', '.gn p', '.ds-end-line', ['color'], REF],
   ['Sleep well button', 'night', '.gn .ghost', '.ds-end-action button', ['h', 'tt'], 'The shared outlined button is 48px, as M19 .ghost.'],
-  ['night background', 'night', '.frame', '.ds-guide', ['bg', 'color']],
+  ['night background', 'night', '.frame', '.ds-guide', ['bg']],
+  ['night words colour', 'night', '.frame', '.ds-guide', ['color'], REF],
   ['night orb', 'breathe', '.orbs', '.ds-night-breathe .ds-borb', ['w'], 'The orb is Breathe’s own since the Breathe tools round: 280px, 240px on a phone (Tim, 26 Nov, decisions part 12).'],
-  ['Work’s done title', 'wdone', '.wd h2', '.ds-end-title', ['fs', 'ls', 'ff', 'tt', 'ta', 'color']],
-  ['Work’s done line', 'wdone', '.wd p', '.ds-end-line', ['fs', 'ff', 'color']],
-  ['Work’s done button', 'wdone', '.wd .btn', '.ds-end-action button', ['h', 'bg']],
-  ['Carried over heading', 'morning', '.grp h5', '.ds-pick-group-title', ['fs', 'ff', 'color']],
-  ['source line', 'morning', '.pkrow small', '.ds-pick-group .ds-todo-tag', ['fs', 'color']],
+  ['Work’s done title', 'wdone', '.wd h2', '.ds-end-title', ['ls', 'ff', 'tt', 'ta', 'color']],
+  ['Work’s done title size', 'wdone', '.wd h2', '.ds-end-title', ['fs'], REF],
+  ['Work’s done line', 'wdone', '.wd p', '.ds-end-line', ['ff']],
+  ['Work’s done line size and colour', 'wdone', '.wd p', '.ds-end-line', ['fs', 'color'], REF],
+  ['Work’s done button', 'wdone', '.wd .btn', '.ds-end-action button', ['h', 'bg'], REF],
+  ['Carried over heading', 'morning', '.grp h5', '.ds-pick-group-title', ['fs', 'ff']],
+  ['Carried over heading colour', 'morning', '.grp h5', '.ds-pick-group-title', ['color'], REF],
+  ['source line', 'morning', '.pkrow small', '.ds-pick-group .ds-todo-tag', ['fs']],
+  ['source line colour', 'morning', '.pkrow small', '.ds-pick-group .ds-todo-tag', ['color'], REF],
   // M19's "You’ve chosen n of 3" is gone: no limit on the Daily plan (Tim, 16 Nov, 19:03; checked as absent in part 3).
-  ['thought number', 'think', '.trow .n', '.ds-rowlist-n', ['fs', 'color']],
+  ['thought number', 'think', '.trow .n', '.ds-rowlist-n', ['fs', 'color'], REF],
 ];
 function compare(view, mode, what, mock, app, fields, known) {
   if (!mock || !app) {

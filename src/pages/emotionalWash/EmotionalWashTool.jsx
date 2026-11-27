@@ -66,7 +66,7 @@ import './emotionalWash.css';
 //   onTodoGone(id)     a to-do replaced by an edit, or no longer wanted: the page deletes it
 //   pdf                the "Download my PDF" link in the summary's bottom bar
 //   onEdited           “Save my edit” went back to the summary: the page saves
-//   actions            “Delete”, for a wash opened from My Plans: under the
+//   actions            “Delete”, for a wash opened from My plans: under the
 //                      summary, and under the first question while it is
 //                      still a draft (`actionsFirst`)
 //   draftKey, initialStep, onClose, onFinish   as GuidedTool's

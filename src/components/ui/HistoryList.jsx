@@ -23,7 +23,7 @@ import { rowName } from '../design/ListRow';
 //   Filters sit behind the one Filter button, with one line saying what is
 //   applied and Clear (guideline 6).
 //
-// Shared history list: My Plans, My Reviews and My Journals. Driven only
+// Shared history list: My plans, My reviews and My journals. Driven only
 // by props: no data fetching, no Supabase calls, no navigation of its
 // own. The caller supplies rows, decides what "open"/"edit"/"delete"
 // mean, and renders its own dialogs/toasts around this component.
@@ -36,17 +36,17 @@ import { rowName } from '../design/ListRow';
 //
 // Row -> filter matching: by default a filter's `id` is matched against
 // each row's own `typeLabel`, and the id 'all' always matches every row.
-// A filter may instead carry its own `match(row)` predicate (My Plans and
-// My Reviews filter by area).
+// A filter may instead carry its own `match(row)` predicate (My plans and
+// My reviews filter by area).
 //
 // `subFilters`: an optional map of parent filter id -> a second array of
 // {id,label[,match]} filter defs, a second drop-down once that parent is
-// chosen (My Plans: "Which tool?" under Personal, "Which team?" under
+// chosen (My plans: "Which tool?" under Personal, "Which team?" under
 // Strategic; `subLabels` names it). `initialFilter` and
 // `initialSubFilter` open the list already filtered (a hub's "Open My
 // Plans" link, an old address).
 //
-// `search` (My Plans and My Reviews, Phase 5 step 4): { label,
+// `search` (My plans and My reviews, Phase 5 step 4): { label,
 // placeholder } turns on a search box with the Filter button, which
 // keeps the rows whose name or tool hold every word typed, on top of the
 // filters, from the rows already on the device (so offline too).

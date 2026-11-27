@@ -114,10 +114,10 @@ export default function MissionProgressReviewDetail() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/my-reviews')} label="Back to my reviews" /></div>
 
         <div className="plan-summary-head">
-          {/* "POP review" (Personal Operating Plan review), Tim's
-              explicit wording (patch 2d) - matches My Reviews' filter/row
-              label for this same review type. */}
-          <PageOpening label={formatShortDate(review.created_at)} title="POP review" line={B3_LINES.missionReview} />
+          {/* Once "POP review" (patch 2d); the old plan's name is never shown
+              (Tim, 27 Nov), so it reads as the Individual Performance Plan's
+              review, matching My reviews' row for this same review type. */}
+          <PageOpening label={formatShortDate(review.created_at)} title="Individual Performance Plan review" line={B3_LINES.missionReview} />
         </div>
 
         {/* The POP review is retired (Phase 3, step 4): saved ones are
@@ -165,7 +165,7 @@ export default function MissionProgressReviewDetail() {
       <DeleteDialog
         open={deleteOpen}
         title="Delete this review?"
-        body="It will be deleted for good and removed from My Reviews. Your plan and its Versions are not affected."
+        body="It will be deleted for good and removed from My reviews. Your plan and its Versions are not affected."
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
       />

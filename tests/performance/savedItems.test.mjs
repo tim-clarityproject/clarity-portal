@@ -1,4 +1,4 @@
-// My Plans and My Reviews (src/lib/savedItems.js, Phase 4 step 4): every
+// My plans and My reviews (src/lib/savedItems.js, Phase 4 step 4): every
 // saved item named in words with its tool and its date on the right
 // (writing rule 60), the area it belongs to, the hubs' recent rows and the
 // Health Check's teams. Fixed days only. Run with npm run test:performance.
@@ -49,7 +49,7 @@ const PLANS = {
   missions: [{ id: 'm1', title: 'Grow the studio', updated_at: at('2026-06-01'), archived_at: at('2026-09-01') }],
 };
 
-test('My Plans: every type, named in words, with its tool, area and date', () => {
+test('My plans: every type, named in words, with its tool, area and date', () => {
   const rows = planRows(PLANS, TODAY);
   const by = (id) => rows.find((r) => r.id === id);
   assert.equal(by('decision:d1').title, 'Yesterday’s plan', 'an old day plan is never named by its date');
@@ -70,13 +70,14 @@ test('My Plans: every type, named in words, with its tool, area and date', () =>
   assert.equal(by('day-plan:dp2').edit.path, '/daily-plan/2026-10-18');
   assert.equal(by('day-plan:dp3'), undefined);
   assert.equal(by('pop:m1').to.path, '/personal-operating-plan-archived/m1');
+  assert.equal(by('pop:m1').typeLabel, 'Individual Performance Plan', 'the old plan’s name is never shown (Tim, 27 Nov)');
   for (const r of rows) {
     assert.ok(r.title && !/^\d|^(mon|tue|wed|thu|fri|sat|sun)(?![a-z]*day’s )/i.test(r.title), `${r.id} is named in words: ${r.title}`);
     assert.ok(r.typeLabel && r.dateLabel, `${r.id} has its tool and date`);
   }
 });
 
-test('My Plans: the area filter, the tool and team choices, the recent rows and the teams', () => {
+test('My plans: the area filter, the tool and team choices, the recent rows and the teams', () => {
   const rows = planRows(PLANS, TODAY);
   const { filters, subFilters, subLabels } = listFilters(rows);
   assert.deepEqual(filters.map((f) => f.id), ['personal', 'interpersonal', 'strategic']);
@@ -112,7 +113,7 @@ const REVIEWS = {
   sprintReviews: [{ sprint_id: 's0', finished_at: '2026-09-27T18:00:00Z' }],
 };
 
-test('My Reviews: every type, named in words, with its tool, area and date', () => {
+test('My reviews: every type, named in words, with its tool, area and date', () => {
   const rows = reviewRows(REVIEWS, TODAY);
   const by = (id) => rows.find((r) => r.id === id);
   assert.equal(by('entry:e1').title, 'Yesterday’s review');
@@ -122,8 +123,9 @@ test('My Reviews: every type, named in words, with its tool, area and date', () 
   assert.equal(by('entry:e3').title, 'Weekly check-in');
   assert.equal(by('entry:e4').title, 'Harbour discovery call');
   assert.equal(by('pop-review:mr1').canEdit, false, 'POP reviews stay read only');
+  assert.equal(by('pop-review:mr1').typeLabel, 'Individual Performance Plan review', 'the old plan’s name is never shown (Tim, 27 Nov)');
   assert.equal(by('journal:j1').title, 'Journal entry');
-  assert.equal(by('wheel:w1').title, 'Focus on health');
+  assert.equal(by('wheel:w1').title, 'Focus on health'); // an old saved label, 'Health / Fitness', reads through areaName
   assert.equal(by('wheel:w3').title, 'Focus on Sleep', 'their own area as typed');
   assert.equal(by('wheel:w2').title, 'September review');
   assert.equal(by('day-review:dr1').title, 'Today’s review');
@@ -140,9 +142,34 @@ test('an old saved row labelled "First review" reads "First check-in" (display o
   assert.equal(shownTitle(' first review '), 'First check-in');
   assert.equal(shownTitle('First review of the plan'), 'First review of the plan', 'only the whole old label');
   assert.equal(shownTitle('October review'), 'October review');
+  // Stage D, item 6 (the capitals rule): older saved names in capitals read in sentence case, display only.
+  assert.equal(shownTitle('Daily Plan - Mon, Nov 2, 2026'), 'Daily plan - Mon, Nov 2, 2026');
+  assert.equal(shownTitle('After-Action Review'), 'After-action review');
+  assert.equal(shownTitle('Confidence Bank'), 'Confidence bank');
+  assert.equal(shownTitle('My Daily Plan'), 'My Daily Plan', 'only a name at the start');
+  assert.equal(shownTitle('Daily plan'), 'Daily plan');
   const raw = { id: 'e9', review_type: 'after-action', title: 'First review', status: 'final', created_at: at('2026-10-15') };
   const rows = reviewRows({ ...REVIEWS, entries: [raw] }, TODAY);
   const row = rows.find((r) => r.id === 'entry:e9');
   assert.equal(row.title, 'First check-in');
   assert.equal(raw.title, 'First review', 'the saved value is never changed');
+});
+
+test('the life balance areas: sentence case with “and” for the slash, keys unchanged (Tim, 27 Nov)', async () => {
+  const { STANDARD_AREAS, areaName, wrapLabel } = await import('../../src/lib/wheelOfLife.js');
+  assert.deepEqual(STANDARD_AREAS.map((a) => a.key), ['career', 'financial', 'health', 'relationships', 'romance', 'growth', 'fun', 'home', 'contribution', 'meaning']);
+  assert.deepEqual(STANDARD_AREAS.map((a) => a.name), [
+    'Career and work', 'Financial and money', 'Health and fitness', 'Relationships and family', 'Romance and partner',
+    'Personal growth and learning', 'Fun and recreation', 'Physical environment and home', 'Contribution and community', 'Purpose and meaning',
+  ]);
+  assert.equal(areaName({ key: 'growth', label: 'Personal Growth / Learning' }), 'Personal growth and learning', 'an old snapshot label reads the new name');
+  assert.equal(areaName({ key: 'own_x', label: 'Travel' }), 'Travel');
+  assert.deepEqual(wrapLabel('Physical environment and home', 18), ['Physical', 'environment and', 'home']);
+  assert.deepEqual(wrapLabel('Career and work', 12), ['Career and', 'work']);
+  const rows = reviewRows({ checkins: [
+    { id: 'g', checkinAt: '2026-10-01T10:00:00Z', date: '2026-10-01', areas: [{ key: 'growth', label: 'Personal Growth / Learning' }], focusAreaKey: 'growth' },
+    { id: 'm', checkinAt: '2026-10-01T10:00:00Z', date: '2026-10-01', areas: [{ key: 'meaning', label: 'Purpose and meaning' }], focusAreaKey: 'meaning' },
+  ] }, TODAY);
+  assert.equal(rows.find((r) => r.id === 'wheel:g').title, 'Focus on personal growth');
+  assert.equal(rows.find((r) => r.id === 'wheel:m').title, 'Focus on meaning');
 });

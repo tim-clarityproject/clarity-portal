@@ -149,6 +149,10 @@
 .ui-root .bt-row > .ds-choice { flex: 1 1 0; min-width: 0; }
 .ui-root .bt-row .ds-inline { display: flex; justify-content: flex-end; }
 .ui-root .bt-row .ds-rows { flex: 1 1 auto; min-width: 0; }
+/* Once the switch has become rows, the name sits above them, as a question over its answers, never beside a column of
+   rows (twice the text size on a phone; Stage D, DG item 9). */
+.ui-root .bt-row:has(.ds-rows) { flex-direction: column; align-items: stretch; gap: var(--space-2); }
+.ui-root .bt-row:has(.ds-rows) > .ds-choice { flex: none; width: 100%; }
 
 .ui-root .bt-row-name { white-space: nowrap; }
 

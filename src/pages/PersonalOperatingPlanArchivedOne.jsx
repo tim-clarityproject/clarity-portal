@@ -134,7 +134,7 @@ export default function PersonalOperatingPlanArchivedOne() {
         <div className="plan-summary-head">
           <PageOpening
             title={mission.title}
-            label={[`Archived ${new Date(mission.archived_at).toLocaleDateString('en-GB')}`, version ? `Last Version ${version.major}.${version.minor}` : null].filter(Boolean).join(', ')}
+            label={[`Archived ${new Date(mission.archived_at).toLocaleDateString('en-GB')}`, version ? `Last version ${version.major}.${version.minor}` : null].filter(Boolean).join(', ')}
             line="You can read this plan but not change it."
           />
         </div>

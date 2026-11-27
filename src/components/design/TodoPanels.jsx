@@ -184,7 +184,7 @@ export function AddWinPanel({ open, onClose, form, onFormChange, strategies, day
       <div className="ds-panel-form">
         <div className="ds-panel-lead">
           <p>Something you did that wasn’t in your plan but moved the needle.</p>
-          <p>It counts as done and is saved to your Confidence Bank.</p>
+          <p>It counts as done and is saved to your confidence bank.</p>
         </div>
         <div>
           <TextBox ref={box} label="What did you do?" who="me" value={form.text} onChange={(text) => set({ text })} placeholder="e.g. Ran a workshop that led to two referrals" maxLength={TEXT_LIMIT} />

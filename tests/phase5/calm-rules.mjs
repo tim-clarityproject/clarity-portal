@@ -243,6 +243,8 @@ const UNSTUCK_PLAN = {
 const PAGES = PAGES_ALL.filter(([name]) => !ONLY || ONLY.test(name));
 
 const BACKGROUND = { dark: 'rgb(0, 0, 0)', light: 'rgb(249, 248, 245)' };
+// The frame round a laptop's panel (--raised; the 25 Nov reference's frame colour).
+const FRAME_BG = { dark: 'rgb(17, 17, 16)', light: 'rgb(239, 237, 232)' };
 const TEXT = { dark: 'rgb(255, 255, 255)', light: 'rgb(0, 0, 0)' };
 
 /** Runs in the page. */
@@ -728,6 +730,9 @@ function measureHealthCheck({ layer }) {
     small,
     sideways: Math.max(document.documentElement.scrollWidth - window.innerWidth, scroller.scrollWidth - scroller.clientWidth),
     background: solid(hc),
+    // On a laptop a guided tool runs in focus mode as the portal does (Polish 1, Stage B): the frame colour round one
+    // rounded panel in the page colour (design.css .ds-guide--fullscreen .ds-guide-frame; the 25 Nov reference's frame).
+    panel: hc.querySelector(':scope > .ds-guide-scroll > .ds-guide-frame') && window.innerWidth >= 1024 ? solid(hc.querySelector('.ds-guide-frame')) : null,
     behind: getComputedStyle(document.documentElement).backgroundColor,
     textColour: heading ? getComputedStyle(heading).color : null,
     theme: document.documentElement.getAttribute('data-theme'),
@@ -753,7 +758,9 @@ if (HC_ONLY) {
           await page.mouse.move(2, 2);
           await sleep(700);
           const r = await page.evaluate(measureHealthCheck, { layer });
-          pass(`${tag}: the page and its text follow the device (${mode})`, r.background === BACKGROUND[mode] && r.behind === BACKGROUND[mode] && r.textColour === TEXT[mode] && r.theme === mode, `${r.background} ${r.behind} ${r.textColour} ${r.theme}`);
+          // Framed (a laptop, focus mode): the frame colour round the panel, the panel the page colour; else the page colour.
+          const pageOk = r.panel ? r.background === FRAME_BG[mode] && r.panel === BACKGROUND[mode] : r.background === BACKGROUND[mode];
+          pass(`${tag}: the page and its text follow the device (${mode})`, pageOk && r.behind === BACKGROUND[mode] && r.textColour === TEXT[mode] && r.theme === mode, `${r.background} ${r.panel || ''} ${r.behind} ${r.textColour} ${r.theme}`);
           pass(`${tag}: every tap area is 44px or more`, r.small.length === 0, r.small.slice(0, 6).join('; '));
           pass(`${tag}: no sideways scroll`, r.sideways <= 0, `${r.sideways}px`);
           const btns = await page.evaluate(buttonProblems, { phone, scale: SCALE });
@@ -912,19 +919,21 @@ if (CHEVRONS) {
           pass(`${tag}: measured`, false, e.message.split('\n')[0]);
         }
       }
-      // Back beside a guided tool's name (the Daily review's second screen; nothing is saved).
+      // A guided tool's Back, at the foot since Polish 1, Stage B (rule 29t's note: the chevron then the word "Back" on a
+      // laptop), on the Daily review's second screen; nothing is saved. Its chevron is centred on the word (rule 29ao);
+      // its 10px gap is backGaps' (Stage D, DG item 3: this read the top bar, where Back no longer is).
       try {
         await page.goto(`${APP}/daily-review`);
-        await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
-        for (let i = 0; i < 3 && !(await page.locator('.ds-guide-back').count()); i += 1) {
-          await page.getByRole('button', { name: /^(Next|Skip)$/ }).first().click({ timeout: 3000 }).catch(() => null);
+        await page.waitForSelector('.ds-guide-question, .ds-tool-q', { timeout: 20000 });
+        for (let i = 0; i < 3 && !(await page.locator('.ds-tool-back:visible').count()); i += 1) {
+          await page.locator('.ds-guide-next, .ds-guide-skip, .ds-tool-skip').first().click({ timeout: 3000 }).catch(() => null);
           await sleep(600);
         }
         await page.evaluate(() => document.fonts.ready);
         await sleep(600);
-        const guide = (await measureChevrons(page)).filter((c) => c.label.startsWith('ds-guide-back'));
+        const guide = (await measureChevrons(page)).filter((c) => /ds-tool-back|ds-guide-back/.test(c.label));
         measured += guide.length;
-        pass(`chevrons, a guided tool's Back ${width}px: centred on the capitals of the tool's name`, guide.length === 1 && chevronsOff(guide).length === 0, guide.length ? chevronsOff(guide).join('; ') : 'Back was not found');
+        pass(`chevrons, a guided tool's Back ${width}px: centred on its word`, phone ? true : guide.length === 1 && chevronsOff(guide).length === 0, guide.length ? chevronsOff(guide).join('; ') : 'Back was not found');
       } catch (e) {
         pass(`chevrons, a guided tool's Back ${width}px: measured`, false, e.message.split('\n')[0]);
       }

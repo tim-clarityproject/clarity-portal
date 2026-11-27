@@ -144,7 +144,7 @@ test('levels: gating off by default, so nothing is ever locked (plan risk 20)', 
   assert.equal(lv.levelOf([{ level: 'individual', status: 'active', created_at: '2026-10-01' }, { level: 'free', status: 'cancelled', created_at: '2026-11-01' }]).level, 'individual');
   assert.equal(lv.cancelLine('individual', '2026-12-18'), 'Your Individual plan ends on Fri 18 Dec.');
   assert.equal(lv.chooseWords('executive'), 'Choose Executive');
-  assert.match(lv.PLANS[0].line, /Daily plan, the Daily review/, 'the daily tools’ names (CLAUDE.md rule 26a)');
+  assert.match(lv.PLANS[0].line, /daily plan, the daily review, the confidence bank/, 'the daily tools’ names (CLAUDE.md rule 26a), lower case inside a sentence (Stage D, item 6)');
 });
 
 test('no client-facing string in Group C’s files says pay, paid or payment (Apple Pay is a product name), or Opened', () => {

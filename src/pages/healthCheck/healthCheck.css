@@ -932,6 +932,12 @@
     padding: var(--space-px14) 0 !important;
   }
 
+  /* One left edge (sign-in rule 49): mobile.css's old rule for every button on a phone (button:not(...), 12px 16px
+     !important) outranked the line above and put each project 16px in from the column's edge (Stage D, DG item 2). */
+  .ui-root button.hc-prow:not(#_) {
+    padding: var(--space-px14) 0 !important;
+  }
+
   .ui-root .hc-pn {
     margin-top: var(--line-w);
   }

@@ -305,7 +305,7 @@ export function LinkPanel({ cal, open, onClose, start = null }) {
 // ---------------------------------------------------------------- the two call types every coach starts with
 
 /**
- * Makes the Discovery call and the Connection Call for a coach who has
+ * Makes the Discovery call and the Connection call for a coach who has
  * neither yet, once the device knows what the database holds: through 051's
  * own function when it is there, on the device before that (they move across
  * with everything else).

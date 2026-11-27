@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/check-api-functions.mjs && vite build",
+    "build": "node scripts/check-api-functions.mjs && node scripts/check-capitals.mjs && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
     "test:panels": "node --import ./tests/mute-audio.mjs tests/design-reference/panels-never-jump.mjs",

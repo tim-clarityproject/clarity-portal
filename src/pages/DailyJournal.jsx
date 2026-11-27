@@ -274,7 +274,7 @@ export default function DailyJournal() {
   }, [blocks, isLoading, serverKnown]);
 
   // × on a journal edited since it was last saved: the edit goes to the database as Done sends it (straight there,
-  // or through the offline queue), so My Journals' word count and other devices see it. "Saved." is said only when
+  // or through the offline queue), so My journals' word count and other devices see it. "Saved." is said only when
   // that is true; queued, it says it will sync (the functionality tester, Q4). A day that hasn't loaded keeps the
   // writing on the device, as every tool's × keeps it.
   const handleClose = async () => {
@@ -306,7 +306,7 @@ export default function DailyJournal() {
     try {
       const saved = await persist(false);
       // Kept on the device for now: stay here, showing "Will sync".
-      if (saved && !saved.queued) navigate('/daily-journals', { state: { toast: 'Journal saved. It is in My Reviews too.' } });
+      if (saved && !saved.queued) navigate('/daily-journals', { state: { toast: 'Journal saved. It is in My reviews too.' } });
     } catch (error) {
       console.error('[DailyJournal] save failed:', error);
       toast.error('That didn’t save. Check your connection and try again.');
@@ -387,7 +387,7 @@ export default function DailyJournal() {
                     lines="many"
                     focusMode
                     placeholder={i === lastTIndex ? 'Start writing...' : undefined}
-                    ariaLabel={i === 0 ? 'Daily Journal' : 'Daily Journal, continued'}
+                    ariaLabel={i === 0 ? 'Journal' : 'Journal, continued'}
                     value={b.v}
                     onChange={(v) => changeBlock(i, v)}
                   />

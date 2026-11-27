@@ -173,7 +173,7 @@ export async function insidePage(browser, width, mode, opts = {}) {
           // .single() asks for one object, as PostgREST gives it.
           return /vnd\.pgrst\.object/.test(req.headers().accept || '') ? json(found[0]) : json(found);
         }
-        // Any other list of decisions (My Plans): the real rows, with the Health Checks from here.
+        // Any other list of decisions (My plans): the real rows, with the Health Checks from here.
         try {
           const real = await route.fetch();
           const body = await real.json().catch(() => []);
