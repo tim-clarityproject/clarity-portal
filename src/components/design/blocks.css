@@ -80,7 +80,7 @@
   min-width: 0;
   max-width: 100%;
   margin: 0 0 var(--space-4);
-  padding: var(--space-1) 0 var(--space-px12);
+  padding: 0 0 var(--space-px14);  /* with the line's half-leading: 10px from the title, 16px to the hairline (option C) */
   border-bottom: var(--line-w) solid var(--line);
   font-size: var(--fs-small);
   line-height: 1.55;
@@ -213,7 +213,7 @@
   min-height: 0;
   padding: 0;
   border-radius: var(--radius-add-sq);
-  background: var(--raised);
+  background: var(--add-sq-bg);
   color: var(--text);
   cursor: pointer;
   transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);

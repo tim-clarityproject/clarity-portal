@@ -106,7 +106,8 @@ test('Needs you’s line: M28’s "Five things are drafted…", in words to ten'
   assert.equal(needsYouLine(5), 'Five things are drafted and waiting for you. Nothing goes until you send it.');
   assert.equal(needsYouLine(1), 'One thing is drafted and waiting for you. Nothing goes until you send it.');
   assert.equal(needsYouLine(12), '12 things are drafted and waiting for you. Nothing goes until you send it.');
-  assert.match(needsYouLine(0), /^Nothing is waiting for you\./);
+  // Walk fixes (27 Nov, UI tester): the empty line is one sentence.
+  assert.equal(needsYouLine(0), 'Nothing is waiting for you, and drafted reminders and invoices will show here.');
 });
 
 test('walk item 11 (27 Nov): the workshop line names the real organisation and place each time', () => {

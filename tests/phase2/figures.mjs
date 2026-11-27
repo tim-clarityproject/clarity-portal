@@ -139,9 +139,13 @@ pass('sprint page: the average is 68%, from week 1', /68%/.test(details) && /Wee
 const usual = await page.locator('body').textContent();
 // The usual-range line waits until it's ready, with nothing said before (Tim, 5 Nov).
 pass('sprint page (M8): fewer than 6 weeks, so the usual range waits, unsaid', !usual.includes('Your usual range'));
-const centre = (await page.locator('.ds-sdial-big').first().textContent()).trim();
+// Polish 1, Stage B (Tim's walk, item 9; CLAUDE.md "Figure takes empty"): the dial never shows a bare 0%. With nothing
+// scored this week its centre is a sentence and there is no .ds-sdial-big, so read the whole centre and its figure, if any.
+const centre = (await page.locator('.ds-sdial-centre').first().textContent()).trim();
+const centreFigure = (centre.match(/\d+%/) || [''])[0];
 const soFar = sprintWeekSoFar(d, today);
-pass('sprint page: this week so far equals src/lib/scores', soFar?.result?.score == null ? !/\d+%/.test(centre) : centre === `${m0Round(soFar.result.score)}%`, `${centre} vs ${soFar?.result?.score}`);
+const soFarShown = soFar?.result?.score == null ? null : m0Round(soFar.result.score);
+pass('sprint page: this week so far equals src/lib/scores', !soFarShown ? !centreFigure && /first log|Nothing is scored yet/.test(centre) : centreFigure === `${soFarShown}%`, `${centre} vs ${soFar?.result?.score}`);
 
 // The database's frozen copy.
 const frozen = await until(async () => {
@@ -190,7 +194,9 @@ const tiles = await page.evaluate(() => [...document.querySelectorAll('.ds-stile
 for (const s of d.strategies) {
   const want = soFar?.result?.strategies?.find((x) => x.id === s.id)?.score;
   const tile = tiles.find((t) => t.includes(s.name)) || '';
-  const ok = want == null ? /no score yet/.test(tile) : tile.includes(`${m0Round(want)}%`);
+  // Polish 1, Stage B (Tim's walk, item 9; "Figure takes empty"): a Strategy with nothing scored, or a bare 0%,
+  // shows the sentence "Its score starts with its first log." instead of a figure.
+  const ok = want == null || m0Round(want) === 0 ? /no score yet|Its score starts with its first log\./.test(tile) && !/\d+%/.test(tile) : tile.includes(`${m0Round(want)}%`);
   pass(`plan: "${s.name}" tile equals src/lib/scores this week so far`, ok, `${want == null ? 'none' : m0Round(want)} in ${tile.slice(0, 100)}`);
 }
 

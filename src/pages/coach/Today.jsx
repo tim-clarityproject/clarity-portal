@@ -262,8 +262,9 @@ export default function Today() {
 
 
         {/* Two columns on a laptop (the example's .cols): what needs the coach and today's work on the left, the month,
-            the week and the quieter lists on the right. On a phone the right column comes first, as the example draws. */}
-        <div className="ds-cols ds-cols--needs-first cc-today-cols">
+            the week and the quieter lists on the right. In one column the left column comes first: Needs you, then the sessions
+            (the example's coach Today; UI tester, walk fixes). */}
+        <div className="ds-cols cc-today-cols">
           <div>
             {needsCard}
             {sessionsCard}

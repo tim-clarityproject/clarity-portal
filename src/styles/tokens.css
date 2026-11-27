@@ -763,6 +763,7 @@
 
   /* Colours with no dark token above (dark values) */
   --raised: #111110;         /* surface: tiles, the Mission pill, examples, the chosen option */
+  --add-sq-bg: #1A1A19;      /* the card-head add square at rest in dark (option B; --raised would vanish on a card) */
   --seg-track: #111110;      /* a segmented switch's quiet grey surface (Tim, 18 Nov) */
   --seg-tile: #262626;       /* its chosen option's raised tile: the card colour in light; in dark a step up, as the dark card would vanish on the surface */
   --seg-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); /* the tile's very faint shadow */
@@ -831,6 +832,7 @@
   --surface: #FFFFFF;        /* boxes (the old name for --card) */
   --card: #FFFFFF;
   --raised: #EFEDE8;
+  --add-sq-bg: #EFEDE8;
   --seg-track: #EFEDE8;
   --seg-tile: #FFFFFF;
   --seg-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);

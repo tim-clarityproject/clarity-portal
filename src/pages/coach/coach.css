@@ -677,7 +677,7 @@ body:has(> #root .ui-root.cc-app) {
 /* A tablet: no room outside the row for the round tick, so it sits inside
    it, at the row's left (shown on hover, keyboard focus, or once choosing
    has begun, as on a laptop). */
-@media (min-width: 601px) and (max-width: 1180px) {
+@media (min-width: 601px) and (max-width: 1023px) {
   .ui-root .cc-rows .cc-pick-row { display: grid; grid-template-columns: var(--tap-min) minmax(0, 1fr); align-items: center; }
   .ui-root .cc-rows .cc-pick { position: static; margin: 0; }
 }

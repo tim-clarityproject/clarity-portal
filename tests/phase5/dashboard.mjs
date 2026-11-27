@@ -389,7 +389,7 @@ function compareSizes(name, mock, app, keys) {
     const b = mock?.[k];
     if (a == null || b == null) { results.push(`NOTE  ${name}: ${k} not on screen (app ${a}, M4 ${b})`); continue; }
     const same = Array.isArray(b) ? b.every((x, i) => Math.abs(x - a[i]) <= 1) : typeof b === 'string' ? Math.abs(parseFloat(a) - parseFloat(b)) <= 0.3 : Math.abs(a - b) <= 1;
-    pass(`${name}: ${k} as M4 (${JSON.stringify(b)})`, same, `app ${JSON.stringify(a)}`);
+    pass(`${name}: ${k} as M4, Polish 1 type (${JSON.stringify(b)})`, same, `app ${JSON.stringify(a)}`);
   }
 }
 
@@ -413,7 +413,15 @@ for (const mode of ['dark', 'light']) {
         const keys = width === 1280
           ? ['hero', 'glance', 'section', 'group', 'item', 'itemLine', 'big', 'foldTitle', 'foldLine', 'foldH', 'foldFigure', 'crowValue', 'crowName', 'sq', 'sqSmallH', 'sqSmallW', 'mini', 'lead']
           : ['section', 'item', 'foldTitle', 'foldLine', 'foldFigure', 'crowName', 'lead'];
-        compareSizes(name, width === 1280 ? m4.d : m4.p, app, keys);
+        // Polish 1, Stage A/B (CLAUDE.md "Type", the 25 Nov reference): the type is four steps, so M4's sizes give way
+        // where they differ. The headline figure is 24px (M4's 64), section labels 13px spaced grey capitals (M4's 16px
+        // Nekst), and a row's value is row-sized at 16px (M4's 20 and 24: "a card holds at most one 24px figure").
+        // The fold row loses the 4px its smaller figure frees (M4's 20px figure, now 16).
+        const mock = { ...(width === 1280 ? m4.d : m4.p) };
+        const polish1 = { hero: 24, section: 13, big: 16, foldFigure: 16, crowValue: 16 };
+        if (mock.foldH != null && mock.foldFigure != null) mock.foldH -= mock.foldFigure - polish1.foldFigure;
+        for (const [k, v] of Object.entries(polish1)) if (mock[k] != null) mock[k] = v;
+        compareSizes(name, mock, app, keys);
       }
       if (width < 601) {
         const minis = await page.locator('.dash-fv .dash-mini').count();
@@ -427,10 +435,12 @@ for (const mode of ['dark', 'light']) {
         }
         const chartW = await page.evaluate(() => {
           const c = document.querySelector('.dash-hchart-plot');
-          const p = document.querySelector('.dash-page');
+          // Polish 1, Stage B (CLAUDE.md "Layout": one Card): the big chart sits inside its card ("Your weeks"),
+          // so it fills the card's inner width rather than the page's.
+          const p = document.querySelector('.dash-hero-card') || document.querySelector('.dash-page');
           if (!c) return null;
           const cs = getComputedStyle(p);
-          return Math.round(c.getBoundingClientRect().width) - Math.round(p.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight));
+          return Math.round(c.getBoundingClientRect().width) - Math.round(p.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth));
         });
         if (chartW != null) pass(`${name}: the big chart is full width`, Math.abs(chartW) <= 1, chartW);
       }

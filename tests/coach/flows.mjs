@@ -462,7 +462,12 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
 
     // Time credit: Clock in and Clock out, to the minute.
     await open(page, `/coach/clients/${ID.marcus}`);
-    pass('time credit: what is left shows as a figure in Nekst Light', /Time credit left\s+2 hours 10 minutes/.test((await text(page)).replace(/\n+/g, ' ')) && (await page.locator('.ds-stat-value').first().evaluate((e) => getComputedStyle(e).fontWeight)) === '300');
+    // Polish 1, Stage B (CLAUDE.md "Type" and "Layout"): the time credit is a Card whose label is a 13px spaced-capitals
+    // section label (so its text reads in capitals) holding one Figure: a headline figure, DM Sans 24px light (300),
+    // no longer Nekst.
+    const creditFig = page.locator('.ds-fig').first();
+    const creditLook = await creditFig.evaluate((e) => { const c = getComputedStyle(e); return { w: c.fontWeight, f: c.fontFamily, s: parseFloat(c.fontSize) }; });
+    pass('time credit: what is left shows as a figure, DM Sans 24px light', /Time credit left\s+2 hours 10 minutes/i.test((await text(page)).replace(/\n+/g, ' ')) && creditLook.w === '300' && /DM Sans/.test(creditLook.f) && Math.abs(creditLook.s - 24) <= 1, JSON.stringify(creditLook));
     await page.getByRole('button', { name: 'Clock in to Leadership offsite design' }).click();
     await settle(page, 1500);
     pass('time credit: Clock in starts the clock on that project', /Clocked in for 0:00:0\d/.test(await text(page)) && db.rows.time_entries.some((t) => !t.ended_at));
@@ -474,7 +479,7 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     await open(page, `/coach/clients/${ID.marcus}`);
     await page.getByRole('button', { name: 'Clock out of Leadership offsite design' }).click();
     await settle(page, 900);
-    pass('time credit: Clock out adds the whole minutes', /1 hour 1 minute added/.test(await toastText(page)) && /Time credit left\s+1 hour 9 minutes/.test((await text(page)).replace(/\n+/g, ' ')), await toastText(page));
+    pass('time credit: Clock out adds the whole minutes', /1 hour 1 minute added/.test(await toastText(page)) && /* Polish 1: the Card's label reads in capitals */ /Time credit left\s+1 hour 9 minutes/i.test((await text(page)).replace(/\n+/g, ' ')), await toastText(page));
     pass('time credit: one clock runs at a time', db.rows.time_entries.filter((t) => !t.ended_at).length === 0);
 
     // Names in quiet lines open a note; Email opens the coach's own email, and nothing is sent.

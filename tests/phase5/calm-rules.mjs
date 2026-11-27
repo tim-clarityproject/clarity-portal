@@ -554,8 +554,10 @@ for (const width of PAGES.length ? WIDTHS : []) {
         await page.evaluate(() => document.fonts.ready);
         await sleep(1200);
         if (act === 'menu') {
-          // The phone bar's menu button shows up to 768px wide, the header's above it.
-          await page.locator('.ds-bar-menu:visible, .hdr-menu:visible').first().click();
+          // Polish 1, Stage B ("Frame and menu"): no phone bar and no header menu button any more. On a laptop the menu
+          // column is always in view (nothing to press); under 1024px the phone header's crosshair (.ds-mbtn) opens it.
+          const menuBtn = page.locator('.ds-mbtn:visible').first();
+          if (await menuBtn.count()) await menuBtn.click();
           await sleep(700);
         }
         const fonts = await page.evaluate(() => [document.fonts.check('16px "DM Sans"'), document.fonts.check('16px Nekst')]);

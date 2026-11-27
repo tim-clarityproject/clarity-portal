@@ -224,7 +224,7 @@ const C2_NUMBERS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven',
 
 /** Needs you's line (M28: "Five things are drafted and waiting for you. Nothing goes until you send it."). */
 export function needsYouLine(count) {
-  if (!count) return 'Nothing is waiting for you. Drafted reminders and invoices will show here.';
+  if (!count) return 'Nothing is waiting for you, and drafted reminders and invoices will show here.';
   const n = count <= 10 ? C2_NUMBERS[count] : String(count);
   return `${n} ${count === 1 ? 'thing is' : 'things are'} drafted and waiting for you. Nothing goes until you send it.`;
 }

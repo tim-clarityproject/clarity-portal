@@ -361,7 +361,8 @@ if (run('taps')) {
     for (let i = 0; i < 3 && !/What 2 to 4 results/.test(await heading(e.page)); i += 1) await next(e.page);
     await e.page.locator('.ds-objed').first().getByLabel('What’s your target?').fill('41');
     await e.page.waitForTimeout(1800);
-    await e.page.getByRole('button', { name: 'Close', exact: true }).click({ clickCount: 3 });
+    // Polish 1, Stage B: ToolFrame's × is named 'Close and save my place'
+    await e.page.getByRole('button', { name: 'Close and save my place', exact: true }).click({ clickCount: 3 });
     await e.page.waitForURL(/\/performance-plan$/, { timeout: 20000 });
     await e.page.waitForTimeout(1500);
     const v1 = await q(db.from('plan_versions').select('major, minor').eq('user_id', me));
@@ -639,7 +640,8 @@ if (run('text')) {
     await page.waitForTimeout(1600);
     pass('text: Edit never scrolls sideways', await noSideways(page));
     noErrors(page, 'text in Edit');
-    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    // Polish 1, Stage B: ToolFrame's × is named 'Close and save my place'
+    await page.getByRole('button', { name: 'Close and save my place', exact: true }).click();
     await page.waitForTimeout(1500);
   } catch (e) {
     pass('text ran to the end', false, e.message.split('\n')[0]);
@@ -975,7 +977,7 @@ if (run('dates')) {
         void future;
         const meta = await bodyText(page);
         const v = m0WeekOfDay(m0SprintCalendar({ start: sprint.start_on, lengthWeeks: sprint.length_weeks, recoveries: [] }, target).weeks, target);
-        pass(`dates: ${z} ${label}: the week shown is week ${v}`, meta.includes(`Week ${v} of ${sprint.length_weeks}`), meta.slice(0, 160));
+        pass(`dates: ${z} ${label}: the week shown is week ${v}`, /* Polish 1: the sprint's week label is a 13px spaced-capitals section label (CLAUDE.md "Type"), so its text reads in capitals; match case-insensitively */ meta.toLowerCase().includes(`week ${v} of ${sprint.length_weeks}`), meta.slice(0, 160));
         const saved = await until(async () => (await q(db.from('person_settings').select('time_zone').eq('user_id', me)))[0]?.time_zone === z, 8000);
         pass(`dates: ${z} ${label}: the saved time zone follows the device`, Boolean(saved));
         noErrors(page, `dates ${z} ${label}`);
@@ -1003,7 +1005,7 @@ if (run('long')) {
   try {
     await openSprint(page);
     const text = await bodyText(page);
-    pass('long: the sprint page says week 16 of 16', text.includes('Week 16 of 16'), text.slice(0, 200));
+    pass('long: the sprint page says week 16 of 16', /* Polish 1: the sprint's week label is a 13px spaced-capitals section label (CLAUDE.md "Type"), so its text reads in capitals; match case-insensitively */ text.toLowerCase().includes('week 16 of 16'), text.slice(0, 200));
     const segs = await page.locator('.ds-sdial [data-tip], .ds-sdial-seg').count();
     pass('long: the dial has 16 weeks', segs >= 16, `${segs}`);
     pass('long: no sideways scroll on the sprint page', await noSideways(page));
@@ -1052,7 +1054,7 @@ if (run('recovery')) {
     await openSprint(page);
     const text = await bodyText(page);
     const w = m0WeekOfDay(cal.weeks, today);
-    pass('recovery: the week shown matches the calendar with the Saturday-to-Tuesday Recovery', text.includes(`Week ${w} of ${sprint.length_weeks}`), `${w} / ${text.slice(0, 160)}`);
+    pass('recovery: the week shown matches the calendar with the Saturday-to-Tuesday Recovery', /* Polish 1: the sprint's week label is a 13px spaced-capitals section label (CLAUDE.md "Type"), so its text reads in capitals; match case-insensitively */ text.toLowerCase().includes(`week ${w} of ${sprint.length_weeks}`), `${w} / ${text.slice(0, 160)}`);
     const end = cal.actualEnd || cal.weeks[cal.weeks.length - 1]?.end;
     const human = end ? new Date(`${end}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '';
     pass('recovery: the end moved by the four days', end === addDays(sprint.planned_end_on, 4), `${end} vs planned ${sprint.planned_end_on}`);

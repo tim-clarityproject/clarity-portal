@@ -16,7 +16,7 @@ import { createClient } from '@supabase/supabase-js';
 import { QUESTIONS, checkinMonth, monthName } from '../../src/lib/performance/checkin.js';
 import { m13CheckinScores, m13Results } from '../../src/lib/scores/m13.js';
 
-const APP = 'http://localhost:5173';
+const APP = process.env.APP_URL || 'http://localhost:5173'; // like the other phase 5 suites, so it can run on any stand-in
 const TEST_HOST = TARGET_HOST;
 const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
 const part = (n) => !ONLY || ONLY.has(n);
@@ -85,7 +85,9 @@ if (part('N')) {
     await open(page, '/monthly-review', '.ds-guide-question');
     const c = await bodyText(page);
     note(`N check-in ${path(page)}: ${c.replace(/\s+/g, ' ').slice(0, 300)}`);
-    pass('N check-in opens on its opening screen', /Ready/.test(c) && !junk(c));
+    // A new person's first one is the First check-in (CLAUDE.md rule 26a; Tim's walk of Stage B, 26 Nov), which opens on
+    // "What would make coaching useful for you?" and "Start with my goals"; only a later month opens on "Ready to look back…".
+    pass('N check-in opens on its opening screen', /Ready to look back on your month\?|What would make coaching useful for you\?/.test(c) && !junk(c), c.replace(/\s+/g, ' ').slice(0, 160));
     pass('N check-in: no last-month figures', !/\/100|last month/i.test(c));
     for (const url of ['/my-plans', '/my-reviews']) {
       await open(page, url);

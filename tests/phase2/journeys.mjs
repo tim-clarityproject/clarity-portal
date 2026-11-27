@@ -765,7 +765,9 @@ try {
   await page.waitForURL(/\/performance-sprint$/, { timeout: 15000 }).catch(() => null);
   await openSprint(page);
   const back = await bodyText(page);
-  pass('welcome back: "…, so let’s start with this week."', back.includes('so let’s start with this week.') && /Welcome back/i.test(back), back.slice(0, 300));
+  // Polish 1, Stage B (rule 12, PageOpening): the sprint page opens with the title "Welcome back, Sam", drawn in
+  // Nekst capitals, and its one line is M15's own "Let’s start with this week." (no longer "…, so let’s start…").
+  pass('welcome back: "Let’s start with this week."', /Welcome back/i.test(back) && /let’s start with this week\./i.test(back), back.slice(0, 300));
   const v = await libraryView();
   pass('welcome back: the sprint now ends 2 days later', addDays(plannedEnd, 2) === v.calendar?.end || back.includes(`It ends on`), `${plannedEnd} → ${v.calendar?.end}`);
   // The welcome-back dial shows words, not the score; the week's pop-up has it.
