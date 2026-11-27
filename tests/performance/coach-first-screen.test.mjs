@@ -43,6 +43,12 @@ test('the page an address opens on', () => {
   assert.equal(screenKindOf('/coach/finances/'), 'finances');
   assert.equal(screenKindOf('/coach/finances/money'), 'finances');
   assert.equal(screenKindOf('/coach/finances/cash-flow'), 'finances');
+  // The money pages (Tim's walk of 27 Nov, item 14): the builder, Needs you and a block of hours' log.
+  assert.equal(screenKindOf('/coach/needs-you'), 'money');
+  assert.equal(screenKindOf('/coach/agreements/new'), 'money');
+  assert.equal(screenKindOf(`/coach/agreements/${id}/edit`), 'money');
+  assert.equal(screenKindOf(`/coach/agreements/${id}/hours`), 'money');
+  for (const other of [`/coach/agreements/${id}`, `/coach/agreements/${id}/check`, `/coach/agreements/${id}/sent`, '/coach/needs-youx']) assert.equal(screenKindOf(other), null, other);
   for (const other of ['/coach/clients/past', `/coach/clients/${id}/close`, '/coach/todos', '/coach/leads', '/coach/calendar/book', '/coach/settings', '/welcome', '/coach/sign-in',
     '/coach/finances/invoices', '/coach/finances/pricing', '/coach/finances/other', '/coach/finances/money/x', '/coach/financesx']) {
     assert.equal(screenKindOf(other), null, other);

@@ -100,7 +100,7 @@ export function PricingTab() {
           ))}
         </FinPart>
       ))}
-      <FinPart title="Discounts" add={<AddLink label="Add discount" expanded={panel?.kind === 'discount' && !panel.id} onClick={() => setPanel({ kind: 'discount' })} />}>
+      <FinPart title="Discounts" add={<AddLink label="Add a discount" expanded={panel?.kind === 'discount' && !panel.id} onClick={() => setPanel({ kind: 'discount' })} />}>
         {(discounts || []).length === 0 && <p className="cc-quiet fin-none">No discounts yet.</p>}
         {(discounts || []).map((d) => <FigRow key={d.id} title={d.name} facts={[discountFor(d, packages)]} value={discountWords(d)} onClick={() => setPanel({ kind: 'discount', id: d.id })} label={`Edit ${d.name}`} />)}
       </FinPart>
@@ -269,7 +269,7 @@ export function OtherTab() {
         <FigRow title="Where each client lives" facts={['Kept for every client outside the UK, as evidence']} value={abroad === 1 ? '1 client' : `${abroad} clients`} />
       </FinPart>
 
-      <FinPart title="Company deadlines" add={<AddLink label="Add deadline" expanded={panel?.kind === 'deadline' && !panel.id} onClick={() => setPanel({ kind: 'deadline' })} />}>
+      <FinPart title="Company deadlines" add={<AddLink label="Add a deadline" expanded={panel?.kind === 'deadline' && !panel.id} onClick={() => setPanel({ kind: 'deadline' })} />}>
         {upcoming.length === 0 && <p className="cc-quiet fin-none">No deadlines yet.</p>}
         {upcoming.map((d) => <FigRow key={d.id} title={d.name} facts={[[KIND_WHO[d.kind], (EVERY_WORDS[d.every] || '').toLowerCase()].filter(Boolean).join(', ')]} value={dayWordsFrom(d.day, todayKey)} onClick={() => setPanel({ kind: 'deadline', id: d.id })} label={`Edit ${d.name}`} />)}
       </FinPart>

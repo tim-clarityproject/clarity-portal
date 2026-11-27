@@ -19,6 +19,7 @@ import {
   PatternCard,
   Section,
   Stat,
+  TermInfo,
   StatGroup,
   StatusAction,
   SwitchRow,
@@ -31,6 +32,7 @@ import {
   LoadError,
   PdfDownload,
 } from '../../components/design';
+import { PERFORMANCE_SCORE_EXPLAIN } from '../../lib/performance/scoreExplain';
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
 import { friendlyError } from '../../lib/friendlyError';
@@ -211,7 +213,7 @@ function NotOpen({ view }) {
       {view.state === 'closed' && (
         <div className="deb-closed-score">
           <Stat
-            label={`Week ${view.week} performance score`}
+            label={view.score ? <TermInfo explain={PERFORMANCE_SCORE_EXPLAIN} helpKey="performance-score" label="How your Performance score is worked out">{`Week ${view.week} performance score`}</TermInfo> : `Week ${view.week} performance score`}
             value={view.score ? `${view.score.value}%` : 'None'}
             good={Boolean(view.score?.good)}
             note={view.score ? null : 'Nothing was planned this week.'}
@@ -682,7 +684,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
             <CardHead
               label="Unplanned wins"
               as="h3"
-              add={<AddLink label="Add unplanned win" expanded={panel === 'win'} onClick={() => { setWinForm((f) => (f.text ? f : emptyWin(view.winDays[view.winDays.length - 1]?.value))); setPanel('win'); }} />}
+              add={<AddLink label="Add an unplanned win" haspopup="dialog" onClick={() => { setWinForm((f) => (f.text ? f : emptyWin(view.winDays[view.winDays.length - 1]?.value))); setPanel('win'); }} />}
             />
             {view.wins.length > 0 ? (
               <TodoList label="Unplanned wins" className="rev-list">
@@ -817,7 +819,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
           <CardHead
             label="Next week’s to-dos"
             as="h3"
-            add={<AddLink label="Add to-do" expanded={panel === 'todo'} onClick={() => { setTodoForm((f) => (f.text ? f : emptyTodo(view.nextWeek.number))); setPanel('todo'); }} />}
+            add={<AddLink label="Add a to-do" expanded={panel === 'todo'} onClick={() => { setTodoForm((f) => (f.text ? f : emptyTodo(view.nextWeek.number))); setPanel('todo'); }} />}
           />
           {view.nextWeek.todos.length ? (
             <TodoList label="Next week’s to-dos" className="rev-list">
@@ -845,7 +847,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
             <Stat
               panel
               celebrate={Boolean(view.score?.good)}
-              label={view.scoreLabel}
+              label={view.score ? <TermInfo explain={PERFORMANCE_SCORE_EXPLAIN} helpKey="performance-score" label="How your Performance score is worked out">{view.scoreLabel}</TermInfo> : view.scoreLabel}
               value={view.score ? `${view.score.value}%` : 'None'}
               good={Boolean(view.score?.good)}
               note={view.score ? [view.usualLine].filter(Boolean) : ['Nothing was planned this week.']}

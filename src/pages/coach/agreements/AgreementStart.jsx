@@ -99,7 +99,9 @@ export default function AgreementStart() {
       toast.error(SAVE_PROBLEM);
     }
   };
-  const go = (profile || organisation) && ready && !partial && !problem;
+  // While only a first screen is here, the money pages' one (walk item 14) already holds every table a new draft is made
+  // from (the agreements, their versions, packages, billing profiles and purchase orders): it starts at once.
+  const go = (profile || organisation) && ready && (!partial || partial === 'money') && !problem;
   useEffect(() => { if (go) start(); });
 
   if (lead?.won_profile_id) return <Navigate to={`/coach/agreements/new?for=client:${lead.won_profile_id}${asQuote ? '&as=quote' : ''}`} replace />;

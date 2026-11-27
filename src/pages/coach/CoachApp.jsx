@@ -11,7 +11,7 @@ import { loadAdminClients, loadCoaches } from '../../lib/coach/actions';
 import { takeFinanceOpening } from '../../lib/coach/earlyScreen';
 import { deviceCopyAvailable, readExtra, writeExtra } from '../../lib/coach/deviceCopy';
 import { callForBar, favouriteViews, nextCallBar } from '../../lib/coach/model';
-import { COACH_PAGES, coachFrameMenu, coachTitle } from '../../lib/coach/navigation';
+import { BOARDS_ON, COACH_PAGES, coachFrameMenu, coachTitle } from '../../lib/coach/navigation';
 import PortalFrame, { MenuButton, useFrame } from '../../components/design/Frame';
 import { testCalls } from '../../lib/coach/calls';
 import { barCalls, coachZoneOf } from '../../lib/coach/calendar';
@@ -153,6 +153,24 @@ if (typeof window !== 'undefined') {
 }
 
 const BELL = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" /></svg>;
+// Search's magnifying glass (walk of Stage C, item 3): 20px, 1.5px lines in the text colour with round ends, drawn as the
+// reference's line icons are.
+const GLASS = <svg className="cc-glass" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="8.75" cy="8.75" r="6" /><path d="M13.2 13.2 18 18" /></svg>;
+
+/** Search (walk of Stage C, item 3): the magnifying glass that opens the quick jump and search panel. */
+function SearchButton({ onSearch, className = '' }) {
+  return (
+    <button type="button" className={`cc-glass-btn ${className}`.trim()} aria-label="Search" aria-haspopup="dialog" onClick={onSearch}>
+      {GLASS}
+    </button>
+  );
+}
+
+/** Boards is switched off (walk of Stage C, item 1): its addresses go to Leads, with what followed them. */
+function BoardsToLeads() {
+  const { search, hash } = useLocation();
+  return <Navigate to={{ pathname: '/coach/leads', search, hash }} replace />;
+}
 
 const LIVE = typeof __CLARITY_LIVE__ !== 'undefined' && __CLARITY_LIVE__;
 const later = COACH_PAGES.filter((p) => p.later);
@@ -337,7 +355,7 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
   const menu = useMemo(() => {
     const lists = (todoLists || []).filter((l) => !l.finished_at);
     const favourites = favouriteViews(views || []).filter((v) => v.list !== 'leads' || isOwner);
-    const hasShared = !isOwner && (boards || []).length > 0;
+    const hasShared = BOARDS_ON && !isOwner && (boards || []).length > 0;
     return coachFrameMenu({ isOwner, live: LIVE, hasShared, pathname, lists, favourites });
   }, [isOwner, views, todoLists, boards, pathname]);
   const onGo = useCallback((item) => navigate(item.to), [navigate]);
@@ -345,15 +363,15 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
     <PortalFrame
       className={`cc-app${hold ? ' cc-hold' : ''}`}
       rootProps={{ inert: hold || undefined, 'aria-busy': hold || undefined }}
-      menu={{ ...menu, onGo, onSignOut: signOut.start, signOutBusy: signOut.busy, privacyHref: '/legal/privacy', phoneTop: <PhoneMenuTop unread={unread} onSearch={openSearch} onBell={() => setBell(true)} /> }}
+      menu={{ ...menu, onGo, onSignOut: signOut.start, signOutBusy: signOut.busy, privacyHref: '/legal/privacy', markAside: <SearchButton onSearch={openSearch} />, phoneTop: <PhoneMenuTop unread={unread} onBell={() => setBell(true)} /> }}
     >
+      {/* On a laptop the bell alone at the panel's top right (Search is the glass at the top of the menu column); on a
+          phone the crosshair at the left and the glass at the right, the bell at the top of the phone menu (item 3). */}
       <header className="cc-header cc-header--frame">
         <div className="cc-header-in">
           <MenuButton className="cc-frame-menu" />
-          <button type="button" className="cc-search" aria-label="Search, or do anything" aria-haspopup="dialog" onClick={openSearch}>
-            <span>Search or do anything</span>
-          </button>
-          <button type="button" className="cc-round" aria-label={unread ? `Notifications, ${unread} new` : 'Notifications'} aria-haspopup="dialog" onClick={() => setBell(true)}>
+          <SearchButton onSearch={openSearch} className="cc-glass-btn--head" />
+          <button type="button" className="cc-round cc-bell" aria-label={unread ? `Notifications, ${unread} new` : 'Notifications'} aria-haspopup="dialog" onClick={() => setBell(true)}>
             {BELL}
             {unread > 0 && <span className="cc-count" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
           </button>
@@ -374,16 +392,14 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
 }
 
 /**
- * The top of the phone menu (Tim's walk, item 21): Search and the bell, so the phone header holds only the crosshair (and
- * My Mission). On a laptop they stay at the panel's top right. Choosing either closes the menu first.
+ * The top of the phone menu (Tim's walk, item 21): the bell. Search is the glass in the phone header since the walk of
+ * Stage C (item 3), so it isn't offered here twice. On a laptop the bell stays at the panel's top right. Choosing it
+ * closes the menu first.
  */
-function PhoneMenuTop({ unread, onSearch, onBell }) {
+function PhoneMenuTop({ unread, onBell }) {
   const { closeMenu } = useFrame();
   return (
     <div className="cc-pmenu-top">
-      <button type="button" className="cc-search" aria-label="Search, or do anything" aria-haspopup="dialog" onClick={() => { closeMenu(); onSearch(); }}>
-        <span>Search or do anything</span>
-      </button>
       <button type="button" className="cc-round" aria-label={unread ? `Notifications, ${unread} new` : 'Notifications'} aria-haspopup="dialog" onClick={() => { closeMenu(); onBell(); }}>
         {BELL}
         {unread > 0 && <span className="cc-count" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
@@ -614,10 +630,11 @@ export default function CoachApp() {
         <Route path="leads/cold" element={isOwner ? <ColdLeads /> : <Navigate to="/coach" replace />} />
         <Route path="leads/automations" element={isOwner ? <Automations /> : <Navigate to="/coach" replace />} />
         <Route path="leads/:id" element={isOwner ? <LeadPage /> : <Navigate to="/coach" replace />} />
-        {/* Boards (run 4): the owner's own; an associate opens only a board the owner has shared, and can't change it. */}
         <Route path="network" element={isOwner ? <Network /> : <Navigate to="/coach" replace />} />
-        <Route path="boards" element={<Boards />} />
-        <Route path="boards/:id" element={<BoardPage />} />
+        {/* Boards (run 4): the owner's own; an associate opens only a board the owner has shared, and can't change it.
+            Switched off until after go-live (walk of Stage C, item 1): every Boards address goes to Leads. */}
+        <Route path="boards" element={BOARDS_ON ? <Boards /> : <BoardsToLeads />} />
+        <Route path={BOARDS_ON ? 'boards/:id' : 'boards/*'} element={BOARDS_ON ? <BoardPage /> : <BoardsToLeads />} />
         <Route path="business/*" element={<Navigate to="/coach/finances" replace />} />
         {/* Finances (Phase 6b run 2) are the owner's alone: an associate is sent to their own Today, as M11 does. */}
         <Route path="finances" element={isOwner ? <Finances /> : <Navigate to="/coach" replace />} />

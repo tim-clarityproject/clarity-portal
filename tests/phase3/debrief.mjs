@@ -417,7 +417,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
   pass(`${tag}: an open to-do rolls over`, (await rolled.count()) === 1 && (await rolled.innerText()).includes('Rolls over from week 3'));
   pass(`${tag}: next week's to-dos aren't ticked here`, (await page.locator('.ds-todos [role=checkbox]').count()) === 0);
   await checkScreen(page, `${tag} next week`);
-  await page.getByRole('button', { name: 'Add to-do' }).click();
+  await page.getByRole('button', { name: 'Add a to-do' }).click(); // walk item 4: the card's add is named "Add a to-do"
   const panel = page.getByRole('dialog', { name: 'Add to-do' });
   await panel.locator('textarea').first().waitFor();
   await panel.locator('textarea').first().fill(TODO);

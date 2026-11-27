@@ -296,6 +296,17 @@
   column-gap: var(--space-6);
 }
 
+/* Two lists side by side only while the grid is at least 600px wide (walk item 17's check at 1024: a 564px grid gave
+   two 258px columns and "Plan it into this week" wrapped inside its link); narrower, one above the other. A container
+   query's width can't be a token, so 600px is written out here, as .ds-cols does in blocks.css. */
+.ui-root :has(> .dash-sumg--two) {
+  container-type: inline-size;
+}
+
+@container (max-width: 599.98px) {
+  .ui-root .dash-sumg--two { grid-template-columns: minmax(0, 1fr); }
+}
+
 .ui-root .dash-sh {
   margin: 0;
   padding-bottom: var(--space-px12);

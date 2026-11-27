@@ -458,7 +458,7 @@ function ReviewFlow({ userId, data, view, today, onFinish }) {
           ) : (
             <p className="plan-muted">Your plan has no Outcome Objectives yet.</p>
           )}
-          {liveCount < MAX_OBJECTIVES && <CardHead label="New objectives" as="h3" add={<AddLink label="Add objective" onClick={addObjective} />} />}
+          {liveCount < MAX_OBJECTIVES && <CardHead label="New objectives" as="h3" add={<AddLink label="Add an objective" onClick={addObjective} />} />}
           {draft.added.length > 0 && (
             <div className="review-added">
               {draft.added.map((o) => (

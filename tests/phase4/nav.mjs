@@ -330,7 +330,7 @@ if (part(1) || part(2) || part(3)) {
         }
       }
       await goHub(page, '/strategic');
-      await page.getByRole('button', { name: 'Start a new Health Check' }).click();
+      await page.getByRole('button', { name: 'Add a team' }).click(); // walk item 4: the card's square, named by what it adds
       // A new team's first question (M7), at its own version's address.
       pass('/strategic: Start a new Health Check opens a new team', await until(async () => /^\/strategic-alignment\/version\/[0-9a-f-]{36}$/.test(path(page)), 20000), path(page));
       pass('/strategic: the inside Health Check opens as a fresh start', await until(async () => (await page.locator('.ds-guide-question').innerText().catch(() => '')).includes('Which team is this Health Check for?'), 15000));

@@ -202,7 +202,7 @@ export default function Today() {
       add={(
         <span className="cc-today-heads">
           <MoreLink small onClick={() => navigate('/coach/todos')} aria-label="View all to-dos">{COACH_TODAY.todosAll}</MoreLink>
-          <AddLink label="Add to-do" expanded={panel === 'add'} onClick={() => setPanel('add')} />
+          <AddLink label="Add a to-do" expanded={panel === 'add'} onClick={() => setPanel('add')} />
         </span>
       )}
     >

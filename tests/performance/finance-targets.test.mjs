@@ -83,3 +83,16 @@ test('the minimum is measured after associate pay', () => {
   assert.equal(f.percentOf(1, 5000), 1);
   assert.equal(f.percentOf(10, 0), null);
 });
+
+test('walk item 20 (27 Nov): "Nothing settled yet, and no target set." is said once in Your targets', async () => {
+  const { targetsShown } = await import('../../src/lib/finance/targets.js');
+  const row = (label, paid, target) => ({ label, paid, target, detail: 'x', minimum: '', percentWords: '' });
+  const month = row('This month', 0, 0);
+  const quarter = row('This quarter, October to December', 0, 0);
+  const year = row('This year, from 1 May', 120000, 0);
+  const two = targetsShown([month, quarter, year]);
+  assert.deepEqual(two.map((r) => r.label), ['This month and this quarter, October to December', 'This year, from 1 May']);
+  assert.equal(targetsShown([month, quarter, row('This year, from 1 May', 0, 0)]).map((r) => r.label).join(), 'This month, quarter and year');
+  const one = [month, row('This quarter, October to December', 5000, 0), year];
+  assert.deepEqual(targetsShown(one), one, 'one row with nothing keeps its own words');
+});

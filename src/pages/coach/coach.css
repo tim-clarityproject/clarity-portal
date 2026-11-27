@@ -587,6 +587,18 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-setrow-edit .ds-field { width: 100%; box-sizing: border-box; }
 .ui-root .cc-setrow-saves { display: flex; align-items: center; gap: var(--space-px20); }
 .ui-root .cc-setpane .ds-switchrow { min-height: var(--cc-setrow-h); }
+/* Words never wrap inside a control (walk item 17's check at 1024 and 1100: beside the section list the pane is 350 to
+   430px, and "Copy link", "Make one", "Connect Google Calendar" and "Edit this list" wrapped in their row's last
+   column). While the laptop's pane is under 560px, a row is one column: its label, its value, then its buttons under
+   them. A container query's width can't be a token, so 560px is written out here. */
+.ui-root .cc-settings:has(> .cc-setnav) > .cc-setpane { container-type: inline-size; }
+@container (max-width: 559.98px) {
+  .ui-root .cc-setpane .cc-setrow, .ui-root .cc-setpane .cc-setrow--still { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .cc-setpane .cc-setrow > .ds-link, .ui-root .cc-setpane .cc-setrow > .cc-setrow-acts { justify-self: start; }
+  .ui-root .cc-setpane .cc-setrow > .ds-link { justify-content: flex-start; }
+  .ui-root .cc-setpane .cc-setrow--edit .cc-setrow-label { padding-top: 0; }
+  .ui-root .cc-setpane .cc-setrow-edit { grid-column: 1 / -1; }
+}
 .ui-root .cc-setlist { margin-top: var(--space-px14); }
 
 /* ---------------------------------------------------------------- panels' parts */
@@ -827,15 +839,46 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .ds-card .cc-rows > :last-child { border-bottom: 0; }
 /* A card is its own rhythm (rule 13): one gap between cards (--card-gap, under each), never the older part's 32px above too. */
 .ui-root .ds-card.cc-part { margin-top: 0; }
-/* Search and the bell at the top of the phone menu (Tim's walk, item 21): once the frame draws them there (it marks its
-   root .ds-frame-root--ptop when given a phoneTop; requests-b5.md), the phone header keeps only the crosshair (and My
-   Mission). On a laptop they stay at the panel's top right. */
-.ui-root .cc-pmenu-top { display: grid; grid-template-columns: minmax(0, 1fr) var(--tap-min); gap: var(--space-2); align-items: center; padding: 0 var(--space-px20) var(--space-3); }
-.ui-root .cc-pmenu-top .cc-search { max-width: none; }
-@media (max-width: 1023px) {
-  .ui-root.ds-frame-root--ptop .cc-header--frame .cc-search,
-  .ui-root.ds-frame-root--ptop .cc-header--frame .cc-round { display: none; }
+/* Search (walk of Stage C, item 3): the "Search or do anything" box is gone. A magnifying glass, 20px in 1.5px lines of the
+   text colour with round ends, its tap area 44px: on a laptop at the top of the menu column, at the right of the
+   crosshair's line (FrameMenu's markAside); on a phone at the right of the header, the crosshair at its left. The bell
+   stays at the panel's top right on a laptop and at the top of the phone menu (Tim's walk, item 21). */
+.ui-root .cc-glass-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  flex: none;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-control);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
 }
+.ui-root .cc-glass { width: var(--space-px20); height: var(--space-px20); fill: none; stroke: currentColor; stroke-width: var(--icon-line); stroke-linecap: round; stroke-linejoin: round; }
+@media (hover: hover) {
+  .ui-root .cc-glass-btn:hover { color: var(--text-2); }
+}
+.ui-root .cc-glass-btn:focus-visible { outline: var(--focus-w) solid var(--text); outline-offset: calc(-1 * var(--focus-w)); }
+/* In the menu column: the glass's right edge as far in from the column's right as the crosshair is from its left (10px),
+   its 44px tap area reaching over and under the crosshair's line without moving the menu. */
+.ui-root .ds-menu-aside .cc-glass-btn { margin-block: calc((var(--bold-cross-menu) - var(--tap-min)) / 2); margin-right: calc(var(--space-px10) - (var(--tap-min) - var(--space-px20)) / 2); }
+@media (min-width: 1024px) {
+  .ui-root .cc-header--frame .cc-glass-btn--head { display: none; }
+}
+/* A phone and a narrow window: the coach's own header, the crosshair at the left and the glass at the right, its ink on
+   the page's 20px edge (the frame's crosshair-only header steps aside); the bell is in the phone menu. Never in focus mode. */
+@media (max-width: 1023px) {
+  .ui-root.cc-app.ds-frame-root--ptop:not(.ds-frame-root--focus) .ds-frame .cc-header--frame { display: block; }
+  .ui-root.cc-app.ds-frame-root--ptop .ds-frame .ds-frame-phead { display: none; }
+  .ui-root .cc-header--frame .cc-glass-btn--head { margin-right: calc((var(--space-px20) - var(--tap-min)) / 2); }
+  .ui-root.ds-frame-root--ptop .cc-header--frame .cc-bell { display: none; }
+}
+/* The phone menu's bell: on the line of its ×, at the right, where the glass is in the header, its ink on the 20px edge
+   (no row of its own under the line). */
+.ui-root .ds-pmenu-top:has(> .cc-pmenu-top) { position: absolute; top: calc(env(safe-area-inset-top, 0px) + var(--space-px14)); right: var(--space-px20); margin: 0; }
+.ui-root .cc-pmenu-top { display: flex; margin-right: calc((var(--cc-bar-icon) - var(--tap-min)) / 2); }
 /* The next-call bar inside the frame (B5): on a laptop it sits under the panel's top-right search and bell (never under
    them), its words on the page's left edge; the page's opening follows 24px under it. On a phone it runs edge to edge
    under the frame's header, as before. */

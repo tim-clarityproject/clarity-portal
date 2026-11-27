@@ -5,6 +5,11 @@
 // "Coming in this build" page.
 // `shared`: the owner's, and an associate's only once the owner has shared
 // something there with them (Boards: run 4).
+// `off`: switched off for now (Tim's walk of Stage C, 27 Nov, item 1: Boards, until after go-live): out of the menu,
+// search and every page, its addresses sent to Leads; its code and saved boards are kept, so BOARDS_ON brings it back.
+
+/** Boards, switched off until after go-live (walk of Stage C, item 1). True brings back its menu item, search and pages. */
+export const BOARDS_ON = false;
 
 export const COACH_MENU = [
   { key: 'today', label: 'Today', to: '/coach' },
@@ -15,7 +20,7 @@ export const COACH_MENU = [
   { key: 'clients', label: 'Clients', to: '/coach/clients' },
   { key: 'leads', label: 'Leads', to: '/coach/leads', owner: true },
   { key: 'network', label: 'Network', to: '/coach/network', owner: true },
-  { key: 'boards', label: 'Boards', to: '/coach/boards', shared: true },
+  { key: 'boards', label: 'Boards', to: '/coach/boards', shared: true, off: !BOARDS_ON },
   { key: 'calendar', label: 'Calendar', to: '/coach/calendar' },
   { key: 'leading-ideas', label: 'Leading Ideas', to: '/coach/leading-ideas', later: true },
   { key: 'library', label: 'Library', to: '/coach/library', later: true },
@@ -101,16 +106,22 @@ export function coachTitle(pathname) {
   return hit ? `${hit[1]}, ${COACH_NAME}` : COACH_NAME;
 }
 
-/** The menu's pages for one coach: an associate never has the owner's pages, and has a shared page only when something there is shared with them. */
-export const menuFor = ({ isOwner, live = false, hasShared = false } = {}) => COACH_MENU.filter((i) => (!i.owner || isOwner) && (!i.later || !live) && (!i.shared || isOwner || hasShared));
+/**
+ * The menu's pages for one coach: an associate never has the owner's pages, and has a shared page only when something
+ * there is shared with them. A page still to come (`later`: Leading Ideas and the Library, Phase 6c) and one switched
+ * off (`off`: Boards) are in no menu and no search, on previews too (walk of Stage C, items 1 and 23); a page still to
+ * come keeps its "Coming in this build" address on previews.
+ */
+export const menuFor = ({ isOwner, hasShared = false } = {}) => COACH_MENU.filter((i) => !i.off && !i.later && (!i.owner || isOwner) && (!i.shared || isOwner || hasShared));
 
 /**
  * The coach portal's menu in the frame (25 Nov design reference and example pages, "Coach: Today"; polish 1, rule 19):
- * groups separated by gaps, not names (Today, Calendar, To-dos; Clients, Leads, Network, Boards; Finances and the pages
- * still to come), the coach's own to-do lists under To-dos and favourite views as a last group; Settings in the foot.
+ * groups separated by gaps, not names, in Tim's order (walk of Stage C, item 2): Today, Calendar, To-dos, Needs you;
+ * Clients, Leads, Network (and Boards once it is on); Finances, Leading Ideas, Library (once they are built). The
+ * coach's own to-do lists under To-dos and favourite views as a last group; Settings in the foot.
  * `pathname` marks the page the coach is on.
  */
-export const COACH_MENU_GROUPS = [['today', 'calendar', 'todos'], ['clients', 'leads', 'network', 'boards'], ['finances', 'needs-you', 'leading-ideas', 'library']];
+export const COACH_MENU_GROUPS = [['today', 'calendar', 'todos', 'needs-you'], ['clients', 'leads', 'network', 'boards'], ['finances', 'leading-ideas', 'library']];
 
 export function coachFrameMenu({ isOwner, live = false, hasShared = false, pathname = '', lists = [], favourites = [] }) {
   const items = menuFor({ isOwner, live, hasShared });

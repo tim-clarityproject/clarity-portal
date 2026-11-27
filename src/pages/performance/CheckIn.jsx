@@ -27,6 +27,7 @@ import {
   TextBox,
   WhoSees,
   clearGuideDraft,
+  dayTitle,
   useToast,
 } from '../../components/design';
 import { ONE_TAP_MS } from '../../components/design/GuidedTool';
@@ -93,7 +94,7 @@ import {
 } from '../../lib/performance';
 import { exampleRole } from '../../content/planBuilder';
 import { PORTAL_NAME } from '../../lib/navigation';
-import { formatSavedDate, getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
+import { getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
 import { B2_LINES } from '../../content/pageLines/client';
 import './performance.css';
 
@@ -1023,12 +1024,15 @@ function CheckinRead({ userId, today, loaded, row }) {
   const results = useMemo(() => checkinResults({ answers: row.answers || {}, previous }), [row.answers, previous]);
   const points = useMemo(() => checkinPoints(data.checkins.filter((c) => c.month <= row.month)), [data.checkins, row.month]);
   const checkinId = useRef(row.id);
-  const when = row.finished_at ? formatSavedDate(getLocalDateKey(parseDbTimestamp(row.finished_at)), today) : monthFull(row.month);
+  // Walk item 24 (27 Nov): the eyebrow is the date alone, "Thursday 5 November", as Home's is; a date in another
+  // year keeps its year (a date drops its year only in the current year).
+  const doneKey = row.finished_at ? getLocalDateKey(parseDbTimestamp(row.finished_at)) : null;
+  const when = doneKey ? `${dayTitle(doneKey)}${doneKey.slice(0, 4) === today.slice(0, 4) ? '' : ` ${doneKey.slice(0, 4)}`}` : monthFull(row.month);
   return (
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page ck-page">
-        <PageOpening label={`Monthly Hardware and Software review, ${when}`} title={checkinTitle(row)} line={B2_LINES.monthlyReview} aside={eye} />
+        <PageOpening label={when} title={checkinTitle(row)} line={B2_LINES.monthlyReview} aside={eye} />
         <Results
           userId={userId}
           today={today}

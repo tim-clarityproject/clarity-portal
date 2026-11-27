@@ -15,11 +15,13 @@ export const LEAN_NOT_YET_KEY = 'clarity-coach-screen-lean-not-yet';
 
 /**
  * Which page's first screen an address opens on: 'today', 'clients', 'client', 'calendar', 'finances' (the owner's
- * Overview, Money and Cash flow), or null (any other page).
+ * Overview, Money and Cash flow), 'money' (the agreement builder, Needs you and a block of hours' log; Tim's walk of
+ * 27 Nov, item 14), or null (any other page).
  */
 export function screenKindOf(pathname = '') {
   const p = String(pathname).replace(/\/+$/, '');
   if (p === '/coach') return 'today';
+  if (p === '/coach/needs-you' || p === '/coach/agreements/new' || /^\/coach\/agreements\/[0-9a-f-]{36}\/(edit|hours)$/i.test(p)) return 'money';
   if (/^\/coach\/finances(\/(money|cash-flow))?$/.test(p)) return 'finances';
   if (p === '/coach/clients') return 'clients';
   if (/^\/coach\/clients\/[0-9a-f-]{36}$/i.test(p)) return 'client';
@@ -75,6 +77,17 @@ export function profilesOf(pathname = '') {
   const m = /^\/coach\/clients\/([0-9a-f-]{36})(?:[/?#]|$)/i.exec(String(pathname));
   return m ? [m[1].toLowerCase()] : [];
 }
+
+// ---------------------------------------------------------------- the money pages' first screen (walk item 14)
+
+// The agreement builder, Needs you and a block of hours' log draw their first screen before the coach's whole load, as
+// Today does (coach rule 49): Today's own first screen (060's: the coach's settings, clients, organisations, active
+// engagements and their time) and, side by side, the agreement tables those pages read, each the coach's own plain
+// read under its table's rules. Those of them a coach's role or the database doesn't have yet are left out (store.js's
+// tablesThere): an associate never reads the owner's Finances tables.
+export const MONEY_SCREEN_TABLES = ['agreements', 'agreement_versions', 'agreement_quotes', 'agreement_clause_standards', 'agreement_extras',
+  'agreement_reminders', 'agreement_change_requests', 'org_billing_profiles', 'invoices', 'invoice_sources', 'time_entries', 'needs_you_done',
+  'pricing_packages', 'purchase_orders'];
 
 // ---------------------------------------------------------------- Finances' first screen (Phase 6b run 2)
 

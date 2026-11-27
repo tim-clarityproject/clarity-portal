@@ -27,7 +27,7 @@ import { DAY_PARTS, runDay } from './day-flows.mjs';
 // Polish 1 (B4): "+ Add" by the list's label opens Quick Add; "Add their details too" opens the whole Add client form,
 // the name typed there carried over (cleared here, so the form starts as it always did).
 async function openAddClient(page) {
-  await page.locator('.ds-addlink[aria-label="Add client"]').first().click();
+  await page.locator('.ds-addlink[aria-label="Add a client"]').first().click(); // walk item 4: named by what it adds
   await page.locator('#cc-add-client .ds-qa-box').fill('x');
   await page.getByRole('button', { name: 'Add their details too', exact: true }).click();
   await page.waitForTimeout(500);
@@ -84,21 +84,26 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     for (const f of ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png']) {
       pass(`shell: the icon ${f} is served`, (await page.request.get(`${APP}/coach-app/${f}`)).status() === 200);
     }
-    // The header (polish 1): one search box and the bell with its count, at the top right; the menu is the frame's
-    // column on a laptop (its items real links, Sign out a button).
+    // The header (polish 1): the bell with its count at the top right; Search is the magnifying glass at the top of the
+    // menu column, on the crosshair's line (walk of Stage C, item 3: the "Search or do anything" box is gone). The menu
+    // is the frame's column on a laptop (its items real links, Sign out a button).
     const header = await page.locator('.cc-header').evaluate((h) => [...h.querySelectorAll('button')].filter((b) => b.offsetParent).map((b) => b.getAttribute('aria-label')));
-    pass('shell: the header is one search box and the bell', header.length === 2 && header[0].startsWith('Search') && header[1].startsWith('Notifications'), header.join(' | '));
+    pass('shell: the header is the bell alone', header.length === 1 && header[0].startsWith('Notifications'), header.join(' | '));
+    pass('shell: no search box, and Search is the glass at the top of the menu column', (await page.locator('.cc-search').count()) === 0 && (await page.locator('.ds-frame-side .ds-menu-top button[aria-label="Search"]').count()) === 1);
     pass('shell: the bell shows its small count', (await page.locator('.cc-count').innerText()) === '2');
 
-    // The menu (polish 1, rule 19): groups by gaps, Settings and Sign out at the foot; pages of later runs show on a
-    // build that isn't live.
+    // The menu (polish 1, rule 19): groups by gaps, Settings and Sign out at the foot, in Tim's order (walk of Stage C,
+    // item 2). Boards is switched off (item 1); Leading Ideas and the Library (Phase 6c) are in no menu until they are
+    // built (item 23), though their addresses still open the calm page on a build that isn't live.
     const items = await frameMenuWords(page);
-    pass('shell: the owner’s menu, in the frame’s order', /^Today, Calendar, To-dos, .*Clients, Leads, Network, Boards, Finances, Needs you, Leading Ideas, Library, .*Settings, Sign out$/.test(items.join(', ')), items.join(', '));
+    pass('shell: the owner’s menu, in Tim’s order', /^Today, Calendar, To-dos, (.*, )?Needs you, Clients, Leads, Network, Finances, (.*, )?Settings, Sign out$/.test(items.join(', ')) && !/Boards|Leading Ideas|Library/.test(items.join(', ')), items.join(', '));
     pass('shell: menu items are links, Sign out a button', (await page.locator('.ds-frame-side a.ds-mi').count()) === items.length - 1 && (await page.locator('.ds-frame-side button.ds-mi--out').count()) === 1);
-    // The Calendar is built (run 3): Library is still a later run's page.
-    await openFromMenu(page, 'Library');
+    await open(page, '/coach/library');
     await settle(page, 600);
-    pass('shell: a page of a later run opens the calm “Coming in this build” page', /Coming in this build/.test(await text(page)) && new URL(page.url()).pathname === '/coach/library');
+    pass('shell: a page of a later run opens the calm “Coming in this build” page from its address', /Coming in this build/.test(await text(page)) && new URL(page.url()).pathname === '/coach/library');
+    await open(page, '/coach/boards?x=1#h');
+    await settle(page, 600);
+    pass('shell: Boards’ address goes to Leads, with its query and hash (walk of Stage C, item 1)', `${new URL(page.url()).pathname}${new URL(page.url()).search}${new URL(page.url()).hash}` === '/coach/leads?x=1#h', page.url());
 
     // The next-call bar, with test calls (it fills in run 3).
     const call = (minutes) => page.evaluate((m) => sessionStorage.setItem('clarity-coach-test-calls', JSON.stringify([{ name: 'Sam Okafor', startsAt: new Date(Date.now() + m * 60000).toISOString(), zoom: 'https://zoom.example/j/1', briefTo: '/coach/clients' }])), minutes);
@@ -718,9 +723,9 @@ if (has('associate')) {
   await seedDevice(page, me, seedRows());
   await open(page, '/coach');
 
-  pass('associate, phone: no phone bar; the crosshair in the header opens the menu', (await page.locator('.cc-phonebar').count()) === 0 && (await page.locator('.ds-mbtn').first().isVisible()));
+  pass('associate, phone: no phone bar; the crosshair in the header opens the menu', (await page.locator('.cc-phonebar').count()) === 0 && (await page.locator('.ds-mbtn:visible').first().isVisible())); // walk (WA): the coach's own phone header holds the crosshair; the frame's is hidden
   const items = await frameMenuWords(page);
-  pass('associate: their menu, with no Leads, Network or Finances', /^Today, Calendar, To-dos, Clients, .*Settings, Sign out$/.test(items.join(', ')) && !items.some((i) => /^(Leads|Network|Finances)$/.test(i)), items.join(', '));
+  pass('associate: their menu, with no Leads, Network or Finances', /^Today, Calendar, To-dos, (Needs you, )?Clients, .*Settings, Sign out$/.test(items.join(', ')) && !items.some((i) => /^(Leads|Network|Finances)$/.test(i)), items.join(', ')); // walk item 2: Needs you follows To-dos
   await openFromMenu(page, 'Settings');
   await settle(page, 700);
   // Polish 1: the phone's list of sections is one card of rows (.ds-li), each a real link.

@@ -34,6 +34,7 @@ import { frameMenuWords } from './shared.mjs';
 import { CAL, CRM, ID, seedClock, seedWithCrm } from './seed.mjs';
 import { withSharedBoard } from './screens.mjs';
 import { addDays } from '../../src/lib/time/index.js';
+import { BOARDS_ON } from '../../src/lib/coach/navigation.js';
 
 // The coach's menu as the Polish 1 frame draws it (Stage A; shared.mjs frameMenuWords): the frame lists Boards itself,
 // not each board under it (Stage C: the boards are on Boards' page).
@@ -342,7 +343,24 @@ async function run() {
       }
 
       // ---------------------------------------------------------------- boards
-      if (on('crm-board')) {
+      // Switched off until after go-live (walk of Stage C, item 1): no Boards in the menu or search, and its addresses
+      // go to Leads (the owner's; an associate, for whom Leads is closed, lands on Today). Its own flows run once it's on.
+      if (on('crm-board') && !BOARDS_ON) {
+        const tag = `crm-board off, ${mode}`;
+        const a = await openAt({ db, tag, path: `/coach/boards/${CRM.speaking}?x=1#h` });
+        const { page } = a;
+        pass(`${tag}: a board's address goes to Leads with its query and hash`, `${new URL(page.url()).pathname}${new URL(page.url()).search}${new URL(page.url()).hash}` === '/coach/leads?x=1#h', page.url());
+        pass(`${tag}: the menu has no Boards`, !/Boards/.test(await menuText(page)));
+        await openSearch(page); await settle(page, 400);
+        await page.keyboard.type('Speaking'); await settle(page, 600);
+        pass(`${tag}: search finds no board`, !/\bBoard\b/.test(await page.locator('.cc-jump').innerText()));
+        await page.keyboard.press('Escape');
+        await a.close();
+        const b = await openAt({ role: 'associate', db, tag: `${tag}, an associate`, path: '/coach/boards', rows: withSharedBoard() });
+        pass(`${tag}: an associate with a shared board has no Boards in the menu, and its address goes to Today`, !/Boards|Speaking/.test(await menuText(b.page)) && new URL(b.page.url()).pathname === '/coach', b.page.url());
+        await b.close();
+      }
+      if (on('crm-board') && BOARDS_ON) {
         const tag = `crm-board, ${mode}`;
         const a = await openAt({ db, tag, path: '/coach/boards' });
         const { page } = a;
@@ -434,7 +452,7 @@ async function run() {
         await a.close();
       }
 
-      if (on('crm-shared')) {
+      if (on('crm-shared') && BOARDS_ON) {
         const tag = `crm-shared, ${mode}`;
         const a = await openAt({ role: 'associate', db, tag, path: '/coach/boards', rows: withSharedBoard() });
         const { page } = a;

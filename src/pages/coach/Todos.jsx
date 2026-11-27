@@ -69,7 +69,7 @@ export default function Todos() {
 
           {show === 'list' && (
             // The tab's list is one card (rule 13), "+ Add" at its label's right opening Quick Add (rule 10).
-            <Card label={TABS.find((t) => t.value === tab).label} className="cc-part cc-todo-card" quickAdd={<TodoQuickAdd open={adding} onClose={() => setAdding(false)} defaultDay={tab === 'today' ? todayKey : null} />} add={<AddLink label="Add to-do" expanded={adding} onClick={() => setAdding(true)} />}>
+            <Card label={TABS.find((t) => t.value === tab).label} className="cc-part cc-todo-card" quickAdd={<TodoQuickAdd open={adding} onClose={() => setAdding(false)} defaultDay={tab === 'today' ? todayKey : null} />} add={<AddLink label="Add a to-do" expanded={adding} onClick={() => setAdding(true)} />}>
           {tab === 'today' && (
             <>
               {today.work.length === 0 && today.afterWork.length === 0 && <p className="cc-quiet">Nothing is planned for today.</p>}

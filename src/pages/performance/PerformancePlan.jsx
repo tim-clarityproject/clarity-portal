@@ -7,6 +7,7 @@ import {
   AlignmentCheck,
   Button,
   EmptyState,
+  ExplainInfo,
   Loading,
   ObjectiveCard,
   ObjectiveGrid,
@@ -40,6 +41,8 @@ import './performance.css';
 import { useClientPreparing } from '../../lib/clientPreparing';
 import Preparing from '../Preparing';
 import { B1_LINES } from '../../content/pageLines/client';
+import { MISSION_ANCHOR } from '../../lib/performance/missionPlace';
+import { STRATEGY_SCORE_EXPLAIN } from '../../lib/performance/scoreExplain';
 import '../hubs/clientPage.css';
 
 // The Individual Performance Plan (mock-up M1, R.ipp): My Mission, the
@@ -195,13 +198,16 @@ export default function PerformancePlan() {
     // A Strategy with no score yet this week says nothing (5e rule 6).
     return null;
   };
-  // The dashboard's "Review its Strategies" lands on the Strategies (#strategies).
+  // The dashboard's "Review its Strategies" lands on the Strategies (#strategies); My Mission (the laptop line
+  // under Home's and the Dashboard's title, the phone header's box) lands on the Mission card, its Edit in reach
+  // (MISSION_PLACE, #my-mission; walk item 5, 27 Nov).
   const strategiesShown = Boolean(view);
   useEffect(() => {
-    if (location.hash !== '#strategies' || !strategiesShown) return undefined;
-    const frame = requestAnimationFrame(() => document.getElementById('strategies')?.scrollIntoView({ block: 'start' }));
+    const place = { '#strategies': 'strategies', [`#${MISSION_ANCHOR}`]: MISSION_ANCHOR }[location.hash];
+    if (!place || !strategiesShown) return undefined;
+    const frame = requestAnimationFrame(() => document.getElementById(place)?.scrollIntoView({ block: 'start' }));
     return () => cancelAnimationFrame(frame);
-  }, [location.hash, strategiesShown]);
+  }, [location.hash, location.key, strategiesShown]);
 
   const hideScores = view?.inRecovery && !showResults;
   const scoreLabel = view?.pausedWeek ? `Performance score in week ${view.pausedWeek}, before your recovery` : SCORE_LABEL;
@@ -251,6 +257,7 @@ export default function PerformancePlan() {
             <Card
               label={titleWithAside('My Mission', <WhoSees {...who('mission', 'Your Mission')} />)}
               className="ipp-mission"
+              id={MISSION_ANCHOR}
               aria-label="My Mission"
               link={{ children: 'Edit', onClick: () => openPart({ kind: 'mission', id: null }), 'aria-label': 'Edit my Mission' }}
             >
@@ -287,6 +294,7 @@ export default function PerformancePlan() {
             <Section
               id="strategies"
               title="Strategies"
+              eye={<ExplainInfo explain={STRATEGY_SCORE_EXPLAIN} helpKey="strategy-score" label="How a Strategy’s score is worked out" />}
               className="ipp-section"
             >
               {view.strategies.length ? (

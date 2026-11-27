@@ -56,6 +56,8 @@
 }
 
 .ui-root .ipp-page .ipp-mission { margin: 0; }
+/* My Mission opens the plan here (#my-mission; walk item 5): the card lands 32px under the top, never glued to it. */
+.ui-root .ipp-page .ipp-mission { scroll-margin-top: var(--space-5); }
 .ui-root .ipp-page .ipp-section { margin-top: var(--space-5); padding-top: 0; border-top: 0; }
 
 /* The Performance Sprint: "+ Add" and "+ Add win" beside the to-dos' label (rule 10); the quiet

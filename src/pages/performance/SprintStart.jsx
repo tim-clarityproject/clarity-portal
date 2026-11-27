@@ -504,7 +504,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
               <p className="plan-muted">You can add one for this sprint here.</p>
             </div>
           )}
-          {addTo && <CardHead label="New habits for this sprint" as="h3" add={<AddLink label="Add habit" onClick={addHabit} />} />}
+          {addTo && <CardHead label="New habits for this sprint" as="h3" add={<AddLink label="Add a habit" onClick={addHabit} />} />}
           {draft.added.length > 0 && (
             <div className="plan-habits sprint-start-added">
               {draft.added.map((h) => (
@@ -540,7 +540,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
       nudges: ['Add the moments in this sprint that need more of your energy, attention and focus.'],
       render: () => (
         <div>
-          <CardHead label="Peak moments in this sprint" as="h3" add={<AddLink label="Add peak moment" onClick={() => navigate('/peak-moments/add', { state: { from: '/performance-sprint/start' } })} />} />
+          <CardHead label="Peak moments in this sprint" as="h3" add={<AddLink label="Add a peak moment" onClick={() => navigate('/peak-moments/add', { state: { from: '/performance-sprint/start' } })} />} />
           {peakInSprint.length > 0 && (
             <PeakMomentList label="Peak moments in this sprint">
               {peakInSprint.map((o) => (

@@ -491,7 +491,7 @@ if (PARTS.includes('flows')) {
     await page.waitForSelector('.si-code-sq', { timeout: 15000 }).catch(() => null);
     const lines = await words(page);
     // The 25 Nov example's line replaced M26's two (polish 1, rule 23).
-    pass('Second computer: “From your authenticator app. It goes in by itself.”', lines.includes('From your authenticator app. It goes in by itself.'), lines.slice(0, 160));
+    pass('Second computer: “Enter the 6-digit code from your authenticator app.” (walk item 7)', lines.includes('Enter the 6-digit code from your authenticator app.'), lines.slice(0, 160));
     // Five wrong codes in a row: a calm wait, and even the right code waits.
     for (let i = 1; i <= 5; i += 1) {
       await page.getByRole('textbox', { name: 'Code', exact: true }).fill(`00000${i}`); /* goes in by itself on the sixth digit (polish 1, rule 23) */

@@ -142,10 +142,10 @@ export const PEOPLE = Object.freeze({
   groupsLabel: 'Groups',
   workshopsLabel: 'Workshops',
   noClients: 'Your clients will appear here once you add them.',
-  noClientsAct: 'Add a whole team from a spreadsheet',
   noMatch: 'Nobody matches. Clear the search or the filters to see everyone.',
   noGroups: 'A group is a team you coach together. Your groups will appear here.',
   noWorkshops: 'Your workshops will appear here once you add one.',
+  // One wording for both places (walk item 18): the empty card's link, then the line under the card once there are clients.
   addTeam: 'Add a team from a spreadsheet',
   export: 'Export',
   pastClients: 'Past clients',
@@ -178,11 +178,14 @@ export function clientLine({ role = '', city = '' } = {}) {
   return 'Their coaching, notes and what comes next are all in one place.';
 }
 
-/** A workshop's line: who it's for and where, then where it stands. */
+/**
+ * A workshop's line, with the real organisation and place each time (Tim, 27 Nov, walk item 11): "See who has
+ * registered for Halden at Leeds, and what goes to them."; once it has happened, "See who came from Halden at Leeds,
+ * and what they said."
+ */
 export function workshopLine({ organisation = null, place = null, past = false }) {
-  const where = [organisation ? `For ${organisation}` : null, place ? `${organisation ? 'at' : 'At'} ${place}` : null].filter(Boolean).join(' ');
-  const state = past ? 'See who came and what they said.' : 'See who has registered, and what goes to them.';
-  return where ? `${where}, ${state.charAt(0).toLowerCase()}${state.slice(1)}` : state;
+  const where = `${organisation ? ` ${past ? 'from' : 'for'} ${organisation}` : ''}${place ? ` at ${place}` : ''}`;
+  return past ? `See who came${where}${where ? ',' : ''} and what they said.` : `See who has registered${where}, and what goes to them.`;
 }
 
 /** A lead's page (B4): what the page is for, in a sentence. */

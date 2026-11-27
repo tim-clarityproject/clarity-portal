@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRe
 import {
   QuickAdd as SharedQuickAdd,
   AddButton, Button, Chip, ChipRow, DatePicker, Dropdown, IconButton, SlidePanel, SwitchRow, TextBox, TextField, useIsPhone, useToast,
+  useTabStrip,
 } from '../../components/design';
 import keepWords from '../../components/design/keepWords';
 import { useToastAbove } from '../../components/design/toastAbove';
@@ -425,9 +426,11 @@ export function TodoList({ todos, view = 'today', label, picks = null, onOpen, r
  */
 export function UnderTabs({ label, tabs, value, onChange, panelId }) {
   const refs = useRef([]);
-  const go = (i) => { const n = (i + tabs.length) % tabs.length; onChange(tabs[n].value); refs.current[n]?.focus({ preventScroll: true }); refs.current[n]?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); };
+  const stripRef = useRef(null);
+  useTabStrip(stripRef, value); // walk item 21: no tab cut at the strip's edge; the chosen one in view
+  const go = (i) => { const n = (i + tabs.length) % tabs.length; onChange(tabs[n].value); refs.current[n]?.focus({ preventScroll: true }); };
   return (
-    <div className="cc-utabs" role="tablist" aria-label={label}>
+    <div ref={stripRef} className="cc-utabs" role="tablist" aria-label={label}>
       {tabs.map((t, i) => (
         <button
           key={t.value}

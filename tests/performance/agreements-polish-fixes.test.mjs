@@ -183,11 +183,11 @@ test('Q1: before the client chooses, the Read states both ways truthfully; once 
   const { forStorage, resolveChoice, mainPoints } = await import('../../src/lib/agreements/clauses.js');
   const t = terms({ totalMinor: 1048000, settle: 'equal', months: 6, startsOn: '2027-01-04', endsOn: '2027-06-25', offerUpfront: true });
   const both = resolveChoice(forStorage(t), 'either').find((c) => c.key === 'investment').paragraphs[0].text;
-  assert.equal(both, 'Your investment is £9,956, in full, up front, with 5% off, or £10,480, in 6 monthly instalments, the first £1,746.70 and then £1,746.66. You choose which when you sign.');
-  assert.match(mainPoints(t, { choice: 'either' }).find((r) => r.label === 'Your investment').value, /up front, with 5% off, or £10,480, in 6 monthly instalments/);
+  assert.equal(both, 'Your investment is £9,956, in full, up front, with 5% off, or £10,480, in 6 monthly payments of £1,746.66, with £1,746.70 for the first. You choose which when you sign.');
+  assert.match(mainPoints(t, { choice: 'either' }).find((r) => r.label === 'Your investment').value, /up front, with 5% off, or £10,480, in 6 monthly payments of £1,746\.66, with £1,746\.70 for the first/);
   assert.match(resolveChoice(forStorage(t), 'plan').find((c) => c.key === 'investment').paragraphs[0].text, /^Your investment is £10,480, in 6 monthly/);
   const noChoice = { ...t, offerUpfront: false };
-  assert.match(mainPoints(noChoice, { choice: 'either' }).find((r) => r.label === 'Your investment').value, /^£10,480, in 6 monthly instalments/, 'no up front offered: the coach’s way only');
+  assert.match(mainPoints(noChoice, { choice: 'either' }).find((r) => r.label === 'Your investment').value, /^£10,480, in 6 monthly payments of £1,746\.66, with £1,746\.70 for the first$/, 'no up front offered: the coach’s way only');
 });
 
 test('Q9: a team programme’s Purpose names its people in the third person for the sponsor', async () => {
@@ -287,8 +287,19 @@ test('P7: "The full £X" for one payment that settles it all, "The first £X" on
 
 test('the monthly line names the first instalment where they don’t divide evenly, so the figures agree', async () => {
   const { equalLabel, settleOptions } = await import('../../src/lib/agreements/settling.js');
-  assert.equal(equalLabel(1748000, 12), '12 monthly instalments, the first £1,456.74 and then £1,456.66');
+  assert.equal(equalLabel(1748000, 12), '12 monthly payments of £1,456.66, with £1,456.74 for the first');
   assert.equal(equalLabel(1530000, 6), '6 monthly instalments of £2,550');
   const t = terms({ totalMinor: 1748000, settle: 'equal', months: 12, offerUpfront: false });
-  assert.equal(settleOptions(t).find((o) => o.value === 'equal').label, '12 monthly instalments, the first £1,456.74 and then £1,456.66');
+  assert.equal(settleOptions(t).find((o) => o.value === 'equal').label, '12 monthly payments of £1,456.66, with £1,456.74 for the first');
+});
+
+test('walk item 8 (Tim, 27 Nov): uneven payments read "12 monthly payments of £X, with £Y for the first." with the real numbers, everywhere', async () => {
+  const { paymentsWords, teamOptions } = await import('../../src/lib/agreements/settling.js');
+  const { mainPoints } = await import('../../src/lib/billing/agreementText.js');
+  assert.equal(paymentsWords(124000, 3), '3 monthly payments of £413.33, with £413.34 for the first');
+  assert.equal(paymentsWords(1000000, 3, 'GBP', ''), '3 payments of £3,333.33, with £3,333.34 for the first');
+  assert.ok(teamOptions({ kind: 'team', currency: 'GBP', team: { totalMinor: 1000000 } }).every((o) => !/the first .* and then/.test(o.label)));
+  const inv = mainPoints({ coaching: 'x', sessions: 12, minutes: 60, rhythm: 'every 2 weeks', total_minor: 1748000, instalments: 12, coachName: 'A', clientName: 'B' })
+    .find((r) => (r.label ?? r[0]) === 'Your investment');
+  assert.match(inv.value ?? inv[1], /in 12 monthly payments of £1,456\.66, with £1,456\.74 for the first$/);
 });

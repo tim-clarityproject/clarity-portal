@@ -49,9 +49,10 @@ export const preparingLine = (coachFirstName) => `Your portal is still being pre
  *  review's check-in keeps its own. */
 export const TOOL_CLOSED = 'Saved. Pick up where you left off from Home.';
 
-/** The Daily plan, inside its tool frame (rule 21). */
+/** The Daily plan, inside its tool frame (rule 21). Its name is "Daily plan" everywhere, the eyebrow included
+ *  (rule 26a; walk item 9, 27 Nov: the example page's "Plan my day" was its old name). */
 export const DAILY_PLAN = Object.freeze({
-  name: 'Plan my day',
+  name: 'Daily plan',
   closed: TOOL_CLOSED,
 });
 

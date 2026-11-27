@@ -5,7 +5,7 @@ import { isPhoneWidth } from '../../components/design/pageLock';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { findCalItems } from '../../lib/coach/store';
 import { searchResults, withRecent } from '../../lib/coach/model';
-import { menuFor, SETTINGS_SECTIONS } from '../../lib/coach/navigation';
+import { BOARDS_ON, menuFor, SETTINGS_SECTIONS } from '../../lib/coach/navigation';
 import { coachZoneOf, searchItems } from '../../lib/coach/calendar';
 import { boardSearchItems, boardsFor, LEAD_SEARCH_ACTIONS, leadSearchItems } from '../../lib/coach/crm';
 import { networkPageOf } from '../../lib/coach/networkData';
@@ -108,13 +108,14 @@ export function Search({ open, onClose }) {
       ...(isOwner ? organisations.map((o) => ({ key: `o:${o.id}`, title: o.name, kind: 'Organisation', to: `/coach/organisations/${o.id}` })) : []),
       // Leads are the owner's alone: an associate's search never finds one (run 4).
       ...(isOwner ? leadSearchItems(leads, leadStages) : []),
-      // Boards: the owner's own; an associate finds only the ones shared with them.
-      ...boardSearchItems(boards, { isOwner }),
+      // Boards: the owner's own; an associate finds only the ones shared with them. None while Boards is switched off
+      // (walk of Stage C, item 1).
+      ...(BOARDS_ON ? boardSearchItems(boards, { isOwner }) : []),
     ];
   }, [armed, clients, groups, workshops, organisations, admin, isOwner, coach, leads, leadStages, boards]);
   const fixed = useMemo(() => ({
     pages: [
-      ...menuFor({ isOwner, live: LIVE, hasShared: boardsFor(boards, { isOwner }).length > 0 }).map((i) => ({ key: `p:${i.key}`, title: i.label, kind: 'Page', to: i.to })),
+      ...menuFor({ isOwner, live: LIVE, hasShared: BOARDS_ON && boardsFor(boards, { isOwner }).length > 0 }).map((i) => ({ key: `p:${i.key}`, title: i.label, kind: 'Page', to: i.to })),
       ...(isOwner ? [{ key: 'p:automations', title: 'Automations', kind: 'Page', to: '/coach/leads/automations' }] : []),
       ...SETTINGS_SECTIONS.filter((x) => !x.owner || isOwner).map((x) => ({ key: `s:${x.key}`, title: x.label, kind: 'Settings', also: 'settings', to: `/coach/settings/${x.key}` })),
       { key: 'p:past', title: 'Past clients', kind: 'Page', to: '/coach/clients/past' },
@@ -125,7 +126,7 @@ export function Search({ open, onClose }) {
       { key: 'a:group', title: 'Add group', to: '/coach/clients?tab=groups', state: { open: 'group' } },
       { key: 'a:workshop', title: 'Add workshop', to: '/coach/clients?tab=workshops', state: { open: 'workshop' } },
       { key: 'a:export', title: 'Export clients to a spreadsheet', to: '/coach/clients', state: { open: 'export' } },
-      ...(isOwner ? [...LEAD_SEARCH_ACTIONS, ...NETWORK_SEARCH_ACTIONS, { key: 'a:board', title: 'New board', to: '/coach/boards', state: { open: 'board' } }, { key: 'a:automation', title: 'Add automation', to: '/coach/leads/automations', state: { open: 'add' } }] : []),
+      ...(isOwner ? [...LEAD_SEARCH_ACTIONS, ...NETWORK_SEARCH_ACTIONS, ...(BOARDS_ON ? [{ key: 'a:board', title: 'New board', to: '/coach/boards', state: { open: 'board' } }] : []), { key: 'a:automation', title: 'Add automation', to: '/coach/leads/automations', state: { open: 'add' } }] : []),
       { key: 'a:book', title: 'Book a call', to: '/coach/calendar/book' },
       { key: 'a:open', title: 'Set my open times', to: '/coach/calendar/open' },
       { key: 'a:offer', title: 'Offer times by email', to: '/coach/calendar/offer' },

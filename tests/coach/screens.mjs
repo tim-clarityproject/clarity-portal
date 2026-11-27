@@ -22,6 +22,7 @@ import { bookStore, guestStandIn } from './book-standin.mjs';
 import { clearCoaching, clientContext, clientStandIn, fromCoach } from './client.mjs';
 import { chooseZone } from './cal-rules.mjs';
 import { addDays, instantAt } from '../../src/lib/time/index.js';
+import { BOARDS_ON } from '../../src/lib/coach/navigation.js';
 
 /**
  * Marks three calls on the device as a round of the sync marks one moved in Google Calendar (Sam's, with its session; Ruth's
@@ -257,6 +258,8 @@ const boardAs = async (page, size, layout) => {
   if (size === 400) { await click('View')(page); await page.getByRole('menuitemcheckbox', { name: layout }).click(); } else await page.getByRole('button', { name: layout, exact: true }).click();
   await settle(page, 600);
 };
+// Boards is switched off until after go-live (walk of Stage C, item 1): its screens are left out until BOARDS_ON.
+const boardsShown = ([name, route]) => BOARDS_ON || !(String(route).startsWith('/coach/boards') || /^boards?-/.test(name));
 const CRM_SCREENS = [
   ['automations', '/coach/leads/automations', null, { full: true, expects: ['automations'] }],
   ['automations-add', '/coach/leads/automations', click('Add automation'), { expects: ['panel'] }],
@@ -659,7 +662,7 @@ export const GROUPS = [
   // Run 4, step 3: Automations, Boards, Settings' Email, Past clients' check-ins, Today's Keep in touch and an organisation's
   // account map, the owner's, device first (052 isn't on the test project). Then an associate, who sees only the board the
   // owner has shared, can't change it, and has no Automations.
-  { name: 'crm', at: TUE, roles: ['owner'], seed: () => seedWithCrm({ accounts: true, network: false }), screens: CRM_SCREENS },
+  { name: 'crm', at: TUE, roles: ['owner'], seed: () => seedWithCrm({ accounts: true, network: false }), screens: CRM_SCREENS.filter(boardsShown) },
   // Run 8's 3 (the UI tester): keep in touch switched on, with Ben's 3-month check-in due today (as crm-flows' crm-keep), and
   // the "Catch up with Ben" to-do it adds on Today. The switch stays on, so the to-do screen comes second.
   {
@@ -679,7 +682,7 @@ export const GROUPS = [
       ['board-not-shared', `/coach/boards/${CRM.partners}`, null, { expects: ['board-gone'] }],
       ['boards-shared-menu', '/coach', async (page) => { await frameMenu(page); await settle(page, 600); }, { expects: ['shared-board'] }],
       ['automations-closed', '/coach/leads/automations', null, { expects: ['not-leads'] }],
-    ],
+    ].filter(boardsShown),
   },
   // Run 4, step 4: Network, the owner's alone, device first (052 isn't on the test project): M11's twenty people, then 1,200
   // (the table's pages of 50 in its own box, the map's 150 with numbered spots); an associate who opens it lands on their own

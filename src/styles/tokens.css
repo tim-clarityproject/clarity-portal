@@ -130,7 +130,9 @@
   --tool-frame-max: 720px;
   --phead-mark: 24px;        /* the crosshair in the phone header */
   --mission-box-h: 40px;     /* My Mission in the phone header: a 40px box, not a pill */
-  --mission-box-max: 320px;  /* My Mission at the panel's top right on a laptop: at most this wide, ending in "…" */
+  --add-sq: 32px;            /* "+ Add" in a card's head: the square (walk of Stage C, item 4, option B) */
+  --add-sq-plus: 16px;       /* its plus */
+  --radius-add-sq: 8px;      /* its corners */
   --mission-gap: 24px;       /* an opening's first line stops this far short of My Mission (and Chat) on a laptop */
   --qa-sheet-pad: 20px;
   --fs-fig-unit: calc(16 * var(--u));
@@ -981,7 +983,7 @@
   /* What run 1 left (Phase 6a run 2, step 6) */
   --cc-card-lifted: 0.4;        /* a card's place on the board while it is dragged */
   /* Leads (Phase 6a run 4; M11 .board, .lcard, .qrow, the Edit stages panel) */
-  --cc-lead-col-min: 190px;     /* a stage's column, at its narrowest: five fit the board's width, more wrap under */
+  --cc-lead-col-min: 190px;     /* a stage's column, at its narrowest: the board scrolls sideways inside itself below that */
   --cc-lead-q-w: 170px;         /* "Where Amy is": a row's label */
   --cc-lead-dots: 16px;         /* the three dots of a row's More menu */
   --cc-stage-pct-w: 84px;       /* Edit stages: a stage's likelihood */

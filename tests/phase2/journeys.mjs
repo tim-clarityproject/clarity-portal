@@ -376,7 +376,7 @@ try {
   await card(0).getByLabel('Where are you now?').fill('12');
   await card(0).getByLabel('What’s your target?').fill('20');
   await pickDate(0, '15 June 2027', 8);
-  await page.getByRole('button', { name: 'Add objective' }).click();
+  await page.getByRole('button', { name: 'Add an objective' }).click(); // walk item 4: the card's add is named "Add an objective"
   await card(1).locator('textarea').fill(O2);
   await card(1).getByRole('radio', { name: 'I’ll rate it from Poor to Excellent' }).click();
   await pickWord(page, card(1), 'Where are you now?', 'Good');
@@ -390,11 +390,11 @@ try {
   await next(page);
 
   // One Strategy for each objective.
-  await page.getByRole('button', { name: 'Add Strategy' }).click();
+  await page.getByRole('button', { name: 'Add a Strategy' }).click(); // walk item 4: the card's add is named "Add a Strategy"
   await page.getByLabel('Strategy 1').fill(S1);
   await next(page);
   const strategyBoxes = await page.getByLabel(/Strategy \d/).count();
-  await page.getByRole('button', { name: 'Add Strategy' }).click();
+  await page.getByRole('button', { name: 'Add a Strategy' }).click(); // walk item 4: the card's add is named "Add a Strategy"
   await until(async () => (await page.getByLabel(/Strategy \d/).count()) > strategyBoxes, 10000);
   await page.getByLabel(/Strategy \d/).last().fill(S2);
   await until(async () => {
@@ -421,11 +421,11 @@ try {
     }
   };
   await forStrategy(S1);
-  await page.getByRole('button', { name: 'Add habit' }).click();
+  await page.getByRole('button', { name: 'Add a habit' }).click(); // walk item 4: the card's add is named "Add a habit"
   await habit(0).locator('textarea').fill('Thank-you notes sent');
   await measure(0, 'I’ll say yes or no each day');
   await habit(0).getByLabel('What’s the target?').fill('4');
-  await page.getByRole('button', { name: 'Add habit' }).click();
+  await page.getByRole('button', { name: 'Add a habit' }).click(); // walk item 4: the card's add is named "Add a habit"
   await habit(1).locator('textarea').fill('Weekly referral review');
   await measure(1, 'I’ll say yes or no once a week');
   const habitsSaved = (want) => until(async () => {
@@ -434,10 +434,10 @@ try {
   });
   await habitsSaved([['Thank-you notes sent', 'yes_no_days_target', 4], ['Weekly referral review', 'yes_no_weekly', null]]);
   await forStrategy(S2);
-  await page.getByRole('button', { name: 'Add habit' }).click();
+  await page.getByRole('button', { name: 'Add a habit' }).click(); // walk item 4: the card's add is named "Add a habit"
   await habit(0).locator('textarea').fill('Practice runs');
   await habit(0).getByLabel('What’s the target?').fill('3');
-  await page.getByRole('button', { name: 'Add habit' }).click();
+  await page.getByRole('button', { name: 'Add a habit' }).click(); // walk item 4: the card's add is named "Add a habit"
   await habit(1).locator('textarea').fill('Energy');
   await measure(1, 'I’ll rate it each day, from Poor to Excellent');
   await pickWord(page, habit(1), 'What’s the target?', 'Very good');
@@ -610,7 +610,7 @@ const W1 = 'A past client introduced a friend';
 const W2 = 'The pilot workshop sold out';
 async function addTodo(text, strategy, week = null) {
   at = `add to-do ${text}`;
-  await page.getByRole('button', { name: 'Add to-do' }).click();
+  await page.getByRole('button', { name: 'Add a to-do' }).click(); // walk item 4: the card's add is named "Add a to-do"
   await page.waitForSelector('.ds-panel textarea');
   await page.locator('.ds-panel textarea').fill(text);
   await page.locator('.ds-panel').getByRole('radio', { name: strategy }).click();
@@ -626,7 +626,7 @@ async function addTodo(text, strategy, week = null) {
 }
 async function addWin(text, strategy) {
   at = `add win ${text}`;
-  await page.getByRole('button', { name: 'Add unplanned win' }).click();
+  await page.getByRole('button', { name: 'Add an unplanned win' }).click(); // walk item 4: the card's add is named "Add an unplanned win"
   await page.waitForSelector('.ds-panel textarea');
   await page.locator('.ds-panel textarea').fill(text);
   await page.locator('.ds-panel').getByRole('button', { name: strategy }).click();
@@ -835,7 +835,7 @@ try {
   await carry('Practice runs').getByRole('radio', { name: 'Change it', exact: true }).click();
   await carry('Practice runs').locator('.ds-habed').getByLabel('What’s the target?').fill('2');
   await carry('Energy').getByRole('radio', { name: 'Remove it', exact: true }).click();
-  await page.getByRole('button', { name: 'Add habit' }).click();
+  await page.getByRole('button', { name: 'Add a habit' }).click(); // walk item 4: the card's add is named "Add a habit"
   await page.locator('.sprint-start-new textarea').first().fill('Workshop invitations');
   await page.locator('.sprint-start-new').getByLabel('What’s the target?').fill('5');
   await next(page);

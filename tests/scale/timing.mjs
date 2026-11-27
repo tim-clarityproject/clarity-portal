@@ -249,7 +249,8 @@ async function tapsOn(page, spec) {
 
 async function searchTap(page) {
   const out = [];
-  const box = page.getByRole('button', { name: 'Search, or do anything' });
+  // Search is the magnifying glass since the walk of Stage C (item 3).
+  const box = page.getByRole('button', { name: 'Search', exact: true }).locator('visible=true').first();
   const n0 = await page.evaluate(() => (window.__scale?.events || []).length);
   await box.click({ timeout: 5000 });
   await page.waitForTimeout(600);

@@ -46,20 +46,28 @@ export function settleOptions(t, chosen) {
   const offer = t?.offerUpfront !== false && selfFunded(t);
   return [
     { value: 'full', label: `In full, up front, ${moneyText(offer ? Math.round(f * (100 - UPFRONT_PERCENT) / 100) : f, c)}${offer ? `, ${UPFRONT_PERCENT}% off` : ''}` },
-    { value: 'deposit', label: `A deposit of ${moneyText(dep, c)}, then ${DEPOSIT_THEN} monthly instalments of ${moneyText(split(f - dep, DEPOSIT_THEN)[DEPOSIT_THEN - 1], c)}` },
+    { value: 'deposit', label: `A deposit of ${moneyText(dep, c)}, then ${paymentsWords(f - dep, DEPOSIT_THEN, c)}` },
     { value: 'equal', label: equalLabel(f, equalCount(t), c) },
     { value: 'delivered', label: `As delivered, ${moneyText(perSession(t), c)} a coaching session` },
   ];
 }
 
 /**
- * "6 monthly instalments of £2,550", or where they don't divide evenly (the leftover pennies go on the first) "12
- * monthly instalments, the first £1,456.74 and then £1,456.66", so the figures never seem to disagree.
+ * `count` payments of `total` in words, with the real count, period word and amounts each time: "6 monthly instalments
+ * of £2,550", or where they don't divide evenly (the leftover pennies go on the first) "12 monthly payments of
+ * £1,456.66, with £1,456.74 for the first" (Tim, 27 Nov, walk item 8; replaces "the first … and then …"), so the
+ * figures never seem to disagree. `period` is 'monthly' or '' (a team programme's instalments have no period).
  */
-export function equalLabel(total, count, c = 'GBP') {
+export function paymentsWords(total, count, c = 'GBP', period = 'monthly') {
   const parts = split(total, count);
-  if (count <= 1 || parts[0] === parts[count - 1]) return `${count} monthly ${count === 1 ? 'instalment' : 'instalments'} of ${moneyText(parts[count - 1], c)}`;
-  return `${count} monthly instalments, the first ${moneyText(parts[0], c)} and then ${moneyText(parts[count - 1], c)}`;
+  const p = period ? `${period} ` : '';
+  if (count <= 1 || parts[0] === parts[count - 1]) return `${count} ${p}${count === 1 ? 'instalment' : 'instalments'} of ${moneyText(parts[count - 1], c)}`;
+  return `${count} ${p}payments of ${moneyText(parts[count - 1], c)}, with ${moneyText(parts[0], c)} for the first`;
+}
+
+/** Set sessions' equal monthly instalments in words (`paymentsWords` with 'monthly'). */
+export function equalLabel(total, count, c = 'GBP') {
+  return paymentsWords(total, count, c, 'monthly');
 }
 
 /** A team programme's three ways (M28's tsettleOpts): a deposit of a third, then 3 instalments; 3 equal; in full. */
@@ -68,8 +76,8 @@ export function teamOptions(t) {
   const f = Number(t?.team?.totalMinor) || 0;
   const dep = roundDeposit(f / 3, c);
   return [
-    { value: 'deposit', label: `A deposit of ${moneyText(dep, c)}, then ${TEAM_THEN} instalments of ${moneyText(split(f - dep, TEAM_THEN)[TEAM_THEN - 1], c)}` },
-    { value: 'equal', label: `${TEAM_THEN} instalments of ${moneyText(split(f, TEAM_THEN)[TEAM_THEN - 1], c)}` },
+    { value: 'deposit', label: `A deposit of ${moneyText(dep, c)}, then ${paymentsWords(f - dep, TEAM_THEN, c, '')}` },
+    { value: 'equal', label: paymentsWords(f, TEAM_THEN, c, '') },
     { value: 'full', label: `In full, up front, ${moneyText(f, c)}` },
   ];
 }
@@ -155,7 +163,7 @@ export function restLine(t, choice = t?.choice ?? 'upfront', chosen) {
   // Read above a Settle button as well as after it (P7): what this payment does, never "Nothing more to settle."
   if (upfrontActive(t, choice)) return `This settles your agreement in full. You save ${moneyText(saving(pf), c)}.`;
   if (t.settle === 'full') return 'This settles your agreement in full.';
-  if (t.settle === 'deposit') return `Then ${DEPOSIT_THEN} monthly instalments of ${moneyText(split(pf - deposit(t, chosen), DEPOSIT_THEN)[DEPOSIT_THEN - 1], c)}, collected the same way.`;
+  if (t.settle === 'deposit') return `Then ${paymentsWords(pf - deposit(t, chosen), DEPOSIT_THEN, c)}, collected the same way.`;
   if (t.settle === 'equal') return `Then ${equalCount(t) - 1} more monthly ${equalCount(t) - 1 === 1 ? 'instalment' : 'instalments'} of ${moneyText(split(pf, equalCount(t))[equalCount(t) - 1], c)}, collected the same way.`;
   return 'Then each coaching session is invoiced after it happens.';
 }

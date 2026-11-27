@@ -25,7 +25,11 @@ const investmentWords = (t) => {
   const total = moneyWords(t.total_minor, t.currency || 'GBP');
   const n = Number(t.instalments) || 1;
   if (n <= 1) return `${total}, in full`;
-  return `${total}, in ${n} monthly instalments of ${moneyWords(Math.floor(t.total_minor / n), t.currency || 'GBP')}`;
+  // The pennies that don't divide go on the first (instalments() in money.js), said with the real amounts (walk item 8).
+  const each = Math.floor(t.total_minor / n);
+  const first = t.total_minor - each * (n - 1);
+  if (first === each) return `${total}, in ${n} monthly instalments of ${moneyWords(each, t.currency || 'GBP')}`;
+  return `${total}, in ${n} monthly payments of ${moneyWords(each, t.currency || 'GBP')}, with ${moneyWords(first, t.currency || 'GBP')} for the first`;
 };
 
 /** Main points, at a glance, in the wording file's order. A funded client's view has Funded by in place of the money. */

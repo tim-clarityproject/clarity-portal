@@ -15,6 +15,7 @@ import { useCoachName, Button, Chevron, ColourModeChoice, MoreLink, PageOpening,
 import { ACCOUNT_LINE } from '../content/pageLines/client';
 import { useClientPreparing } from '../lib/clientPreparing';
 import AccountCoaching from './account/AccountCoaching';
+import ProfileFields from './account/ProfileFields';
 import './account/account.css';
 import { hiddenHelpWords } from '../lib/hiddenHelp';
 import './performance/performance.css';
@@ -49,7 +50,6 @@ export default function MyAccount() {
   // Coaches only: the authenticator and recovery codes (Phase 6a run 5).
   const { coach: coachRow } = useCoachRole();
   const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteStage, setDeleteStage] = useState(0);
@@ -185,13 +185,12 @@ export default function MyAccount() {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('first_name, last_name')
+          .select('first_name')
           .eq('id', user.id)
           .single();
 
         if (profile) {
           setFirstName(profile.first_name || '');
-          setLastName(profile.last_name || '');
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -233,10 +232,8 @@ export default function MyAccount() {
     });
   };
 
-  // While the name and the Mission are still on their way (the first visit on
-  // this device), their rows keep their place with no words, never "Your Name"
-  // or "isn't written yet" for a moment (UI tester, scale check).
-  const fullName = firstName || lastName ? `${firstName} ${lastName}`.trim() : loading ? '\u00a0' : 'Your Name';
+  // While the Mission is still on its way (the first visit on this device), its row keeps its place
+  // with no words, never "isn't written yet" for a moment (UI tester, scale check).
   const missionPending = !personalGoal && !missionKnown;
 
   // The calm layout (design reference version 28; Tim's rules of 5 Nov, and
@@ -253,11 +250,8 @@ export default function MyAccount() {
   const panes = {
     profile: (
       <div className="acct-pane">
-        <Rows label="Your details">
-          <Row name="Your name" value={fullName} onClick={() => navigate('/edit-profile')} />
-          {/* The email once (Polish 1). Someone who signs in with Google changes it there. */}
-          <Row name="Your email" value={user?.email || ''} onClick={signsInWithGoogle(user) ? undefined : () => navigate('/my-account/email')} />
-        </Rows>
+        {/* The example page's two questions with their boxes (walk item 25, 27 Nov), in place of the rows. */}
+        <ProfileFields user={user} firstName={firstName} loading={loading} onNameSaved={setFirstName} />
         {/* How they sign in (M26; Tim, 11 Nov). Someone who signs in with Google has no Password page, and is told so instead. */}
         {signsInWithGoogle(user)
           ? <p className="acct-line">{YOU_SIGN_IN_WITH_GOOGLE}</p>

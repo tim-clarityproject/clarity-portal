@@ -535,7 +535,7 @@ export default function ClientPage() {
             )}
 
             {credit && (
-              <Card label="Projects" add={<AddLink label="Add project" expanded={addingProject} controls="cc-add-project" onClick={() => setAddingProject((v) => !v)} />} quickAdd={<QuickAdd id="cc-add-project" open={addingProject} onClose={() => setAddingProject(false)} placeholder="The project’s name" label="Add project: its name" addLabel="Add project" onAdd={(name) => addProject(name)} />}>
+              <Card label="Projects" add={<AddLink label="Add a project" expanded={addingProject} controls="cc-add-project" onClick={() => setAddingProject((v) => !v)} />} quickAdd={<QuickAdd id="cc-add-project" open={addingProject} onClose={() => setAddingProject(false)} placeholder="The project’s name" label="Add project: its name" addLabel="Add project" onAdd={(name) => addProject(name)} />}>
                 {[...projects, ...(projects.length ? [] : [{ id: null, name: 'Coaching' }])].map((p) => {
                   const on = running && running.engagement_id === engagement.id && (running.project_id || null) === p.id;
                   const total = minutesClocked(entries, { engagementId: engagement.id, projectId: p.id }, now);
@@ -555,7 +555,7 @@ export default function ClientPage() {
                   : <p className="cc-quiet">{profile.user_id ? `${first} isn’t sharing a score with you yet.` : `${first} has no portal account yet, so there is nothing to show.`}</p>}
               </Fold>
               <Fold title="Sessions and recaps" open={Boolean(folds.ses)} onToggle={() => toggle('ses')} summary={heldWords(counted)}>
-                {profile.status !== 'past' && <div className="cc-fold-add"><AddLink label="Add session" onClick={() => setPanel('session')} /></div>}
+                {profile.status !== 'past' && <div className="cc-fold-add"><AddLink square={false} label="Add a session" onClick={() => setPanel('session')} /></div>}
                 <SessionRows sessions={mySessions} label="Sessions" />
                 {engagement && (
                   <Line title="Sessions held" small={counted.sessions_recorded > 0 ? `${counted.sessions_recorded} recorded here, counted with the ones from before.` : 'Each session you write up is counted here.'}>
@@ -586,7 +586,7 @@ export default function ClientPage() {
               <Fold title="To-dos" open={Boolean(folds.todo)} onToggle={() => toggle('todo')} summary={myTodos.length ? openWords(myTodos) : ''}>
                 {myTodos.length === 0 && <p className="cc-quiet">Your own to-dos for {first} show here.</p>}
                 {myTodos.length > 0 && <TodoList todos={myTodos} view="list" label={`Your to-dos for ${first}`} onOpen={setOpenTodo} />}
-                <div className="cc-fold-add"><AddLink label="Add to-do" onClick={() => setPanel('todo')} /></div>
+                <div className="cc-fold-add"><AddLink square={false} label="Add a to-do" onClick={() => setPanel('todo')} /></div>
               </Fold>
               <Fold title="Files" eye={<Eye sentence={`You and ${first} can see these.`} shared />} open={Boolean(folds.files)} onToggle={() => toggle('files')} summary={countWords(files.length, 'file')}>
                 {files.map((f) => (
@@ -631,7 +631,7 @@ export default function ClientPage() {
                   ) : (
                     <>
                       <p className="cc-quiet">{first} has no engagement running.</p>
-                      <div className="cc-fold-add"><AddLink label="Add engagement" onClick={() => setEngDraft(draftFrom(null))} /></div>
+                      <div className="cc-fold-add"><AddLink square={false} label="Add an engagement" onClick={() => setEngDraft(draftFrom(null))} /></div>
                     </>
                   )}
                 </Fold>
@@ -654,7 +654,7 @@ export default function ClientPage() {
                     return <Detail key={f.id} label={f.name} edit><EditCell label={f.name} value={v} words={fieldWords(f, v, todayKey)} kind={f.kind} options={f.options || []} onSave={(typed) => saveField(f, typed)} /></Detail>;
                   })}
                   <Detail label="Tags" edit><button type="button" className={`cc-cell${tagNames.length ? '' : ' cc-cell--empty'}`} aria-label={`Tags, ${tagNames.join(', ') || 'none'}. Edit`} onClick={() => setPanel('tags')}>{tagNames.join(', ') || 'Add'}</button></Detail>
-                  <div className="cc-fold-add"><AddLink label="Add field" onClick={() => setField({ id: newId(), name: '', kind: 'text', optionsText: '' })} /></div>
+                  <div className="cc-fold-add"><AddLink square={false} label="Add a field" onClick={() => setField({ id: newId(), name: '', kind: 'text', optionsText: '' })} /></div>
                   <div className="cc-field"><Dropdown label="Time zone" placeholder="Choose a time zone" options={zones} value={profile.time_zone || null} onChange={(v) => save({ time_zone: v })} /></div>
                   <div className="cc-field"><SwitchRow label="Frequent traveller" note={`Session emails say the calendar invite moves with ${first}.`} checked={profile.frequent_traveller === true} onChange={(on) => save({ frequent_traveller: on })} /></div>
                   {profile.status !== 'past' && <div className="cc-field"><SwitchRow label="Paused" note="A paused client stays in your list, in the board’s Paused column." checked={profile.status === 'paused'} onChange={(on) => save({ status: on ? 'paused' : 'active' })} /></div>}

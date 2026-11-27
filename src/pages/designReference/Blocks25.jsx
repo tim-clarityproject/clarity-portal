@@ -70,7 +70,7 @@ export default function Blocks25() {
           <div className="b25-field b25-mt">
             <InlineChoice label="How well did you sleep?" options={[{ value: 'poorly', label: 'Poorly' }, { value: 'ok', label: 'OK' }, { value: 'well', label: 'Well' }, { value: 'very', label: 'Very well' }]} value={sleep} onChange={setSleep} />
           </div>
-          <Card label="To-dos" add={<AddLink label="Add to-do" onClick={() => setQa((v) => !v)} expanded={qa} />} quickAdd={(
+          <Card label="To-dos" add={<AddLink label="Add a to-do" onClick={() => setQa((v) => !v)} expanded={qa} />} quickAdd={(
             <QuickAdd
               open={qa}
               onClose={() => setQa(false)}

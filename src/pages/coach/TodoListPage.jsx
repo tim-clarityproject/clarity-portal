@@ -132,7 +132,7 @@ export default function TodoListPage() {
           add={list.finished_at ? null : (
             <span className="cc-list-adds">
               <AddLink label="Add heading" expanded={heading === 'new'} onClick={() => setHeading('new')}>Heading</AddLink>
-              <AddLink label="Add to-do" expanded={adding} onClick={() => setAdding(true)} />
+              <AddLink label="Add a to-do" expanded={adding} onClick={() => setAdding(true)} />
             </span>
           )}
         >

@@ -75,7 +75,7 @@ export default function GroupPage() {
         <div className="cc-acts">
           <TextLink onClick={() => setEngDraft(draftFrom(engagement))}>{engagement ? 'Edit the group’s engagement' : 'Add the group’s engagement'}</TextLink>
         </div>
-        <Card label="Members" add={<AddLink label="Add member" onClick={() => setAdding(true)} />}>
+        <Card label="Members" add={<AddLink label="Add a member" onClick={() => setAdding(true)} />}>
           {members.length === 0 && <Empty>The people in this group will appear here once you add them.</Empty>}
           <div className="ds-rows-list">
           {members.map((m) => {
@@ -96,7 +96,7 @@ export default function GroupPage() {
           })}
           </div>
         </Card>
-        <Card label="Sessions and recaps" add={<AddLink label="Add session" onClick={() => setAddingSession(true)} />}>
+        <Card label="Sessions and recaps" add={<AddLink label="Add a session" onClick={() => setAddingSession(true)} />}>
           {mySessions.length === 0 && <Empty>The group’s coaching sessions and their recaps will appear here.</Empty>}
           <SessionRows sessions={mySessions} people={members.length} label="Group sessions" />
         </Card>

@@ -241,6 +241,13 @@
 @media (max-width: 600px) {
   .ui-root .fin-figs { grid-template-columns: minmax(0, 1fr); }
 }
+/* Two or three figures side by side wrap to fewer in a row rather than wrap a label (the lead, 27 Nov: "THIS MONTH SO
+   FAR" and "CASH IN 6 MONTHS" at 1024): each card is at least as wide as its label on one line. */
+@media (min-width: 601px) {
+  .ui-root .fin-figs:not(.fin-figs--4) { display: flex; flex-wrap: wrap; }
+  .ui-root .fin-figs:not(.fin-figs--4) > .ds-card { flex: 1 1 var(--fin-stat-min); min-width: max-content; }
+  .ui-root .fin-figs:not(.fin-figs--4) .ds-label { white-space: nowrap; }
+}
 .ui-root .fin-part > .fin-sector:last-child { padding-bottom: 0; }
 .ui-root .fin-fig-card > .ds-bar:last-child { margin-bottom: 0; }
 /* Phones show less (26 Oct rule 10): the figure's "of £18,000" already says how far it is, so its bar stays on the laptop. */
@@ -255,3 +262,10 @@
 @media (max-width: 600px) {
   .ui-root .fin-fig-stack { align-items: flex-start; }
 }
+
+/* A row that opens something (Your targets' value rows, M11's vr, opening the targets sheet; Coming in) is a plain list
+   row: no box, fill or outline at rest, its figure and the row's chevron at its right on the name's line at every width
+   (the row rule), and its focus ring takes the controls' one radius (at rest square, so its divider runs straight) (walk of 27 Nov, item 20). Its height is a list
+   row's, never a box stretched round a figure. */
+.ui-root button.fin-row:focus-visible { border-radius: var(--radius-control); }
+.ui-root .fin-row--go > .fin-row-value { display: inline-flex; align-items: center; gap: var(--space-2); }

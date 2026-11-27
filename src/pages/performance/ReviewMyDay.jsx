@@ -19,6 +19,7 @@ import {
   PriorityRows,
   Choice,
   Stat,
+  TermInfo,
   TextBox,
   TodoList,
   TodoRow,
@@ -28,6 +29,7 @@ import {
   LoadError,
   PausedGate,
 } from '../../components/design';
+import { PERFORMANCE_SCORE_EXPLAIN } from '../../lib/performance/scoreExplain';
 import { ONE_TAP_MS } from '../../components/design/GuidedTool';
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
@@ -740,7 +742,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
               <CardHead
                 label="Unplanned wins"
                 as="h3"
-                add={<AddLink label="Add unplanned win" expanded={panel} onClick={() => { setWinForm((f) => (f.text ? f : emptyWin(date))); setPanel(true); }} />}
+                add={<AddLink label="Add an unplanned win" haspopup="dialog" onClick={() => { setWinForm((f) => (f.text ? f : emptyWin(date))); setPanel(true); }} />}
               />
               {view.wins.length > 0 ? (
                 <TodoList label="Unplanned wins" className="rev-list">
@@ -831,7 +833,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
             />
             {view.score && (
               <div className="day-score">
-                <Stat label="Performance score this week so far" value={view.score.value} good={view.score.good} />
+                <Stat label={<TermInfo explain={PERFORMANCE_SCORE_EXPLAIN} helpKey="performance-score" label="How your Performance score is worked out">Performance score this week so far</TermInfo>} value={view.score.value} good={view.score.good} />
               </div>
             )}
             {own.summary}

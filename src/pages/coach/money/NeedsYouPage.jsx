@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loading, useIsPhone } from '../../../components/design';
-import { Card, Empty, PageOpening, Row, Rows, dayTitle } from '../../../components/design/Blocks';
+import { Card, PageOpening, Row, Rows, dayTitle } from '../../../components/design/Blocks';
 import { needsYouLine } from '../../../content/pageLines/coach';
-import { EMPTY_LINE } from '../../../lib/agreements/needsYou';
 import { useNeedsYouItems } from '../needsYou/NeedsYou';
 import { NeedsYouDetail } from '../needsYou/panels';
 import { Back, useCoachPortal } from '../parts';
@@ -40,9 +39,9 @@ export default function NeedsYouPage() {
       <div className="cc-col cc-money-page">
         <Back to="Today" onClick={() => navigate('/coach')} />
         <PageOpening label={dayTitle(p.todayKey)} title="Needs you" line={partial ? null : needsYouLine(items.length)} />
-        {partial ? <Loading label="Loading what needs you" /> : items.length === 0 ? (
-          <Card label="Needs you"><Empty action={{ children: 'Back to Today', onClick: () => navigate('/coach') }}>{EMPTY_LINE}</Empty></Card>
-        ) : (
+        {/* Empty: the opening's one line alone, with no card repeating the title and no second way back under "‹ Today"
+            (Tim, 27 Nov, walk item 22). */}
+        {partial ? <Loading label="Loading what needs you" /> : items.length === 0 ? null : (
           <div className="ds-cols ds-cols--needs-first cc-money-needs">
             <div>
               <Card className="cc-money-needs-list" aria-label="Waiting for you">

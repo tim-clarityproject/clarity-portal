@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Chevron from './Chevron';
 import { fromKey, toKey, MONTH_NAMES } from './dates';
@@ -23,14 +23,50 @@ import './blocks.css';
  * `label`, `line`: words. `action`: the one main Button (variant "primary");
  * full width on a phone. `aside`: the page's eye beside the title.
  */
-export function PageOpening({ label, title, line, action, aside, as: Heading = 'h1', className = '' }) {
+export function PageOpening({ label, title, line, action, aside, mission, as: Heading = 'h1', className = '' }) {
+  // `mission`: the laptop's My Mission line under the title (walk item 5): a <MissionLine /> or its props.
+  const missionNode = mission && !mission.$$typeof && typeof mission === 'object' ? <MissionLine {...mission} /> : mission;
   return (
-    <header className={`ds-open ${className}`.trim()}>
+    <header className={`ds-open${missionNode ? ' ds-open--mission' : ''} ${className}`.trim()}>
       {label && <div className="ds-open-label">{label}</div>}
       <Heading className="ds-page-title ds-open-title">{title}{aside ? <span className="ds-page-aside ds-open-aside">{aside}</span> : null}</Heading>
+      {missionNode || null}
       {line && <p className="ds-open-line">{line}</p>}
       {action && <div className="ds-open-act">{action}</div>}
     </header>
+  );
+}
+
+/**
+ * My Mission on a laptop (walk item 5, Tim's option C, 27 Nov): one line straight under the page title, "My Mission"
+ * in 13px grey, two spaces, then the Mission in 13px text colour on one line ending in "…", a hairline under it and
+ * 24px before the page line. Laptop only (1024px and up); under that the phone header's My Mission box stays. The whole
+ * line is one link to the Individual Performance Plan at My Mission.
+ * `mission`: the words ('' when none yet: `empty` shows in grey). `href`: the address it opens. `onClick(e)`: the
+ * router's navigate on a plain click (a modifier or middle click is the browser's own, a new tab). `pending`: not
+ * known yet on this device, so the line keeps its place with no words.
+ */
+export function MissionLine({ mission = '', href, onClick, pending = false, empty = 'Add your Mission when you’re ready', className = '' }) {
+  const has = Boolean(mission && mission.trim());
+  const words = has ? mission.trim() : empty;
+  const go = (e) => {
+    if (!onClick || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    onClick(e);
+  };
+  return (
+    <a
+      className={`ds-mline${has ? '' : ' ds-mline--none'} ${className}`.trim()}
+      href={href}
+      onClick={go}
+      aria-busy={pending || undefined}
+      aria-label={pending ? 'My Mission' : `My Mission: ${words}. Open it in your Individual Performance Plan`}
+      title={has && !pending ? words : undefined}
+    >
+      <span className="ds-mline-k">My Mission</span>
+      <span className="ds-mline-gap" aria-hidden="true">{'  '}</span>
+      <span className={`ds-mline-v${pending ? ' ds-mline-v--pending' : ''}`}>{words}</span>
+    </a>
   );
 }
 
@@ -187,16 +223,37 @@ export function Empty({ children, action, className = '' }) {
  * "+ Add": at the right of a list's label, 13px grey like "View all", a 10px
  * plus then the underlined word. `label` is what a screen reader hears
  * ("Add to-do"); the words shown stay "Add" unless `children` says more.
+ *
+ * Walk item 4 (Tim, 27 Nov, option B): "+ Add" in a card's head is a 32px square in the soft surface grey, no outline,
+ * 8px corners, a 16px plus of 1.5px lines in the text colour, level with the card's label at its right; a 44px tap area;
+ * on hover and keyboard focus the main button's colours (black with a white plus in light, reversed in dark). Its name
+ * is what it adds (`label`: "Add a to-do"). Only an add with other words ("+ Heading") keeps the words.
  */
-export function AddLink({ children = 'Add', label, onClick, expanded, controls, className = '' }) {
+export function AddLink({ children = 'Add', label, onClick, expanded, controls, haspopup, square = true, className = '' }) {
+  // `haspopup` ("dialog"): it opens a panel, so it says so and has no aria-expanded (a reveal names what it opens).
+  const opens = haspopup ? { 'aria-haspopup': haspopup } : { 'aria-expanded': expanded === undefined ? undefined : Boolean(expanded), 'aria-controls': controls };
+  // `square={false}`: the words "+ Add", where two adds share a heading and only words tell them apart (the sprint's
+  // "To-dos this week": "+ Add" and "+ Add win").
+  if (children === 'Add' && square) {
+    return (
+      <button
+        type="button"
+        className={`ds-addsq ds-addlink ${className}`.trim()}
+        onClick={onClick}
+        aria-label={label || 'Add'}
+        {...opens}
+      >
+        <span className="ds-addsq-plus" aria-hidden="true" />
+      </button>
+    );
+  }
   return (
     <button
       type="button"
       className={`ds-addrow ds-addlink ${className}`.trim()}
       onClick={onClick}
       aria-label={label}
-      aria-expanded={expanded === undefined ? undefined : Boolean(expanded)}
-      aria-controls={controls}
+      {...opens}
     >
       <span className="ds-addrow-mark" aria-hidden="true" />
       <span className="ds-addrow-words">{children}</span>
@@ -323,12 +380,67 @@ export function ControlRow({ name, sub, children, className = '' }) {
  * Underlined section tabs: one section at a time; on a phone they scroll
  * sideways in one line. `tabs`: [{ key, label }]. Arrow keys move between them.
  */
+/**
+ * A strip of tabs that scrolls sideways (walk item 21, Tim, 27 Nov): never a word cut at its edge. A tab only partly in
+ * view is hidden (`.ds-tab--cut`) until the strip is scrolled to show it whole, and the chosen tab is scrolled fully into
+ * view when the strip is drawn and whenever the choice changes. `ref`: the strip (role tablist); `value`: the choice.
+ * Used by SectionTabs and the coach's UnderTabs.
+ */
+export function useTabStrip(ref, value) {
+  // Brings a tab fully into the strip's view (only the strip scrolls, never the page).
+  const reveal = (strip, tab) => {
+    if (!strip || !tab) return;
+    const s = strip.getBoundingClientRect();
+    const b = tab.getBoundingClientRect();
+    if (b.right > s.right) strip.scrollLeft += Math.ceil(b.right - s.right);
+    else if (b.left < s.left) strip.scrollLeft -= Math.ceil(s.left - b.left);
+  };
+  const chosenOf = (strip) => strip?.querySelector('[role=tab][aria-selected=true]');
+  useLayoutEffect(() => {
+    const strip = ref.current;
+    reveal(strip, chosenOf(strip));
+    strip?.dispatchEvent(new window.Event('scroll'));
+  }, [ref, value]);
+  useEffect(() => {
+    const strip = ref.current;
+    if (!strip) return undefined;
+    let frame = 0;
+    let width = 0;
+    const mark = () => {
+      frame = 0;
+      const s = strip.getBoundingClientRect();
+      // The strip's width changed (its styles or fonts arrived, the window turned): the chosen tab into view again.
+      if (Math.abs(s.width - width) > 0.5) { width = s.width; reveal(strip, chosenOf(strip)); }
+      const now = strip.getBoundingClientRect();
+      strip.querySelectorAll('[role=tab]').forEach((tab) => {
+        const b = tab.getBoundingClientRect();
+        tab.classList.toggle('ds-tab--cut', now.width > 0 && (b.right > now.right + 0.5 || b.left < now.left - 0.5));
+      });
+    };
+    const soon = () => { if (!frame) frame = requestAnimationFrame(mark); };
+    // A tab reached by the keyboard comes fully into view.
+    const show = (e) => { reveal(strip, e.target.closest?.('[role=tab]')); soon(); };
+    const resized = () => { width = 0; soon(); };
+    mark();
+    strip.addEventListener('focusin', show);
+    strip.addEventListener('scroll', soon, { passive: true });
+    const sizes = typeof ResizeObserver === 'function' ? new ResizeObserver(soon) : null;
+    sizes?.observe(strip);
+    window.addEventListener('resize', resized);
+    document.fonts?.ready?.then(resized);
+    return () => { if (frame) cancelAnimationFrame(frame); strip.removeEventListener('focusin', show); strip.removeEventListener('scroll', soon); sizes?.disconnect(); window.removeEventListener('resize', resized); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ref]);
+}
+
 export function SectionTabs({ tabs, value, onChange, label = 'Sections', className = '' }) {
   const refs = useRef([]);
+  const stripRef = useRef(null);
+  useTabStrip(stripRef, value);
   const at = Math.max(0, tabs.findIndex((t) => t.key === value));
-  const move = (n) => { const i = (n + tabs.length) % tabs.length; onChange?.(tabs[i].key); refs.current[i]?.focus(); };
+  const move = (n) => { const i = (n + tabs.length) % tabs.length; onChange?.(tabs[i].key); refs.current[i]?.focus({ preventScroll: true }); };
   return (
-    <div className={`ds-tabs ${className}`.trim()} role="tablist" aria-label={label}>
+    <div ref={stripRef} className={`ds-tabs ${className}`.trim()} role="tablist" aria-label={label}>
       {tabs.map((t, i) => (
         <button
           key={t.key}

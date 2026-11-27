@@ -281,7 +281,7 @@ export default function Leads() {
   const [addName, setAddName] = useState('');
   const filterWords = filtersOn ? `Filter, ${filtersOn} on` : 'Filter';
   const listLabel = viewName || (narrowed ? leadCountWords(filtered.length, open.length) : PEOPLE.leadsAll);
-  const addLink = <AddLink label="Add lead" expanded={adding} controls="cc-add-lead" onClick={() => setAdding((v) => !v)} />;
+  const addLink = <AddLink label="Add a lead" expanded={adding} controls="cc-add-lead" onClick={() => setAdding((v) => !v)} />;
   const quick = (
     <QuickAdd
       id="cc-add-lead"

@@ -46,6 +46,7 @@ import { loadMySessions } from '../lib/coach/bookingActions';
 import { useAgreements } from './coaching/agreementData';
 import { nextInvoice, showsBilling } from '../lib/coaching/agreementRules';
 import { useClientPreparing } from '../lib/clientPreparing';
+import { useMissionLine } from '../lib/performance/useMissionLine';
 import { getLocalDateKey } from '../lib/dateFormatter';
 import { readCache, useCachedLoad } from '../lib/pageCache';
 import { useDraft } from '../lib/drafts';
@@ -458,10 +459,13 @@ function TodayBody({ userId, user, now, today, sprint, view, day, setDay = () =>
   };
 
   // The one main button is the suggestion for now (homeSuggestion); its second way out, if any, sits beside it.
+  // My Mission's line under the title on a laptop (walk item 5, 27 Nov), opening the plan at My Mission.
+  const missionLine = useMissionLine();
   const opening = (
     <PageOpening
       label={dayTitle(today)}
       title={title}
+      mission={missionLine}
       line={(welcomeBack || comingBack) ? `${line.replace(/\.$/, '')}, so let’s start with this week.` : line}
       action={(cardAction || (cardLink && card?.action)) ? (
         <div className="home-act">
@@ -491,7 +495,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day, setDay = () =>
     <Card
       label={HOME.todayLabel}
       className="home-today"
-      add={running ? <AddLink label={HOME.addLabel} onClick={openQuick} expanded={quickOpen} controls="home-quick-add" /> : undefined}
+      add={running ? <AddLink label="Add a to-do" onClick={openQuick} expanded={quickOpen} controls="home-quick-add" /> : undefined}
       quickAdd={running ? (
         <QuickAdd id="home-quick-add" open={quickOpen} onClose={() => setPanel(null)} onAdd={quickAdd} label={HOME.addLabel}>
           <input

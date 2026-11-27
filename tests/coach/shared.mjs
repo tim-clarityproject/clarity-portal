@@ -1051,7 +1051,7 @@ export async function frameMenu(page) {
   if (await side.isVisible().catch(() => false)) return page.locator('.ds-frame-side .ds-mi');
   const panel = page.locator('.ds-pmenu .ds-mi');
   if (!(await panel.first().isVisible().catch(() => false))) {
-    await page.locator('.ds-mbtn').first().click();
+    await page.locator('.ds-mbtn:visible').first().click(); // walk (WA): the coach's own phone header holds the crosshair; the frame's is hidden
     await page.waitForTimeout(500);
   }
   return panel;
@@ -1077,7 +1077,7 @@ export async function openFromMenu(page, name) {
 export async function openTodoAdd(page) {
   const scope = page.locator('.ds-qa').first();
   if (!(await scope.isVisible().catch(() => false))) {
-    await page.locator('.ds-addlink[aria-label="Add to-do"]').first().click();
+    await page.locator('.ds-addlink[aria-label="Add a to-do"]').first().click(); // walk item 4: named by what it adds
     await page.waitForTimeout(400);
   }
   return scope;
@@ -1092,12 +1092,9 @@ export async function openCalSettings(page, name = null) {
 }
 
 /**
- * Opens Search (Tim's walk, item 21): on a laptop the box at the panel's top right; on a phone it sits at the top of the
- * menu (the crosshair), so the menu is opened first.
+ * Opens Search (walk of Stage C, item 3): the magnifying glass named "Search", at the top of the menu column on a
+ * laptop and at the right of the header on a phone; whichever is on screen.
  */
 export async function openSearch(page) {
-  const inHeader = page.locator('.cc-header .cc-search');
-  if (await inHeader.isVisible().catch(() => false)) { await inHeader.click(); return; }
-  if (!(await page.locator('.ds-pmenu-top .cc-search').isVisible().catch(() => false))) { await page.locator('.ds-mbtn').first().click(); await page.waitForTimeout(400); }
-  await page.locator('.ds-pmenu-top .cc-search').click();
+  await page.locator('button.cc-glass-btn[aria-label="Search"]:visible').first().click();
 }

@@ -148,3 +148,16 @@ export function targetRows({ today, lines, targets, minimumMinor = 0, associateP
     year: row(`This year, from 1 ${monthName(fy.months[0])}`, fy.months, () => ({})),
   };
 }
+
+/**
+ * Your targets' rows with "Nothing settled yet, and no target set." said once (walk of 27 Nov, item 20): the rows with
+ * nothing in and no target (always the first ones: the quarter holds the month, the year the quarter) become one row,
+ * "This month and this quarter, October to December", or "This month, quarter and year" when none has anything.
+ */
+export function targetsShown(list) {
+  const none = list.filter((r) => !r.paid && !r.target);
+  if (none.length < 2) return list;
+  const label = none.length === list.length ? 'This month, quarter and year'
+    : none.map((r, i) => (i ? r.label.replace(/^This /, 'this ') : r.label)).join(none.length === 2 ? ' and ' : ', ');
+  return [{ ...none[0], label, detail: '', minimum: '', percentWords: '' }, ...list.filter((r) => r.paid || r.target)];
+}

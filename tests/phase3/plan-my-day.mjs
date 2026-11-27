@@ -200,6 +200,8 @@ async function checkScreen(page, tag, { eye = true, oneTap = false } = {}) {
       .filter(shown)
       // A counter's minus and plus sit inside its 40px (44px) box: the box is the control (the reference's .count).
       .filter((el) => !el.closest('.ds-textbox-measure, .ds-count'))
+      // Walk item 4: a card's add is the 32px square with an invisible 44 by 44 tap area (.ds-addsq), not a 40px control.
+      .filter((el) => !el.matches('.ds-addsq, .ds-addsq *') && !el.querySelector('.ds-addsq'))
       .map((el) => {
         const r = el.getBoundingClientRect();
         // A button's tap area may be wider than its look (padding or ::before); measure the element.
@@ -305,7 +307,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
     && (await page.locator('.ds-tool-hint, .ds-pick-count').count()) === 0);
   await shot(page, `${tag}-4-do`);
   // Add a to-do from the panel: no "Which week?", and it joins today too (no limit).
-  await page.getByRole('button', { name: 'Add to-do' }).click();
+  await page.getByRole('button', { name: 'Add a to-do' }).click(); // walk item 4: the card's add is named "Add a to-do"
   const panel = page.locator('[role=dialog]').last();
   await panel.locator('textarea').first().fill(PANEL_TODO);
   pass(`${tag}: the panel has no Which week`, (await panel.getByText('Which week?').count()) === 0 && (await panel.getByText('It’s added to today and to this week’s sprint.').count()) === 1);

@@ -41,3 +41,18 @@
 .ui-root .cc-money-qa-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-px12); }
 @media (max-width: 600px) { .ui-root .cc-money-qa-two { grid-template-columns: minmax(0, 1fr); } }
 .ui-root .cc-money-view { margin-top: var(--space-1); }
+
+/* A logged entry's More menu (walk item 13): the dots at the row's right end, after its length, centred on the row and
+   kept inside the row's own height (the 44px tap area overlaps the row's padding, never the next row). On a phone the
+   length goes under the name, as every row's value does, and the dots stay at the right. */
+.ui-root .cc-hours-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; column-gap: var(--space-3); }
+.ui-root .cc-hours-row > .ds-li-name { grid-column: 1; }
+.ui-root .cc-hours-row > .ds-li-value { grid-column: 2; }
+.ui-root .cc-hours-row > .cc-hours-more { grid-column: 3; align-self: center; margin: calc(var(--space-3) * -1) calc(var(--space-px12) * -1) calc(var(--space-3) * -1) calc(var(--space-2) * -1); }
+@media (max-width: 600px) {
+  .ui-root .cc-hours-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: var(--space-px2); }
+  .ui-root .cc-hours-row > .ds-li-value { grid-column: 1; grid-row: 2; justify-self: start; }
+  .ui-root .cc-hours-row > .cc-hours-more { grid-column: 2; grid-row: 1 / span 2; }
+}
+.ui-root .cc-hours-more svg { fill: currentColor; stroke: none; }
+@media (forced-colors: active) { .ui-root .cc-hours-more svg { fill: ButtonText; } }

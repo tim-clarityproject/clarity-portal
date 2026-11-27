@@ -585,7 +585,7 @@ function PeopleQuestion({ t, save, portal, agreement }) {
     toast.saved({ message: `${people[i].name} removed`, long: true, onUndo: () => save(before) });
   };
   return (
-    <Card label="The people" add={<AddLink label="Add person" expanded={open} onClick={() => setOpen(true)} />}
+    <Card label="The people" add={<AddLink label="Add a person" expanded={open} onClick={() => setOpen(true)} />}
       quickAdd={<QuickAdd open={open} onClose={() => setOpen(false)} onAdd={add} stayOpen placeholder="Their full name" label="Add person"
         more={(name) => (theirs.some((p) => p.name.toLowerCase() === name.toLowerCase()) ? null
           : <TextField label="Their email" type="email" value={email} maxLength={320} onChange={(e) => setEmail(e.target.value)} />)} />}>

@@ -49,7 +49,8 @@ export default function ClientCards({ profile, first, next, last, sessions, load
           link={rows.length > FIRST_AGREEMENTS ? { children: allAgreements ? 'Show fewer' : 'View all', onClick: () => setAllAgreements((v) => !v), 'aria-expanded': allAgreements, 'aria-controls': 'cc-money-agreements' } : undefined}
         >
           {loading ? <Loading label="Loading the agreements" /> : rows.length === 0 ? (
-            <Empty action={past ? null : { children: 'New agreement', onClick: () => navigate(`/coach/agreements/new?for=client:${profile.id}`) }}>{`${first} has no agreement yet.`}</Empty>
+            // The sentence alone: New agreement is the page opening's one main button (walk item 12), offered once.
+            <Empty>{`${first} has no agreement yet.`}</Empty>
           ) : (
             <Rows className="cc-money-rows" label={`Agreements with ${first}`}>
               {shownAgreements.map((r) => <Row key={r.id} name={r.name} sub={r.sub} value={r.value} onClick={() => open(r)} label={`${r.name}, ${r.sub}, ${r.value}. Open it`} />)}

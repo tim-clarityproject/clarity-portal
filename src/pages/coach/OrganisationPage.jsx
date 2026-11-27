@@ -215,7 +215,7 @@ export default function OrganisationPage() {
           {map.whosWho.filter((w) => w.kind === 'contact').length + mine.length + theirs.length + here.length === 0 && <Empty>The people you work with there will appear here.</Empty>}
         </Card>
 
-        <Card label="Agreements and proposals" add={<AddLink label={ACCOUNT_WORDS.addDeal} onClick={() => { setDealProblem(null); setDeal({ id: newId(), name: '', kind: 'agreement', status: 'active', value: '', per: 'once', renews: '', detail: '' }); }} />}>
+        <Card label="Agreements and proposals" add={<AddLink label="Add an agreement or proposal" onClick={() => { setDealProblem(null); setDeal({ id: newId(), name: '', kind: 'agreement', status: 'active', value: '', per: 'once', renews: '', detail: '' }); }} />}>
           <div className="ds-rows-list">
           {map.deals.map((d) => (
             <PersonRow key={d.id} name={d.name} facts={[d.status, d.detail, d.opened]} when={(d.value || d.renews) ? <>{d.value && <b aria-label={d.valueSpoken}>{d.value}</b>}{d.value && d.renews ? ', ' : ''}{d.renews}</> : null} label={`Edit ${d.name}`} className="cc-map-deal" onClick={() => openDeal(d)} />
@@ -273,7 +273,7 @@ export default function OrganisationPage() {
           <p className="cc-note">Prices and invoices arrive with Finances.</p>
         </Card>
 
-        <Card label="Documents" aside={<Eye sentence="Only you can see these." />} add={<AddLink label="Add document" onClick={() => { setProblem(null); setDoc({ id: newId(), name: '', expires: '', file: null }); }} />}>
+        <Card label="Documents" aside={<Eye sentence="Only you can see these." />} add={<AddLink label="Add a document" onClick={() => { setProblem(null); setDoc({ id: newId(), name: '', expires: '', file: null }); }} />}>
           {docs.length === 0 && <Empty>A services agreement or a non-disclosure agreement would sit here once you add it.</Empty>}
           {docs.map((d) => (
             <Line key={d.id} title={d.name} small={d.expires_on ? `${d.expires_on < todayKey ? 'Expired' : 'Expires'} on ${dayWords(d.expires_on, todayKey)}.` : 'No expiry date.'}>

@@ -10,6 +10,7 @@ import { useActivePlan } from '../lib/performance/hooks';
 import { onPlanChanged } from '../lib/performance/planChanged';
 import { SiteDesktopMenu } from './SiteMenu';
 import PlanMissionPanel from './PlanMissionPanel';
+import { missionAddress } from '../lib/performance/missionPlace';
 import { isNavPhone } from './design/pageLock';
 import { MenuButton, useFrame } from './design/Frame';
 
@@ -175,7 +176,9 @@ export default function DesignHeader({ className = '' }) {
   // switched on, as a 40px box with a thin line; on a laptop the menu is the
   // frame's column, so My Mission and Chat sit quietly at the top right.
   if (inFrame) {
-    const openMission = missionPending ? undefined : !hasMission ? openMissionStep : activePlan ? openPlanPanel : () => navigate('/personal-operating-plan');
+    // Walk item 5 (27 Nov): the box opens the Individual Performance Plan at My Mission, where it can be changed
+    // (src/lib/performance/missionPlace.js), as the laptop's Mission line does.
+    const openMission = missionPending ? undefined : () => navigate(missionAddress({ hasPlan: Boolean(activePlan), hasMission }));
     return (
       <div className={`ui-root hdr-frame-root ${className}`.trim()}>
         <div className="hdr hdr-frame">
@@ -185,7 +188,6 @@ export default function DesignHeader({ className = '' }) {
               type="button"
               className={`hdr-mbox${hasMission ? '' : ' hdr-mbox--none'}`}
               onClick={openMission}
-              aria-haspopup={activePlan && hasMission ? 'dialog' : undefined}
               aria-busy={missionPending || undefined}
             >
               My Mission
@@ -475,7 +477,6 @@ export default function DesignHeader({ className = '' }) {
               type="button"
               className={`hdr-mis${hasMission ? '' : ' hdr-mis--none'}`}
               onClick={missionPending ? undefined : !hasMission ? openMissionStep : activePlan ? openPlanPanel : () => navigate('/personal-operating-plan')}
-              aria-haspopup={activePlan && hasMission ? 'dialog' : undefined}
               aria-busy={missionPending || undefined}
             >
               <PillWords key={hasMission ? mission : ''} text={hasMission ? mission : NO_MISSION} none={!hasMission} pending={missionPending} />

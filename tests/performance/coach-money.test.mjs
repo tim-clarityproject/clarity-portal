@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { agreementRows, agreementState, amountsText, moneySummary, monthSpan, sentFacts, sentLabel, sentLead, somethingWaiting, reminderLine } from '../../src/lib/coach/money.js';
-import { needsYouLine } from '../../src/content/pageLines/coach.js';
+import { needsYouLine, workshopLine } from '../../src/content/pageLines/coach.js';
 
 const SAM = 'p-sam';
 const TODAY = '2026-11-25';
@@ -107,6 +107,15 @@ test('Needs you’s line: M28’s "Five things are drafted…", in words to ten'
   assert.equal(needsYouLine(1), 'One thing is drafted and waiting for you. Nothing goes until you send it.');
   assert.equal(needsYouLine(12), '12 things are drafted and waiting for you. Nothing goes until you send it.');
   assert.match(needsYouLine(0), /^Nothing is waiting for you\./);
+});
+
+test('walk item 11 (27 Nov): the workshop line names the real organisation and place each time', () => {
+  assert.equal(workshopLine({ organisation: 'Halden', place: 'Leeds' }), 'See who has registered for Halden at Leeds, and what goes to them.');
+  assert.equal(workshopLine({ organisation: 'Brightwater', place: 'the Manchester office' }), 'See who has registered for Brightwater at the Manchester office, and what goes to them.');
+  assert.equal(workshopLine({ place: 'Leeds' }), 'See who has registered at Leeds, and what goes to them.');
+  assert.equal(workshopLine({}), 'See who has registered, and what goes to them.');
+  assert.equal(workshopLine({ organisation: 'Halden', place: 'Leeds', past: true }), 'See who came from Halden at Leeds, and what they said.');
+  assert.equal(workshopLine({ past: true }), 'See who came and what they said.');
 });
 
 test('the agreement email as M28 v6 draws it: the note and what the agreement is in one paragraph, a black button', async () => {

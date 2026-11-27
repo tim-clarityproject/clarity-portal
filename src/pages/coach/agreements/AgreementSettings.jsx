@@ -43,7 +43,7 @@ export default function AgreementSettings() {
     <div className="ab-settings">
       <p className="ab-say ab-settings-line">{BUILDER_LINES.packages}</p>
       {isOwner && (
-        <Card label="Your packages" add={<AddLink label="Add package" expanded={adding} onClick={() => setAdding(true)} />}
+        <Card label="Your packages" add={<AddLink label="Add a package" expanded={adding} onClick={() => setAdding(true)} />}
           quickAdd={<QuickAdd open={adding} onClose={() => setAdding(false)} onAdd={addPackage} placeholder="What’s the package called?" label="Add package" addLabel="Add and set it up" />}>
           {packages.length ? (
             <Rows>
@@ -103,7 +103,7 @@ function Extras() {
   };
   const [open, setOpen] = useState(false);
   return (
-    <Card label="Quote extras" add={<AddLink label="Add extra" expanded={open} onClick={() => { setProblem(null); setOpen(false); setEdit({ key: null, title: '', priceMinor: 0, hint: '' }); }} />}>
+    <Card label="Quote extras" add={<AddLink label="Add an extra" expanded={open} onClick={() => { setProblem(null); setOpen(false); setEdit({ key: null, title: '', priceMinor: 0, hint: '' }); }} />}>
       <Rows>
         {list.map((e) => (
           <Row key={e.key} name={e.title} sub={[moneyText(e.priceMinor, 'GBP'), e.hint].filter(Boolean).join(', ')}

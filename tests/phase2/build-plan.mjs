@@ -214,14 +214,14 @@ try {
   await card(0).getByLabel('Where are you now?').fill('31');
   await card(0).getByLabel('What’s your target?').fill('40');
   await pickDate(0, '15 December 2026', 2);
-  await page.getByRole('button', { name: 'Add objective' }).click();
+  await page.getByRole('button', { name: 'Add an objective' }).click(); // walk item 4: the card's add is named "Add an objective"
   await card(1).locator('textarea').fill('Launch the leadership programme');
   await page.waitForTimeout(1600);
   pass('build: a half-filled objective stays on the device', (await count('outcome_objectives')) === 1, `${await count('outcome_objectives')} saved`);
   await card(1).getByRole('radio', { name: 'Milestone' }).click();
   pass('build: the milestone’s two lines', (await card(1).textContent()).includes('Something you get done once, by a date.'));
   await pickDate(1, '20 January 2027', 3);
-  await page.getByRole('button', { name: 'Add objective' }).click();
+  await page.getByRole('button', { name: 'Add an objective' }).click(); // walk item 4: the card's add is named "Add an objective"
   await card(2).locator('textarea').fill('Confidence leading group workshops');
   await card(2).getByRole('radio', { name: 'I’ll rate it from Poor to Excellent' }).click();
   pass('build: a rating is five words, with no number box (10 Nov)', (await card(2).locator('input[inputmode]').count()) === 0 && /Poor.*Fair.*Good.*Very good.*Excellent/s.test(await card(2).textContent()));
@@ -237,7 +237,7 @@ try {
   // Strategies, one screen per objective.
   pass('build: Strategies for the first objective', (await heading(page)) === 'How will you move “Coaching clients”?', await heading(page));
   pass('build: the help panel uses rule 40’s words', (await page.locator('.ds-help-panel').textContent()).startsWith('Strategies are medium to long-term approaches to achieving your objectives.'));
-  await page.getByRole('button', { name: 'Add Strategy' }).click();
+  await page.getByRole('button', { name: 'Add a Strategy' }).click(); // walk item 4: the card's add is named "Add a Strategy"
   await page.waitForTimeout(150);
   await page.getByLabel('Strategy 1').fill('Maintain my availability to do good work');
   await page.getByRole('button', { name: 'Protect time for deep work' }).click();
@@ -247,7 +247,7 @@ try {
   await next(page);
   pass('build: Strategies for the second objective', (await heading(page)).includes('Launch the leadership programme'));
   await page.getByRole('button', { name: 'Protect time for deep work' }).click(); // "your other Strategies"
-  await page.getByRole('button', { name: 'Add Strategy' }).click();
+  await page.getByRole('button', { name: 'Add a Strategy' }).click(); // walk item 4: the card's add is named "Add a Strategy"
   await page.waitForTimeout(150);
   await page.getByLabel('Strategy 2').fill('Grow through referrals');
   await next(page);
@@ -267,17 +267,17 @@ try {
     await page.getByRole('option', { name: new RegExp(`^${name}`) }).click();
     await page.waitForTimeout(150);
   };
-  await page.getByRole('button', { name: 'Add habit' }).click();
+  await page.getByRole('button', { name: 'Add a habit' }).click(); // walk item 4: the card's add is named "Add a habit"
   await habit(0).locator('textarea').fill('Training sessions');
   await habit(0).getByLabel('What’s the target?').fill('4');
   await habit(0).getByRole('radio', { name: 'High' }).click();
-  await page.getByRole('button', { name: 'Add habit' }).click();
+  await page.getByRole('button', { name: 'Add a habit' }).click(); // walk item 4: the card's add is named "Add a habit"
   await habit(1).locator('textarea').first().fill('Steps');
   await measure(1, 'I’ll measure an amount each day');
   await habit(1).getByLabel('What’s the unit?').fill('steps');
   await habit(1).getByLabel('What’s the target?').fill('10000');
   pass('build: an amount counts a day', (await habit(1).textContent()).includes('a day'));
-  await page.getByRole('button', { name: 'Add habit' }).click();
+  await page.getByRole('button', { name: 'Add a habit' }).click(); // walk item 4: the card's add is named "Add a habit"
   await habit(2).locator('textarea').fill('Focus');
   await measure(2, 'I’ll rate it each day, from Poor to Excellent');
   pass('build: a new rated habit has no "Lower is better" (10 Nov)', (await habit(2).getByRole('radio', { name: 'Lower is better' }).count()) === 0);
@@ -287,7 +287,7 @@ try {
   await page.locator('.ds-guide-body > div > .ds-choice .ds-dd').first().click();
   await page.getByRole('option', { name: 'Grow through referrals' }).click();
   await page.waitForTimeout(200);
-  await page.getByRole('button', { name: 'Add habit' }).click();
+  await page.getByRole('button', { name: 'Add a habit' }).click(); // walk item 4: the card's add is named "Add a habit"
   await habit(0).locator('textarea').fill('Late finishes');
   await measure(0, 'I’ll say yes or no each day, under a limit');
   await habit(0).getByLabel('What’s the target?').fill('2');
@@ -365,11 +365,11 @@ try {
   await page.waitForTimeout(600);
   // The editor carries on where it was left (the objectives).
   pass('edit: carries on where it was left', /What 2 to 4 results/.test(await heading(page)), await heading(page));
-  await page.getByRole('button', { name: 'Add objective' }).click();
+  await page.getByRole('button', { name: 'Add an objective' }).click(); // walk item 4: the card's add is named "Add an objective"
   await card(3).locator('textarea').fill('Speak at a leadership conference');
   await card(3).getByRole('radio', { name: 'Milestone' }).click();
   await pickDate(3, '30 April 2027', 6);
-  pass('edit: no more than 4 objectives', (await page.getByRole('button', { name: 'Add objective' }).count()) === 0);
+  pass('edit: no more than 4 objectives', (await page.getByRole('button', { name: 'Add an objective' }).count()) === 0); // walk item 4: the card's add is named "Add an objective"
   await page.waitForTimeout(1200);
   for (let i = 0; i < 6 && !/Your plan/.test(await heading(page)); i += 1) await next(page);
   const editReady = await page.locator('.ds-guide-body').textContent();

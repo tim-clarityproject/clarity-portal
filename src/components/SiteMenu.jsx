@@ -12,6 +12,8 @@ import { isNavPhone } from './design/pageLock';
 import { areaOf, DESKTOP_MENU, FRAME_MENU, menuAreas, menuCurrent, menuName, PREPARING_MENU, PRIVACY_PATH, TOOLS } from '../lib/navigation';
 import { usePins } from '../lib/menuPins';
 import { SignOutLink, useSignOut } from './SignOut';
+import DesignHeader from './DesignHeader';
+import Preparing from '../pages/Preparing';
 
 // The portal's menus, wired to the app: the desktop's slim panel (option
 // A, Tim, 9 Nov) and the phone's tile menu (mock-up M3; Phase 4 step 1),
@@ -186,6 +188,28 @@ function PreparingWatch({ userId }) {
   return null;
 }
 
+// A client still being prepared can't open tools by typing an address (walk item 15, 27 Nov): every
+// address but Home and My Account (its own pages, About, and Sign out's) shows the same "Your portal is
+// still being prepared." page. Until the facts are known (the first visit on a device; after that the
+// device's copy answers at once) nothing of the tool is drawn, so it can't be used for a moment.
+const PREPARING_OPEN = ['/', '/welcome', '/my-account', '/edit-profile', '/about'];
+export const openWhilePreparing = (pathname) => PREPARING_OPEN.some((p) => pathname === p || (p !== '/' && pathname.startsWith(`${p}/`)));
+
+function PreparingGate({ userId, children }) {
+  const { user } = useContext(AuthContext);
+  const prep = useClientPreparing(userId);
+  if (!prep.known) return <div className="ui-root" role="status" aria-label="Loading" />;
+  if (!prep.preparing) return children;
+  return (
+    <div className="ui-root">
+      <DesignHeader />
+      <main className="plan-page" data-preparing="">
+        <Preparing firstName={prep.firstName || user?.user_metadata?.first_name || ''} coachName={prep.coachName} />
+      </main>
+    </div>
+  );
+}
+
 export function ClientFrame({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -223,7 +247,7 @@ export function ClientFrame({ children }) {
   return (
     <PortalFrame menu={{ ...menu, onGo, onSignOut: signOutFlow.start, signOutBusy: signOutFlow.busy }}>
       {watchPreparing && userId && <PreparingWatch key={userId} userId={userId} />}
-      {children}
+      {userId && !openWhilePreparing(location.pathname) ? <PreparingGate key={`gate-${userId}`} userId={userId}>{children}</PreparingGate> : children}
       {signOutFlow.choice}
     </PortalFrame>
   );

@@ -103,7 +103,7 @@ try {
     pass('its one title is Enter your code, as the h1', (await page.locator('h1').allInnerTexts()).join('|').toLowerCase() === 'enter your code');
     const words = (await page.locator('.si-col').innerText()).replace(/\s+/g, ' ');
     // The 25 Nov example's line (polish 1, rule 23) replaced M26's two.
-    pass('“From your authenticator app. It goes in by itself.”', words.includes('From your authenticator app. It goes in by itself.'), words.slice(0, 200));
+    pass('“Enter the 6-digit code from your authenticator app.” (walk item 7)', words.includes('Enter the 6-digit code from your authenticator app.'), words.slice(0, 200));
     const box = await codeBox(page).evaluate((el) => ({ mode: el.getAttribute('inputmode'), auto: el.getAttribute('autocomplete'), max: el.getAttribute('maxlength'), holder: el.getAttribute('placeholder'), value: el.value, size: parseFloat(getComputedStyle(el).fontSize) }));
     pass('the code box: numbers, one-time-code, 6 at most, tied to its label', box.mode === 'numeric' && box.auto === 'one-time-code' && box.max === '6', JSON.stringify(box));
     pass('the code box has no example code in it', !box.holder && box.value === '', JSON.stringify(box));

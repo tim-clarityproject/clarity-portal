@@ -34,6 +34,14 @@
 
 .ui-root .acct-link { margin-top: var(--space-2); }
 
+/* Profile's two questions with their boxes (walk item 25; the example's .field: 24px under each box, the
+   label 8px over it), then Change my password 24px under the last box. */
+.ui-root .acct-field { margin-bottom: var(--space-4); }
+.ui-root .acct-fields + .acct-link { margin-top: 0; }
+.ui-root .acct-field-save { margin-top: var(--space-2); }
+.ui-root .acct-fields + .acct-link + .acct-foot,
+.ui-root .acct-fields + .acct-line + .acct-foot { margin-top: var(--space-4); }
+
 /* Sign out (a real button) and Delete my account side by side (.row.gap.mt). */
 .ui-root .acct-foot {
   display: flex;

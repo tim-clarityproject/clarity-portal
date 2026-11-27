@@ -69,7 +69,7 @@ import { xlsxBytes, xlsxTable } from '../../src/lib/coach/xlsx.js';
 // Polish 1 (B4): "+ Add" by the list's label opens Quick Add; "Add their details too" opens the whole Add lead form,
 // the name typed there carried over (cleared here, so the form starts as it always did).
 async function openAddLead(page) {
-  await page.locator('.ds-addlink[aria-label="Add lead"]').first().click();
+  await page.locator('.ds-addlink[aria-label="Add a lead"]').first().click(); // walk item 4: named by what it adds
   await page.locator('#cc-add-lead .ds-qa-box').fill('x');
   await page.getByRole('button', { name: 'Add their details too', exact: true }).click();
   await page.waitForTimeout(500);

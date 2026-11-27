@@ -338,7 +338,7 @@ await page.waitForTimeout(500);
 const movedRow = todoRow('Shortlist breathing sound loops').first();
 pass('move: stays this week, tagged, its tick off', (await movedRow.textContent()).includes('Moved to week 6') && await movedRow.getByRole('checkbox').isDisabled());
 
-await page.getByRole('button', { name: 'Add to-do' }).click();
+await page.getByRole('button', { name: 'Add a to-do' }).click(); // walk item 4: the card's add is named "Add a to-do"
 await page.waitForSelector('.ds-panel textarea');
 // Never greyed out (Phase 8a follow-up, step 2): pressed too early, it says what's missing.
 {
@@ -364,7 +364,7 @@ pass('add to-do: saved for this week', added?.planned_week === 4 && added?.sprin
   const backlogFold = page.locator('.sprint-backlog');
   const backlogRow = (text) => backlogFold.locator('.ds-todo').filter({ hasText: text });
   await page.locator('.ds-toast').waitFor({ state: 'detached', timeout: 15000 }).catch(() => null);
-  await page.getByRole('button', { name: 'Add to-do' }).click();
+  await page.getByRole('button', { name: 'Add a to-do' }).click(); // walk item 4: the card's add is named "Add a to-do"
   await page.waitForSelector('.ds-panel textarea');
   const panel = page.locator('.ds-panel');
   await panel.locator('textarea').fill(BACK);
@@ -402,7 +402,7 @@ pass('add to-do: saved for this week', added?.planned_week === 4 && added?.sprin
   if (plannedRow) await db.from('todos').delete().eq('id', plannedRow.id);
 }
 
-await page.getByRole('button', { name: 'Add unplanned win' }).click();
+await page.getByRole('button', { name: 'Add an unplanned win' }).click(); // walk item 4: the card's add is named "Add an unplanned win"
 await page.waitForSelector('.ds-panel textarea');
 await page.locator('.ds-panel textarea').fill('A past client sent two introductions');
 await page.locator('.ds-panel').getByRole('button', { name: 'Grow through referrals' }).click();

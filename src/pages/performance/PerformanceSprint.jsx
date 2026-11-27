@@ -617,8 +617,8 @@ function SprintBody({
           eye={<WhoSees audience="me" />}
           aside={(
             <span className="sprint-adds">
-              <AddLink label="Add to-do" onClick={onAddTodo}>Add</AddLink>
-              <AddLink label="Add unplanned win" onClick={onAddWin}>Add win</AddLink>
+              <AddLink label="Add a to-do" onClick={onAddTodo} square={false}>Add</AddLink>
+              <AddLink label="Add an unplanned win" onClick={onAddWin}>Add win</AddLink>
             </span>
           )}
         >

@@ -367,7 +367,7 @@ function PlanTool({ userId, data, mode }) {
     render: () => (
       <div>
         {/* "+ Add" at the right of the list's label (Polish 1, rule 10). */}
-        <CardHead label="Your objectives" as="h3" add={draft.objectives.length < MAX_OBJECTIVES ? <AddLink label="Add objective" onClick={addObjective} /> : null} />
+        <CardHead label="Your objectives" as="h3" add={draft.objectives.length < MAX_OBJECTIVES ? <AddLink label="Add an objective" onClick={addObjective} /> : null} />
         {draft.objectives.map((o, i) => (
           <ObjectiveEditor
             key={o.id}
@@ -446,7 +446,7 @@ function PlanTool({ userId, data, mode }) {
               />
             </div>
           )}
-          <CardHead label={o ? 'Strategies for this objective' : 'Your Strategies'} as="h3" add={<AddLink label="Add Strategy" onClick={() => addStrategy(o?.id || null)} />} />
+          <CardHead label={o ? 'Strategies for this objective' : 'Your Strategies'} as="h3" add={<AddLink label="Add a Strategy" onClick={() => addStrategy(o?.id || null)} />} />
           {strategyRows(mine, o?.id || null)}
           {others.length > 0 && (
             <div className="plan-picks">
@@ -493,7 +493,7 @@ function PlanTool({ userId, data, mode }) {
             value={habitStrategyId}
             onChange={(habitStrategy) => set({ habitStrategy })}
           />
-          <CardHead label="Your habits" as="h3" add={<AddLink label="Add habit" onClick={addHabit} />} />
+          <CardHead label="Your habits" as="h3" add={<AddLink label="Add a habit" onClick={addHabit} />} />
           <div className="plan-habits">
             {list.map((h) => (
               <HabitEditor

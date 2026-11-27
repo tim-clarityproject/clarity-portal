@@ -21,6 +21,7 @@ import {
   NotePanel,
   PageHeader,
   Stat,
+  TermInfo,
   TextBox,
   WhoSees,
   clearGuideDraft,
@@ -29,6 +30,7 @@ import {
   PausedGate,
   TravelDayPanel,
 } from '../../components/design';
+import { PERFORMANCE_SCORE_EXPLAIN } from '../../lib/performance/scoreExplain';
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
 import { friendlyError } from '../../lib/friendlyError';
@@ -755,7 +757,7 @@ function PlanFlow({ userId, date, today, loaded }) {
               onOpen={() => navigate(travelDay.view.short ? `${TRAVEL_PATH}/${travelDay.plan.id}` : `${TRAVEL_PATH}/${travelDay.plan.id}/day/${date}`, { state: { from: location.pathname } })}
             />
           )}
-          <CardHead label="Your to-dos" add={<AddLink label="Add to-do" onClick={() => setPanel(true)} />} as="h2" />
+          <CardHead label="Your to-dos" add={<AddLink label="Add a to-do" onClick={() => setPanel(true)} />} as="h2" />
           {dayOptions.length ? (
             <MultiChoice
               variant="pick"
@@ -890,7 +892,7 @@ function PlanFlow({ userId, date, today, loaded }) {
             />
             {view.score && (
               <div className="day-score">
-                <Stat label="Performance score this week so far" value={view.score.value} good={view.score.good} />
+                <Stat label={<TermInfo explain={PERFORMANCE_SCORE_EXPLAIN} helpKey="performance-score" label="How your Performance score is worked out">Performance score this week so far</TermInfo>} value={view.score.value} good={view.score.good} />
               </div>
             )}
             {own.summary}

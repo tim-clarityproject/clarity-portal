@@ -175,13 +175,13 @@ async function strategyNames() {
   return (await q(db.from('plan_strategies').select('name').eq('plan_id', plan.id).is('archived_at', null).order('sort_order'))).map((s) => s.name);
 }
 async function openTodoPanel(page, text, strategy) {
-  await page.getByRole('button', { name: 'Add to-do' }).click();
+  await page.getByRole('button', { name: 'Add a to-do' }).click(); // walk item 4: the card's add is named "Add a to-do"
   await page.waitForSelector('.ds-panel textarea');
   await page.locator('.ds-panel textarea').fill(text);
   await page.locator('.ds-panel').getByRole('radio', { name: strategy }).click();
 }
 async function openWinPanel(page, text, strategy) {
-  await page.getByRole('button', { name: 'Add unplanned win' }).click();
+  await page.getByRole('button', { name: 'Add an unplanned win' }).click(); // walk item 4: the card's add is named "Add an unplanned win"
   await page.waitForSelector('.ds-panel textarea');
   await page.locator('.ds-panel textarea').fill(text);
   await page.locator('.ds-panel').getByRole('button', { name: strategy }).click();

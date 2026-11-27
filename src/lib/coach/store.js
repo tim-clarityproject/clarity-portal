@@ -8,7 +8,7 @@ import { deviceKey, readJson, removeKey, writeJson } from '../deviceStore';
 import { deviceCopyAvailable, onCopiesCleared, readCopy, writeTables } from './deviceCopy';
 import { getLocalDateKey } from '../dateFormatter';
 import { openingRole, PROBE_TABLES, SCREEN_NOT_YET_KEY, screenKindOf, screenRead, screenWindow, takeCoachOpening, takeFinanceOpening } from './earlyScreen';
-import { FINANCE_SCREEN_TABLES } from './screenPlan';
+import { FINANCE_SCREEN_TABLES, MONEY_SCREEN_TABLES } from './screenPlan';
 
 // Where the coach portal's data is kept (migration 049; Phase 6a run 1).
 //
@@ -1893,6 +1893,17 @@ async function fetchFinanceScreen(userId) {
   return tables;
 }
 
+/**
+ * The money pages' own tables (the builder, Needs you and a block of hours' log; walk item 14): each of `names` read
+ * whole, side by side, as the load after it reads them. Resolves a Map of reads, as screenAnswer's tables.
+ */
+async function fetchMoneyScreen(names) {
+  const rows = await Promise.all(names.map((t) => fetchTable(t)));
+  const tables = new Map();
+  names.forEach((t, i) => tables.set(t, { rows: (rows[i] || []).filter(isObject), inScope: NOTHING_COVERED }));
+  return tables;
+}
+
 /** Whether a first screen is wanted here: 060 not known to be missing (062 for Finances), and no whole copy on the device. */
 async function screenWanted(userId, kind) {
   if (!kind) return false;
@@ -1986,10 +1997,19 @@ export function loadCoach(userId, { again = false } = {}) {
         await afterPaint();
         if (gen !== generation) return null;
       }
-    } else if (kind !== 'finances' && split != null && there059 && await screenWanted(userId, kind)) {
+    } else if (kind !== 'finances' && split != null && there059 && (kind !== 'money' || there065) && await screenWanted(userId, kind)) {
       const sinceScreen = readBegins();
-      const got = await fetchScreen(userId, kind, { nowMs, split, profiles }).catch(() => null);
-      if (got && gen === generation) {
+      // The money pages (walk item 14): Today's first screen with the agreement tables beside it, each the coach's own read.
+      const money = kind === 'money' ? MONEY_SCREEN_TABLES.filter((t) => tablesThere(dayThere, calThere, crmThere, there059, there061, there062, owner, there065).includes(t)) : null;
+      const [got, moneyTables] = await Promise.all([
+        fetchScreen(userId, money ? 'today' : kind, { nowMs, split, profiles }).catch(() => null),
+        money ? fetchMoneyScreen(money).catch(() => null) : null,
+      ]);
+      if (got && money) {
+        if (!moneyTables) got.tables = null;
+        else for (const [t, v] of moneyTables) got.tables.set(t, v);
+      }
+      if (got?.tables && gen === generation) {
         // The opening's answer was asked a moment earlier: its split is the one every later read follows.
         split = got.split;
         const keepScreen = touchedSince(userId, sinceScreen);

@@ -122,7 +122,7 @@ export default function HubPage({ hub: hubKey }) {
         {anchor && (
           <HubTeams
             teams={teams}
-            add={{ label: 'Start a new Health Check', children: 'Add', onClick: () => navigate(`${anchor.to}/new-team`) }}
+            add={{ label: 'Add a team', children: 'Add', onClick: () => navigate(`${anchor.to}/new-team`) }}
           />
         )}
 

@@ -11079,6 +11079,58 @@
   }
 }
 
+/* The count boxes stay drawn 40px (the lead's call, walk round, 27 Nov) and are tapped 44: their label (the box's
+   wrapper, which focuses its input when pressed) lays an invisible 44px band round the input, 2px above and below. */
+.ui-root label.ds-logweek-box {
+  position: relative;
+}
+
+/* The input stays over the band, so a press on the box itself still places the caret. */
+.ui-root label.ds-logweek-box > input {
+  position: relative;
+  z-index: 1;
+}
+
+.ui-root label.ds-logweek-box::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc((var(--btn-h) - var(--tap-min)) / 2);
+  height: var(--tap-min);
+}
+
+@media (max-width: 600px) {
+  .ui-root label.ds-logweek-box::after {
+    bottom: calc((var(--btn-h-phone) - var(--tap-min)) / 2);
+  }
+}
+
+/* A rated habit's day boxes are the same row control (walk item 26, 27 Nov: the debrief's were 44px on a
+   laptop): drawn 40px (44 on a phone) like the count boxes beside them, tapped 44 through an invisible ::after. */
+.ui-root .ds-logweek-rate-zone .ds-logweek-rate-box {
+  position: relative;
+  min-height: var(--btn-h) !important;
+  height: var(--btn-h);
+}
+
+.ui-root .ds-logweek-rate-zone .ds-logweek-rate-box::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--tap-min);
+  transform: translateY(-50%);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-logweek-rate-zone .ds-logweek-rate-box {
+    min-height: var(--btn-h-phone) !important;
+    height: var(--btn-h-phone);
+  }
+}
+
 .ui-root .ds-log .ds-bar {
   height: calc(var(--line-w) * 2);
 }

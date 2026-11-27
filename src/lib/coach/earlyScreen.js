@@ -92,7 +92,8 @@ export function startCoachOpening(pathname = window.location.pathname, search = 
       if (!error && role?.userId === userId) role.coach = coach;
       return coach;
     }, () => undefined);
-    const kind = screenKindOf(path);
+    // The money pages (walk item 14) take Today's first screen, with their own tables read beside it by store.js.
+    const kind = screenKindOf(path) === 'money' ? 'today' : screenKindOf(path);
     // Finances' first screen waits for the role (it is the owner's alone), so the role goes out first there, and the
     // looks once it has answered (they are needed only once the sign-in check has answered, well after).
     const probes = () => {

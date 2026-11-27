@@ -11,7 +11,7 @@ import { dayKeyWords } from '../../lib/time/index.js';
 import { moneyWords, rateWords } from '../../lib/billing/money';
 import {
   addMonths, clientRows, copyToNewYear, financialYear, incomeChart, expectedIncome, monthKey, monthName, moneyFigures, ofWords, OUTGOING_GROUPS, poundsWords,
-  proBono, sameEveryMonth, sameEveryMonthSums, sectorsFor, shareWords, stripeFees, targetRows, targetsByMonth, outgoingRows, threeMonthAverage, yearExport,
+  proBono, sameEveryMonth, sameEveryMonthSums, sectorsFor, shareWords, stripeFees, targetRows, targetsByMonth, targetsShown, outgoingRows, threeMonthAverage, yearExport,
   EXPORT_COLUMNS, yearStartWords, hoursWords, bankCheckDue, newYearCheckDue, newYearCopyRows, targetsToSave, waitingForPounds,
 } from '../../lib/finance/index.js';
 import { toCsv } from '../../lib/finance/csv.js';
@@ -198,8 +198,9 @@ function Overview() {
       )}
 
       <FinPart title="Your targets" asideHide={false} aside={<TextLink onClick={() => setPanel({ kind: 'targets' })}>Edit targets</TextLink>}>
-        {[month, rows.quarter, year].map((r) => (
-          // Nothing in and no target: a sentence, never a bare £0 (rule 16; Tim's walk of Stage B, item 9).
+        {targetsShown([month, rows.quarter, year]).map((r) => (
+          // Nothing in and no target: a sentence, never a bare £0 (rule 16; Tim's walk of Stage B, item 9), said once
+          // for the rows that have neither (walk of 27 Nov, item 20).
           <FigRow key={r.label} title={r.label} facts={[r.paid || r.target ? r.figure : TARGETS_NONE, r.detail, isPhone ? null : r.minimum]} value={r.percentWords} onClick={() => setPanel({ kind: 'targets' })} label={`${r.label}: ${r.paid || r.target ? `${r.figure}.` : TARGETS_NONE} Edit targets`} />
         ))}
       </FinPart>
@@ -361,6 +362,7 @@ function TargetsPanel({ open, onClose }) {
 /** A target row with nothing in and no target set. */
 const TARGETS_NONE = 'Nothing settled yet, and no target set.';
 
+
 const PERIODS = [{ value: 'month', label: 'This month' }, { value: 'quarter', label: 'This quarter' }, { value: 'year', label: 'This year' }];
 
 function Money() {
@@ -422,7 +424,7 @@ function Money() {
         ))}
       </FinPart>
 
-      <FinPart title="By client" add={<AddLink label="Add bank payment" expanded={panel === 'bank'} onClick={() => setPanel('bank')} />}>
+      <FinPart title="By client" add={<AddLink label="Add a bank payment" expanded={panel === 'bank'} onClick={() => setPanel('bank')} />}>
         {partial && <Loading label="Loading your clients" />}
         {!partial && clients.length === 0 && <p className="cc-quiet">Nothing has come in yet in this period.</p>}
         {!partial && clients.slice(0, 30).map((c) => (
@@ -595,11 +597,11 @@ function CashFlow() {
         {cash.notInPounds > 0 && <p className="cc-note">Money in other currencies is left out until it lands in pounds.</p>}
       </FinPart>
 
-      <FinPart title="Recurring outgoings" aside={monthlyWords(list.total)} add={<AddLink label="Add recurring outgoing" expanded={panel?.kind === 'outgoing'} onClick={() => setPanel({ kind: 'outgoing' })} />}>
+      <FinPart title="Recurring outgoings" aside={monthlyWords(list.total)} add={<AddLink label="Add a recurring outgoing" expanded={panel?.kind === 'outgoing'} onClick={() => setPanel({ kind: 'outgoing' })} />}>
         {list.rows.map((r) => <FigRow key={r.group} title={r.group} facts={[r.names]} value={monthlyWords(r.monthly)} onClick={() => setPanel({ kind: 'group', group: r.group })} label={`${r.group}, ${monthlyWords(r.monthly)}`} />)}
       </FinPart>
 
-      <FinPart title="One-off costs" add={<AddLink label="Add one-off cost" expanded={panel?.kind === 'oneoff' && !panel.id} onClick={() => setPanel({ kind: 'oneoff' })} />}>
+      <FinPart title="One-off costs" add={<AddLink label="Add a one-off cost" expanded={panel?.kind === 'oneoff' && !panel.id} onClick={() => setPanel({ kind: 'oneoff' })} />}>
         {oneOffs.length === 0 && <p className="cc-quiet fin-none">No one-off costs this year.</p>}
         {oneOffs.map((o) => <FigRow key={o.id} title={o.name} facts={[dayWordsFrom(o.starts_on, todayKey), o.group_name]} value={poundsWords(o.amount_minor)} onClick={() => setPanel({ kind: 'oneoff', id: o.id })} label={`Edit ${o.name}`} />)}
       </FinPart>

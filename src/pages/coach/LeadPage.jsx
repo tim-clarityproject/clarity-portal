@@ -130,7 +130,7 @@ export default function LeadPage() {
           </div>
         </Card>
 
-        <Card label="Details" add={<AddLink label="Add field" onClick={() => setField({ id: newId(), name: '', kind: 'text', optionsText: '' })} />}>
+        <Card label="Details" add={<AddLink label="Add a field" onClick={() => setField({ id: newId(), name: '', kind: 'text', optionsText: '' })} />}>
           <Detail label="Email" edit><EditCell label="Email" value={lead.email || ''} onSave={saveText('email', (v) => isEmail(v.toLowerCase()), 'That email doesn’t look right. Check it and try again.')} /></Detail>
           <Detail label="Phone" edit><EditCell label="Phone" value={lead.phone || ''} onSave={saveText('phone')} /></Detail>
           <Detail label={from.label}>{from.personId && isOwner ? <InlineLink onClick={() => navigate(`/coach/network?person=${from.personId}`)}>{from.value}</InlineLink> : from.value}</Detail>

@@ -207,6 +207,10 @@ function measure({ CORAL, MINT, BANNED }) {
     if (el.matches('.ds-seg-btn') && el.getBoundingClientRect().height >= 38) continue;
     const b = el.getBoundingClientRect();
     if (b.height >= 43.5 && b.width >= 43.5) continue;
+    // A tap area drawn by an invisible ::after 44px high (rule 4a), as walk item 5's My Mission line (.ds-mline) and
+    // Polish 1's 40px answer boxes reach it.
+    const after = getComputedStyle(el, '::after');
+    if (after.position === 'absolute' && parseFloat(after.height) >= 43.5 && b.width >= 43.5) continue;
     small.push(`${label(el)} ${Math.round(b.width)}x${Math.round(b.height)}`);
   }
   const probe = document.createElement('span');
@@ -543,7 +547,7 @@ if (part('S')) {
     const iBehind = order.findIndex((t) => /BEHIND/i.test(t));
     const iChain = order.findIndex((t) => /OBJECTIVES AND/i.test(t));
     pass('customise: What’s behind your performance now comes first', iBehind >= 0 && iChain >= 0 && iBehind < iChain, order.join(' | '));
-    await page.goto(`${APP}/my-account`);
+    await page.goto(`${APP}/my-account?tab=settings`); // Polish 1: My Account is tabs; Customise is under Settings
     await page.getByRole('button', { name: 'Customise my dashboard' }).evaluate((el) => el.click());
     const panel2 = page.locator('.ds-dialog', { hasText: 'Which parts do you want to see, and in what order?' });
     pass('customise: the same panel in My Account, Settings', await until(async () => panel2.isVisible(), 4000));

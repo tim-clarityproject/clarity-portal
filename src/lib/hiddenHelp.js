@@ -56,6 +56,9 @@ export const HELP_KEYS = Object.freeze({
   'finance-chart': [],
   'finance-chart-total': [],
   'finance-vat-counts': [],
+  // Combined scores (walk item 6, 27 Nov; src/lib/performance/scoreExplain.js). New, so no older title.
+  'performance-score': [],
+  'strategy-score': [],
 });
 
 /** A saved copy with any title-made key moved to the fixed names it stands for. Pure: the old copy is never changed. */

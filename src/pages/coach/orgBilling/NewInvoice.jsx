@@ -171,7 +171,7 @@ export default function NewInvoice() {
                 </div>
               )}
             </Card>
-            <Card label="Attached pages" add={<AddLink label="Add screenshot or PDF" onClick={() => fileRef.current?.click()} />}>
+            <Card label="Attached pages" add={<AddLink label="Add a screenshot or PDF" onClick={() => fileRef.current?.click()} />}>
               {evidence.length === 0 ? (
                 <p className="cc-money-quiet">{profile?.evidence_required ? evidenceHint(org.name) : `Nothing attached. ${org.name} doesn’t need evidence.`}</p>
               ) : (

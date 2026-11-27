@@ -159,7 +159,8 @@ test('chevron-line (item 8): on a phone an opening row keeps its chevron on the 
   assert.ok(!rules(r).includes('chevron-line'), r.problems.join('; '));
   r = await check(list, { phone: true, extra: '.ui-root .ds-li.ds-li--go { flex-direction: column !important; }' });
   assert.match(r.problems.join('; '), /chevron-line: the chevron of "Customise my dashboard" is off the name's line/);
-  r = await check(list, { extra: '.ui-root .ds-li.ds-li--go { justify-content: flex-start; }' });
+  // The name grows to fill its row since walk item 17 (27 Nov), so the fault is a name that doesn't, packed to the left.
+  r = await check(list, { extra: '.ui-root .ds-li.ds-li--go { justify-content: flex-start; } .ui-root .ds-li.ds-li--go > .ds-li-name { flex: none; }' });
   assert.match(r.problems.join('; '), /chevron-line: the chevron of .* from the row's right end/);
 });
 
@@ -250,11 +251,113 @@ test('mission (item 33): in the phone header My Mission fills the row, 40px high
       assert.match(r.problems.join('; '), /mission: My Mission ends \d+px short of the header's right margin/, `${width} ${theme}`);
     }
   }
-  // On a laptop with the frame it stays at the panel's top right, sized to its words.
+  // On a laptop there is no box (walk item 5, 27 Nov): frame.css hides it, and one drawn there fails.
   let r = await check(PHEAD('Lead well'), { width: 1280 });
   assert.ok(!rules(r).includes('mission'), r.problems.join('; '));
-  r = await check(PHEAD('Lead well'), { width: 1280, extra: '.ui-root .hdr-frame .hdr-mbox:not(#_):not(#_) { min-width: 400px; }' });
-  assert.match(r.problems.join('; '), /mission: My Mission is 400px wide on a laptop/, r.problems.join('; '));
+  r = await check(PHEAD('Lead well'), { width: 1280, extra: '.ui-root .hdr-frame .hdr-mbox:not(#_):not(#_) { display: inline-flex; }' });
+  assert.match(r.problems.join('; '), /mission: a My Mission box is drawn in the laptop header/, r.problems.join('; '));
+});
+
+// ------------------------------------------------------------------ Tim's walk fixes (27 Nov)
+const MLINE = (mission, more = '') => `<div class="ds-frame"><div class="ds-frame-main"><header class="ds-open ds-open--mission"><div class="ds-open-label">Friday 27 November</div><h1 class="ds-page-title ds-open-title">Good morning, Sam</h1><a class="ds-mline${mission ? '' : ' ds-mline--none'}" href="#" aria-label="My Mission"${more}><span class="ds-mline-k">My Mission</span><span class="ds-mline-gap" aria-hidden="true">\u00a0\u00a0</span><span class="ds-mline-v">${mission || 'Add your Mission when you’re ready'}</span></a><p class="ds-open-line">Two things need you today.</p></header></div></div>`;
+
+test('mission (walk item 5): the laptop line under the title passes, light and dark; a long Mission ends in "…" on one line', async () => {
+  for (const theme of ['light', 'dark']) {
+    for (const width of [1024, 1280, 1440]) {
+      const r = await check(MLINE('Lead well and stay well'), { width, theme });
+      assert.ok(!has(r, 'mission'), `${width} ${theme}: ${all(r)}`);
+    }
+    const long = await check(MLINE('To lead with clarity and calm, '.repeat(12)), { width: 1280, theme });
+    assert.ok(!has(long, 'mission'), all(long));
+  }
+  const geom = await tab.evaluate(() => {
+    const ml = document.querySelector('.ds-mline');
+    const t = document.querySelector('.ds-open-title').getBoundingClientRect();
+    const b = ml.getBoundingClientRect();
+    return { gapAbove: b.top - t.bottom, h: b.height, fs: getComputedStyle(ml).fontSize, after: getComputedStyle(ml, '::after').height, ell: getComputedStyle(ml.querySelector('.ds-mline-v')).textOverflow };
+  });
+  assert.equal(geom.fs, '13px');
+  assert.equal(geom.after, '44px');
+  assert.equal(geom.ell, 'ellipsis');
+});
+
+test('mission (walk item 5): the line under 1024px, one off the title, wrapping, or without its gap or hairline fails', async () => {
+  let r = await check(MLINE('Lead well'), { width: 1280, extra: '.ui-root .ds-mline { display: flex !important; }' });
+  assert.ok(!has(r, 'mission'), all(r));
+  r = await check(MLINE('Lead well'), { width: 768, extra: '.ui-root .ds-mline { display: flex !important; }' });
+  assert.match(all(r), /mission: the laptop's Mission line shows under 1024px/);
+  r = await check(MLINE('Lead well'), { width: 1280, extra: '.ui-root .ds-mline { border-bottom: 0 !important; }' });
+  assert.match(all(r), /mission: the Mission line has no hairline under it/);
+  r = await check(MLINE('Lead well'), { width: 1280, extra: '.ui-root .ds-mline { margin-bottom: 8px !important; }' });
+  assert.match(all(r), /mission: 8px from the Mission line's hairline/);
+  r = await check(MLINE('To lead with clarity and calm, '.repeat(12)), { width: 1280, extra: '.ui-root .ds-mline, .ui-root .ds-mline-v { white-space: normal !important; }' });
+  assert.match(all(r), /mission: the Mission line wraps/);
+  r = await check(MLINE('Lead well'), { width: 1280, extra: '.ui-root .ds-mline-k, .ui-root .ds-mline-gap { color: var(--text) !important; }' });
+  assert.match(all(r), /mission: "My Mission" and the Mission are the same colour/);
+});
+
+const ADDCARD = (add) => `<section class="ds-card" style="max-width:520px"><div class="ds-card-head"><h2 class="ds-label">Today</h2>${add}</div><div class="ds-li ds-li--go"><span class="ds-li-name">Daily plan</span><span class="ds-li-value">~4 minutes</span></div><div class="ds-li"><span class="ds-li-name">Daily review</span><span class="ds-li-value">This evening</span></div></section>`;
+const SQUARE = (label = 'Add a to-do') => `<button type="button" class="ds-addsq ds-addlink" aria-label="${label}"><span class="ds-addsq-plus" aria-hidden="true"></span></button>`;
+const WORDS = '<button type="button" class="ds-addrow ds-addlink" aria-label="Add a to-do"><span class="ds-addrow-mark" aria-hidden="true"></span><span class="ds-addrow-words">Add</span></button>';
+
+test('add (walk item 4): the square in a card’s head passes, laptop and phone, light and dark; its size, corners, level and tap measured', async () => {
+  for (const phone of [false, true]) {
+    for (const theme of ['light', 'dark']) {
+      const r = await check(ADDCARD(SQUARE()), { phone, theme });
+      assert.deepEqual(r.problems, [], `${phone ? 'phone' : 'laptop'} ${theme}: ${all(r)}`);
+    }
+  }
+  const m = await tab.evaluate(() => {
+    const sq = document.querySelector('.ds-addsq').getBoundingClientRect();
+    const lab = document.querySelector('.ds-label').getBoundingClientRect();
+    const head = document.querySelector('.ds-card-head').getBoundingClientRect();
+    return { w: sq.width, h: sq.height, mid: (sq.top + sq.height / 2) - (lab.top + lab.height / 2), headH: head.height, labH: lab.height };
+  });
+  assert.equal(m.w, 32);
+  assert.equal(m.h, 32);
+  assert.ok(Math.abs(m.mid) <= 1, `off the label's middle by ${m.mid}`);
+  assert.ok(m.headH - m.labH < 1, `the head grew by ${m.headH - m.labH}px`);
+});
+
+test('add (walk item 4): "+ Add" as words, a square with an outline, 12px corners or no name for what it adds fails', async () => {
+  let r = await check(ADDCARD(WORDS));
+  assert.match(all(r), /add: "\+ Add" in the head of "Today" is drawn as words/i);
+  r = await check(ADDCARD(SQUARE()), { extra: '.ui-root .ds-addsq:not(#_):not(#_) { border: 1px solid var(--field-line); border-radius: 12px; }' });
+  assert.match(all(r), /add: the "\+ Add" square of "Today" has 12px corners/i);
+  assert.match(all(r), /add: the "\+ Add" square of "Today" has an outline/i);
+  r = await check(ADDCARD(SQUARE('Add')));
+  assert.match(all(r), /add: the "\+ Add" square of "Today" isn't named by what it adds/i);
+  r = await check(ADDCARD(SQUARE()), { extra: '.ui-root .ds-card-head .ds-addsq:not(#_):not(#_) { margin-block: 0 -24px; }' });
+  assert.match(all(r), /add: the "\+ Add" square of "Today" isn't level with the label/i);
+});
+
+const COLS = (main) => `<div style="width:${main}px"><div class="ds-cols ds-cols--needs-first"><div><section class="ds-card"><div class="ds-card-head"><h2 class="ds-label">Log today</h2></div><div class="ds-li"><span class="ds-li-name">Performance score this week</span><span class="ds-li-value">40%, usually 66 to 86%</span></div></section></div><div><section class="ds-card"><div class="ds-card-head"><h2 class="ds-label">What needs you</h2></div><div class="ds-li"><span class="ds-li-name">Sign your agreement</span><span class="ds-li-value">Thu 26 Nov</span></div></section></div></div></div>`;
+
+test('squeeze (walk item 17): the columns stack under a 560px main column, in the phone order, at 1024 to 1280', async () => {
+  for (const width of [1024, 1100, 1180, 1280]) {
+    for (const theme of ['light', 'dark']) {
+      // The holder as Home's page is between the frame's padding: the window less the menu column and padding.
+      const r = await check(COLS(width - 330), { width, theme });
+      assert.ok(!has(r, 'squeeze'), `${width} ${theme}: ${all(r)}`);
+    }
+  }
+  await check(COLS(700), { width: 1280 });
+  const stacked = await tab.evaluate(() => { const [a, b] = [...document.querySelectorAll('.ds-cols > div')].map((d) => d.getBoundingClientRect()); return { aboveIsNeeds: b.bottom <= a.top + 1, sameLeft: Math.abs(a.left - b.left) < 1 }; });
+  assert.deepEqual(stacked, { aboveIsNeeds: true, sameLeft: true });
+  await check(COLS(1000), { width: 1280 });
+  const side = await tab.evaluate(() => { const [a, b] = [...document.querySelectorAll('.ds-cols > div')].map((d) => d.getBoundingClientRect()); return a.right <= b.left && a.width >= 560; });
+  assert.ok(side, 'two columns with a main column of at least 560px');
+});
+
+test('squeeze (walk item 17): a forced 340px side column squeezing the main one fails; a row name narrower than its word fails; the value moves under instead', async () => {
+  let r = await check(COLS(800), { width: 1280, extra: '.ui-root .ds-cols:not(#_) { display: grid !important; grid-template-columns: minmax(0, 1fr) 340px !important; }' });
+  assert.match(all(r), /squeeze: two columns with the main one \d+px wide/);
+  r = await check('<section class="ds-card" style="width:200px"><div class="ds-li"><span class="ds-li-name" style="flex:0 0 40px;min-width:0;overflow-wrap:anywhere">Performance score</span><span class="ds-li-value">40%, usually 66 to 86%</span></div></section>');
+  assert.match(all(r), /squeeze: "Performance score" is \d+px wide, narrower than its word "Performance"/);
+  r = await check('<section class="ds-card" style="width:240px"><div class="ds-li"><span class="ds-li-name">Performance score this week</span><span class="ds-li-value">40%, usually 66 to 86%</span></div></section>');
+  assert.ok(!has(r, 'squeeze'), all(r));
+  const moved = await tab.evaluate(() => { const n = document.querySelector('.ds-li-name').getBoundingClientRect(); const v = document.querySelector('.ds-li-value').getBoundingClientRect(); return v.top >= n.bottom - 1; });
+  assert.ok(moved, 'the value sits under the name');
 });
 
 // ------------------------------------------------------------------ Tim's walk of Stage B (26 Nov; WALK-B.md)

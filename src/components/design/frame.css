@@ -71,6 +71,25 @@
   height: 100%;
 }
 
+/* Something on the crosshair's line, at the column's right (the coach's Search, walk of Stage C item 3): centred on the
+   crosshair, as tall as it, so a 44px tap area reaches above and below the line without moving the menu under it. */
+.ui-root .ds-menu-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--space-px2) 0 var(--space-4);
+}
+
+.ui-root .ds-menu-top .ds-menu-mark {
+  margin: 0 var(--space-px10);
+}
+
+.ui-root .ds-menu-aside {
+  display: flex;
+  align-items: center;
+  height: var(--bold-cross-menu);
+}
+
 .ui-root .ds-mgroup {
   display: flex;
   flex-direction: column;
@@ -391,16 +410,19 @@
 
 @media (min-width: 1024px) {
   /* A long page title never runs under My Mission at the panel's top right
-     (B1 7): the opening's first line keeps the box's room clear, the box
-     being at most --mission-box-max wide. */
+     (B1 7). The laptop box is gone (walk of Stage C, item 5): this now keeps
+     titles clear of Chat alone. */
   /* Only as wide as the box and Chat are, and only where they meet the line (Frame.jsx's useMissionRoom sets
      --mission-room on each opening; UI tester F12), so a title that fits beside them stays on one line. */
   .ui-root .ds-frame-main .ds-open > :first-child {
     padding-top: var(--mission-drop, 0px);
     padding-right: var(--mission-room, 0px);
   }
+  /* Walk item 5 (Tim, 27 Nov, option C): no floating My Mission box on a laptop. Home and Dashboard show the Mission
+     line under their title (MissionLine in Blocks.jsx); the phone box below 1024px stays as it was. Chat keeps the
+     top right, and useMissionRoom keeps an opening's first line clear of it alone. */
   .ui-root .hdr-frame .hdr-mbox:not(#_) {
-    max-width: var(--mission-box-max);
+    display: none;
   }
   .ui-root .hdr-frame {
     position: absolute;

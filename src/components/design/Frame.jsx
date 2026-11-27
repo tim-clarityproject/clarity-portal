@@ -54,6 +54,9 @@ export function useFocusMode(on = true) {
 }
 
 /**
+ * Walk item 5 (27 Nov): the laptop's My Mission box is gone (Home and Dashboard draw MissionLine under their title), so
+ * on a laptop only Chat sits at the top right now; the room below is kept for it alone and is 0 where it isn't drawn.
+ *
  * My Mission's room on a laptop (UI tester F12): the box and Chat sit at the panel's top right, out of the page's
  * flow, so an opening's first line keeps clear of them, but only when they are drawn, only where they would meet that
  * line, and only as wide as they are: `--mission-room` on each opening is how far its first line must stop short of
@@ -129,9 +132,10 @@ function plainClick(e) {
  * shown with a gap between groups. `foot`: the same, above Sign out.
  * `onGo(item)` runs on a plain click (the router's navigate); any other
  * click is the browser's own (a new tab). `onSignOut`: Sign out, a button.
- * `privacyHref`: the small Privacy link.
+ * `privacyHref`: the small Privacy link. `markAside`: drawn at the right of the crosshair's line, on a laptop only (the
+ * coach's Search, walk of Stage C item 3); the phone menu, which has no crosshair, leaves it out.
  */
-export function FrameMenu({ groups = [], foot = [], onGo, onSignOut, signOutBusy = false, privacyHref = '/legal/privacy', mark = true, tabIndex, label = 'Menu', id }) {
+export function FrameMenu({ groups = [], foot = [], onGo, onSignOut, signOutBusy = false, privacyHref = '/legal/privacy', mark = true, markAside = null, tabIndex, label = 'Menu', id }) {
   const link = (item) => (
     <a
       key={item.key}
@@ -148,7 +152,13 @@ export function FrameMenu({ groups = [], foot = [], onGo, onSignOut, signOutBusy
   );
   return (
     <nav className="ds-menu" aria-label={label} id={id}>
-      {mark && <span className="ds-menu-mark" aria-hidden="true"><BoldCrosshair /></span>}
+      {mark && !markAside && <span className="ds-menu-mark" aria-hidden="true"><BoldCrosshair /></span>}
+      {mark && markAside && (
+        <div className="ds-menu-top">
+          <span className="ds-menu-mark" aria-hidden="true"><BoldCrosshair /></span>
+          <span className="ds-menu-aside">{markAside}</span>
+        </div>
+      )}
       {groups.filter((g) => g.length).map((g, n) => (
         // eslint-disable-next-line react/no-array-index-key
         <div className="ds-mgroup" key={n}>{g.map(link)}</div>

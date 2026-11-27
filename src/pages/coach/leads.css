@@ -8,8 +8,11 @@
 .ui-root .cc-lead-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-3); font-size: var(--fs-note); }
 .ui-root .cc-lead-line > span { padding-block: var(--space-px12); }
 
-/* ---------------------------------------------------------------- the board: a column a stage; more than fit wrap under */
-.ui-root .cc-lboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--cc-lead-col-min), 1fr)); gap: var(--cc-board-gap); margin-top: var(--space-px20); }
+/* ---------------------------------------------------------------- the board: a column a stage, every stage on one row
+   (walk of Stage C, item 19: Won dropped to a second row at 1280). The columns share the width, never narrower than
+   --cc-lead-col-min; when they don't fit, the board scrolls sideways inside itself and the page never does. A phone
+   stacks the stages (below). */
+.ui-root .cc-lboard { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(var(--cc-lead-col-min), 1fr); gap: var(--cc-board-gap); margin-top: var(--space-px20); overflow-x: auto; overscroll-behavior-x: contain; }
 .ui-root .cc-lboard .cc-board-col { min-height: var(--cc-board-col-min); box-sizing: border-box; }
 .ui-root .cc-lboard-sum { display: flex; justify-content: space-between; gap: var(--space-2); padding: 0 var(--space-1) var(--space-px10); margin-top: calc(-1 * var(--space-px6)); font-size: var(--fs-small); color: var(--text); font-variant-numeric: tabular-nums; }
 .ui-root .cc-lboard-sum small { font-size: var(--fs-small); color: var(--text-2); text-align: right; }
@@ -96,7 +99,7 @@
 
 /* ---------------------------------------------------------------- a phone */
 @media (max-width: 600px) {
-  .ui-root .cc-lboard { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .cc-lboard { grid-auto-flow: row; grid-template-columns: minmax(0, 1fr); overflow-x: visible; }
   .ui-root .cc-lboard .cc-board-col { min-height: 0; }
   .ui-root .cc-lead-q, .ui-root .cc-lead-mail { grid-template-columns: minmax(0, 1fr); gap: var(--space-px2); }
 }

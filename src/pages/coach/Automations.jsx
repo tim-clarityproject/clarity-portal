@@ -110,7 +110,7 @@ export default function Automations() {
         <Back to="Leads" onClick={() => navigate('/coach/leads')} />
         <PageOpening title={AUTOMATION_WORDS.title} line={AUTOMATIONS_LINE} />
         {/* One card (rule 13), "+ Add" at its label's right (rule 10). */}
-        <Card label="Your automations" className="cc-part" add={<AddLink label={AUTOMATION_WORDS.add} expanded={Boolean(draft) && isNew && !isKeep} onClick={() => setDraft(blankAutomation({ id: newId(), coachId: coach.id, stages, position: automations.length }))} />}>
+        <Card label="Your automations" className="cc-part" add={<AddLink label="Add an automation" expanded={Boolean(draft) && isNew && !isKeep} onClick={() => setDraft(blankAutomation({ id: newId(), coachId: coach.id, stages, position: automations.length }))} />}>
         {/* The empty line only when nothing is listed: the keep-in-touch row is always listed, saved or not (tidy follow-up 4, part 2, item 2). */}
         {listed.length === 0 && <p className="cc-quiet cc-card-none">{AUTOMATION_WORDS.none}</p>}
         <div className="cc-rows cc-auto-rows">

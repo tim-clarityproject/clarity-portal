@@ -22,6 +22,7 @@ import {
   SleepTargetEditor,
   SleepTargetLink,
   Stat,
+  TermInfo,
   WhoSees,
   keepWords,
   tipProps,
@@ -45,6 +46,8 @@ import { DashboardCustomise, useDashboardPrefs, useFold } from './DashboardCusto
 import { usePatterns } from './usePatterns';
 import { DASHBOARD_LINE } from '../../content/pageLines/client';
 import { useClientPreparing } from '../../lib/clientPreparing';
+import { useMissionLine } from '../../lib/performance/useMissionLine';
+import { PERFORMANCE_SCORE_EXPLAIN } from '../../lib/performance/scoreExplain';
 import Preparing from '../Preparing';
 import './dashboardCards.css';
 
@@ -112,6 +115,8 @@ export default function Dashboard() {
   };
   // A brand-new client whose coach hasn't set anything up yet (src/lib/clientPreparing.js).
   const prep = useClientPreparing(userId);
+  // My Mission's line under the title on a laptop (walk item 5, 27 Nov), opening the plan at My Mission.
+  const missionLine = useMissionLine();
   const prepName = loaded.data?.firstName || '';
   const sprintNow = useMemo(() => { try { return loaded.data ? sprintPageView(loaded.data, { today }) : null; } catch { return null; } }, [loaded.data, today]);
   const weekLabel = sprintNow?.state === 'running' ? `Week ${sprintNow.current} of ${sprintNow.lengthWeeks}` : null;
@@ -171,6 +176,7 @@ export default function Dashboard() {
             <PageOpening
               label={weekLabel}
               title={DASHBOARD_TITLE}
+              mission={missionLine}
               line={DASHBOARD_LINE}
               aside={view ? (coach ? <CoachSees parts={parts} coachName={coach} onToggle={(_k, on) => setShared(on)} /> : <WhoSees audience="me" />) : null}
             />
@@ -204,7 +210,8 @@ function Hero({ hero, phone, navigate, state }) {
       <h2 className="ds-label" id="dash-hero-title">Your weeks</h2>
       <div className="dash-hero">
       <div className="dash-hero-num">
-        <span className="dash-hero-label">{hero.label}</span>
+        {/* The sprint's average of a combined score: its ⓘ says how the score is worked out (walk item 6). */}
+        <span className="dash-hero-label">{noFigure ? hero.label : <TermInfo explain={PERFORMANCE_SCORE_EXPLAIN} helpKey="performance-score" label="How your Performance score is worked out">{hero.label}</TermInfo>}</span>
         <span className="dash-hero-row">
           {!noFigure && <strong className={`dash-hero-value${hero.good ? ' dash-hero-value--good' : ''}`}>{hero.value}</strong>}
           {hero.change && (

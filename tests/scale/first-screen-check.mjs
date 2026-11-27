@@ -1,7 +1,8 @@
 // The coach first screen run's lasting check: nothing on a first screen is wrong while the rest loads.
 //
 // For each coach (owner, associate), page (Today, Clients, a client's page, the calendar's week, month and the phone's
-// Schedule, and the owner's Finances: Overview, Money and Cash flow) and size, on the local stand-in (stack.mjs, with 060) and a production build (serve.mjs):
+// Schedule, the owner's Finances: Overview, Money and Cash flow, and the money pages (Tim's walk of 27 Nov, item 14): the
+// agreement builder, Needs you and a block of hours' log) and size, on the local stand-in (stack.mjs, with 060) and a production build (serve.mjs):
 //   1. a first visit: the page's words the moment its first screen is drawn (data-first-screen="ready"), with the
 //      quiet loading crosshairs' own labels left out;
 //   2. the same page once everything has come in (quiet for 2 s);
@@ -12,7 +13,8 @@
 // Muted, and nothing leaves this machine.
 //
 //   node --import ./tests/scores/register.mjs tests/scale/first-screen-check.mjs --app http://127.0.0.1:4320 \
-//     [--before http://127.0.0.1:4319] [--roles owner,associate] [--sizes phone,laptop] [--pages today,clients,client,week,month,schedule,finances,money,cashflow]
+//     [--before http://127.0.0.1:4319] [--roles owner,associate] [--sizes phone,laptop]
+//     [--pages today,clients,client,week,month,schedule,finances,money,cashflow,needs,builder,start,hours]
 import { chromium } from 'playwright';
 import { createHash } from 'node:crypto';
 import { refuseHostedLoad } from '../hosted-guard.mjs';
@@ -27,9 +29,11 @@ const API = opt('api', 'http://localhost:54400');
 const ROLES = opt('roles', 'owner,associate').split(',');
 const SIZES = opt('sizes', 'phone,laptop').split(',');
 const md5uuid = (s) => { const h = createHash('md5').update(s).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`; };
+// `draft` and `hours`: an agreement of theirs with a draft version, and a block of hours (065's scale seed); an associate
+// there has neither, so their builder is reached through New agreement for their client (`start`).
 const PEOPLE = {
-  associate: { email: 'scale-coach-02@example.com', client: md5uuid('cprof301') },
-  owner: { email: 'scale-coach-01@example.com', client: md5uuid('cprof1') },
+  associate: { email: 'scale-coach-02@example.com', client: md5uuid('cprof301'), draft: null, hours: null },
+  owner: { email: 'scale-coach-01@example.com', client: md5uuid('cprof1'), draft: '06500010-0000-4000-8000-000000000010', hours: '06500041-0000-4000-8000-000000000041' },
 };
 const PAGES = {
   today: '/coach',
@@ -42,6 +46,12 @@ const PAGES = {
   finances: '/coach/finances',
   money: '/coach/finances/money',
   cashflow: '/coach/finances/cash-flow',
+  // The money pages (walk item 14): Needs you, the builder (an agreement's draft, and New agreement, which makes or
+  // reopens one and goes on to it) and a block of hours' log.
+  needs: '/coach/needs-you',
+  builder: '/coach/agreements/:draft/edit',
+  start: '/coach/agreements/new?for=client::client',
+  hours: '/coach/agreements/:hours/hours',
 };
 const ONLY = opt('pages', Object.keys(PAGES).join(',')).split(',');
 const SIZE = {
@@ -53,10 +63,10 @@ const FAST_4G = { offline: false, latency: 60, downloadThroughput: (9 * 1024 * 1
 // The page's words, as a person reads them: the frame's header and call bar, and the page. The quiet loading
 // crosshairs say "Loading …" to screen readers only; those labels are left out. Lines that move with the clock
 // ("in 12 minutes", "3 minutes ago") are left out too, since the visits are moments apart.
-const WORDS = () => {
+const WORDS = (onlyMain = false) => {
   // Only what is drawn: on a phone the coach header is hidden under the frame's own (Polish 1 Stage B, Search and the
   // bell in the phone menu), and a hidden element's innerText is its raw text, unread count and all.
-  const pick = [document.querySelector('.cc-callbar, .cc-bar'), document.querySelector('.cc-header'), document.querySelector('#cc-main')]
+  const pick = [...(onlyMain ? [] : [document.querySelector('.cc-callbar, .cc-bar'), document.querySelector('.cc-header')]), document.querySelector('#cc-main')]
     .filter((el) => el && (typeof el.checkVisibility !== 'function' || el.checkVisibility()));
   const loading = new Set([...document.querySelectorAll('[role="status"][aria-label^="Loading"]')].flatMap((n) => [n.getAttribute('aria-label'), (n.innerText || '').trim()]).filter(Boolean));
   const out = [];
@@ -83,8 +93,9 @@ async function context(browser, size, session) {
     window.__first = null;
     const look = () => {
       const main = document.querySelector('#cc-main');
-      if (window.__first || !main || main.getAttribute('data-first-screen') !== 'ready' || !main.querySelector('.cc-page') || main.querySelector('[data-first-wait]')) return;
-      window.__first = { at: performance.now(), words: WORDS() };
+      // .ds-tool: a page in focus mode (the builder's questions) draws no .cc-page.
+      if (window.__first || !main || main.getAttribute('data-first-screen') !== 'ready' || !main.querySelector('.cc-page, .ds-tool') || main.querySelector('[data-first-wait]')) return;
+      window.__first = { at: performance.now(), words: WORDS(), main: WORDS(true), path: location.pathname + location.search };
     };
     const start = () => new MutationObserver(look).observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
@@ -129,7 +140,8 @@ for (const role of ROLES) {
   for (const size of SIZES) {
     for (const key of ONLY) {
       if (key === 'schedule' && size !== 'phone') continue; // the phone's own view
-      const path = PAGES[key].replace(':client', who.client);
+      if ((key === 'builder' && !who.draft) || (key === 'hours' && !who.hours)) continue; // none of theirs in the seed
+      const path = PAGES[key].replace(':client', who.client).replace(':draft', who.draft).replace(':hours', who.hours);
       const what = `${role} ${size} ${key}`;
       const c = await context(browser, size, await session(who.email));
       const page = await c.newPage();
@@ -143,7 +155,10 @@ for (const role of ROLES) {
       const first = await page.evaluate(() => window.__first);
       say(Boolean(first), `${what}: the first screen was drawn`);
       if (first) {
-        const wrong = notIn(first.words, whole);
+        // New agreement goes on to the draft it makes, in focus mode, where the frame's header steps aside: there the
+        // page's own words are compared (its first screen is New agreement's, the whole page the builder's).
+        const moved = first.path !== new URL(page.url()).pathname + new URL(page.url()).search;
+        const wrong = moved ? notIn(first.main, await page.evaluate(WORDS, true)) : notIn(first.words, whole);
         say(wrong.length === 0, `${what}: every line of the first screen (${first.words.length} lines at ${Math.round(first.at)} ms) is on the whole page, in order`, `not on the whole page: ${JSON.stringify(wrong.slice(0, 6))}`);
       }
       await page.goto(`${APP}${path}`);

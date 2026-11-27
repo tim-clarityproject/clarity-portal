@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AddButton, Bar, Button, Card, ChartTips, Figure, Dropdown, InlineChoice, SlidePanel, SwitchRow, TextField, tipProps, useIsPhone, useToast } from '../../components/design';
+import { AddButton, Bar, Button, Card, ChartTips, Chevron, Figure, Dropdown, InlineChoice, SlidePanel, SwitchRow, TextField, tipProps, useIsPhone, useToast } from '../../components/design';
 import { newId, removeRow, rowNow, saveChange, saveRow } from '../../lib/coach/store';
 import { SUPERSEDED_MESSAGE } from '../../lib/friendlyError';
 import { supabase } from '../../lib/supabase';
@@ -223,12 +223,14 @@ export function FigRow({ title, facts = [], value, onClick, label, children, cla
         {title}
         {shown.length > 0 && <small ref={line} className="ds-li-sub fin-row-facts" data-grey-line>{shown.map((f, i) => <span key={`${i}:${f}`} data-drop={i}>{f}</span>)}</small>}
       </span>
-      {value != null && value !== '' && <span className="ds-li-value fin-row-value">{value}</span>}
+      {/* A row that opens something ends in the row's chevron, on the name's line at every width (walk item 20). */}
+      {onClick ? <span className="ds-li-value fin-row-value">{value != null && value !== '' && <span>{value}</span>}<Chevron direction="right" /></span>
+        : value != null && value !== '' && <span className="ds-li-value fin-row-value">{value}</span>}
       {children}
     </>
   );
   if (!onClick) return <div className={`ds-li fin-row ${className}`.trim()}>{inner}</div>;
-  return <button type="button" className={`ds-li ds-li--go fin-row ${className}`.trim()} onClick={onClick} aria-label={label}>{inner}</button>;
+  return <button type="button" className={`ds-li ds-li--go fin-row fin-row--go ${className}`.trim()} onClick={onClick} aria-label={label}>{inner}</button>;
 }
 
 /** The readout's words in the shared pop-up: the figure first and larger, then when, then the rest. */

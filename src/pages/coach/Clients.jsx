@@ -343,7 +343,7 @@ export default function Clients() {
 
   const who = viewName || (isOwner && coaches.length > 1 ? PEOPLE.everyone : PEOPLE.yourClients);
   const filterWords = filtersOn ? `Filter, ${filtersOn} on` : 'Filter';
-  const addLink = <AddLink label="Add client" expanded={adding} controls="cc-add-client" onClick={() => setAdding((v) => !v)} />;
+  const addLink = <AddLink label="Add a client" expanded={adding} controls="cc-add-client" onClick={() => setAdding((v) => !v)} />;
   const quick = (
     <QuickAdd
       id="cc-add-client"
@@ -396,7 +396,7 @@ export default function Clients() {
 
       {(layout === 'list' || shown.length === 0) && (
         <Card label={who} add={addLink} quickAdd={quick} className="cc-plist-card">
-          {rows.length === 0 && <Empty action={{ children: PEOPLE.noClientsAct, onClick: () => setPanel('team') }}>{PEOPLE.noClients}</Empty>}
+          {rows.length === 0 && <Empty action={{ children: PEOPLE.addTeam, onClick: () => setPanel('team') }}>{PEOPLE.noClients}</Empty>}
           {rows.length > 0 && shown.length === 0 && <Empty>{PEOPLE.noMatch}</Empty>}
           {shown.length > 0 && (
             <div className={`cc-plist cc-fade${picking ? ' cc-picking' : ''}`} key="list">
@@ -524,7 +524,8 @@ export default function Clients() {
           when it opens more): Past clients, then adding a whole team and Export. */}
       <div className="cc-pfoot">
         <MoreLink href="/coach/clients/past" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); navigate('/coach/clients/past'); }}>{PEOPLE.pastClients}</MoreLink>
-        <TextLink onClick={() => setPanel('team')}>{PEOPLE.addTeam}</TextLink>
+        {/* Said once (Tim, 27 Nov, walk item 18): the empty card's link while the list is empty, this line once there are clients. */}
+        {rows.length > 0 && <TextLink onClick={() => setPanel('team')}>{PEOPLE.addTeam}</TextLink>}
         <TextLink onClick={() => setPanel('export')}>{PEOPLE.export}</TextLink>
       </div>
 
@@ -558,7 +559,7 @@ export default function Clients() {
             never the owner's own clients alone with their count (coach first screen run). */}
         {tab === 'people' && (adminReady ? people : <Loading label="Loading your clients" />)}
         {tab === 'groups' && (
-          <Card label={PEOPLE.groupsLabel} add={<AddLink label="Add group" onClick={() => setPanel('group')} />}>
+          <Card label={PEOPLE.groupsLabel} add={<AddLink label="Add a group" onClick={() => setPanel('group')} />}>
             {groups.length === 0 && <Empty>{PEOPLE.noGroups}</Empty>}
             {groups.length > 0 && (
               <div className="ds-rows-list cc-fade">
@@ -574,7 +575,7 @@ export default function Clients() {
         {tab === 'renewals' && <RenewalsTab />}
         {tab === 'workshops' && partial && <Loading label="Loading your workshops" />}
         {tab === 'workshops' && !partial && (
-          <Card label={PEOPLE.workshopsLabel} add={<AddLink label="Add workshop" onClick={() => setPanel('workshop')} />}>
+          <Card label={PEOPLE.workshopsLabel} add={<AddLink label="Add a workshop" onClick={() => setPanel('workshop')} />}>
             {workshops.length === 0 && <Empty>{PEOPLE.noWorkshops}</Empty>}
             {workshops.length > 0 && (
               <div className="ds-rows-list cc-fade">

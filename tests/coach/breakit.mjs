@@ -17,11 +17,12 @@ import { chromium } from 'playwright';
 import { accountId, APP, clearDevice, coachContext, makeReport, ME, openSearch, OTHER, seedDevice, settle, standIn, toastText } from './shared.mjs';
 import { ADMIN_ROWS, ID, seedRows } from './seed.mjs';
 import { BREAK_PARTS, runDayBreak } from './day-breakit.mjs';
+import { BOARDS_ON } from '../../src/lib/coach/navigation.js';
 
 // Polish 1 (B4): "+ Add" by the list's label opens Quick Add; "Add their details too" opens the whole Add client form,
 // the name typed there carried over (cleared here, so the form starts as it always did).
 async function openAddClient(page) {
-  await page.locator('.ds-addlink[aria-label="Add client"]').first().click();
+  await page.locator('.ds-addlink[aria-label="Add a client"]').first().click(); // walk item 4: named by what it adds
   await page.locator('#cc-add-client .ds-qa-box').fill('x');
   await page.getByRole('button', { name: 'Add their details too', exact: true }).click();
   await page.waitForTimeout(500);
@@ -90,10 +91,14 @@ if (has('reach')) {
   // Boards are open to an associate since run 4 (coach-portal rule 38: a board the owner shares is read only for them,
   // and they see no other board), so /coach/boards is no longer sent to Today; with nothing shared it shows none and
   // offers no New board (fixer D, 22 Nov: this line still expected run 1's "the owner's" and failed from run 4 on).
+  // Boards is switched off until after go-live (walk of Stage C, item 1): its address goes to Leads, which is the owner's,
+  // so an associate lands on Today.
   await open(page, '/coach/boards');
-  {
+  if (BOARDS_ON) {
     const words = await text(page);
     pass('reach: /coach/boards shows an associate no board but a shared one, and no New board', /No board is shared with you yet\./.test(words) && (await button(page, 'New board').count()) === 0, words.slice(0, 200));
+  } else {
+    pass('reach: /coach/boards, switched off, sends an associate to Today', new URL(page.url()).pathname === '/coach', page.url());
   }
   await open(page, '/coach/clients');
   await page.locator('.cc-pick-row', { hasText: 'Sam Okafor' }).hover();

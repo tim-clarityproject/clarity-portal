@@ -5,8 +5,9 @@
 // authenticator's screens) stay in src/lib/signIn/words.js and coachAuth.js.
 
 export const SIGN_IN_LINES = Object.freeze({
-  // Enter your code (the example's own line, replacing "Open your authenticator app for the 6-digit code.").
-  code: 'From your authenticator app. It goes in by itself.',
+  // Enter your code (Tim, 27 Nov, walk item 7; replaces the example's "From your authenticator app. It goes in by
+  // itself."). The code still goes in by itself on the sixth digit.
+  code: 'Enter the 6-digit code from your authenticator app.',
   // My Account, Password.
   password: 'Type your current password, then the new one you’d like to use.',
   // My Account, Email.

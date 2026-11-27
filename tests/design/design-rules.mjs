@@ -58,6 +58,14 @@
 //   bare-zero     also a nought with its unit in words ("0 minutes") as a headline figure (F8)
 //   coral-fill    any coral background, a mistake's included: a mistake is one coral line of words (Tim, 26 Nov, 15:55)
 //
+// Tim's walk fixes (27 Nov):
+//   add           "+ Add" in a card's head not the 32px square (soft grey, no outline, 8px corners, 16px plus, level with
+//                 the label, at the head's right, a 44px tap area, named by what it adds) (item 4)
+//   mission       (changed) on a laptop no My Mission box in the header; the Mission line under the title on one 13px line
+//                 with "…", a hairline, 24px to what follows; never under 1024px (item 5)
+//   squeeze       two columns with the main one under 560px; a row's name, a figure's label, a section label or a card
+//                 narrower than its longest word (item 17)
+//
 // Starting points: client-audit-25nov.md's measuring script (Claude, 25 Nov) and the example pages' own checks.
 // Only the standard text size is held to the sizes (scale 1): larger device text grows them.
 export function designProblems({ phone = false, scale = 1, route = null, tools = null } = {}) {
@@ -137,7 +145,7 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
 
   // Controls: anything you press or type into that is drawn as a box.
   const CTRL = 'button, a[href].ds-btn, [role=button], [role=radio]:not(input), [role=tab], input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea, .ds-count, .ds-numbox, .ds-stepper, .ds-seg, .hdr-mbox';
-  const OWN = `${BREATHE}, ${ROWS}, ${CAL_TILES}, ${CAL_TILES.replace(/, /g, ' *, ')} *, [role=switch], [role=checkbox], .ds-check-box, [role=gridcell] *, .ds-cal-day, .ds-tab, [role=tab], .ds-seg-btn, .seg > button, .ds-count > button, .ds-stepper-btn, .ds-numbox input, .ds-mi, .ds-mbtn, svg, [class*="-dot"], .ds-chart *, .ds-google`;
+  const OWN = `${BREATHE}, ${ROWS}, ${CAL_TILES}, ${CAL_TILES.replace(/, /g, ' *, ')} *, [role=switch], [role=checkbox], .ds-check-box, [role=gridcell] *, .ds-cal-day, .ds-tab, [role=tab], .ds-seg-btn, .seg > button, .ds-count > button, .ds-stepper-btn, .ds-numbox input, .ds-mi, .ds-mbtn, svg, [class*="-dot"], .ds-chart *, .ds-google, .ds-addsq`;
   const drawn = (st) => (parseFloat(st.borderTopWidth) > 0 && st.borderTopStyle !== 'none' && !clear(st.borderTopColor)) || !clear(st.backgroundColor) || (/inset/.test(st.boxShadow) && /0px 0px 0px 1px/.test(st.boxShadow));
   const controls = [...top.querySelectorAll(CTRL)].filter((el) => vis(el) && !el.matches(OWN) && !el.closest('.ds-count, .ds-numbox, .ds-seg') ? true : el.matches('.ds-seg, .ds-count, .ds-numbox') && vis(el));
   const boxed = controls.filter((el) => drawn(getComputedStyle(el)));
@@ -495,10 +503,32 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
     }
   }
 
-  // mission: on a phone header, the box fills the row from the crosshair to the right margin, 40px high; on a laptop
-  // with the frame it is sized to its words.
+  // mission: on a phone header, the box fills the row from the crosshair to the right margin, 40px high. On a laptop
+  // (walk item 5, Tim, 27 Nov, option C) there is no box: the Mission is one 13px line straight under the page title
+  // (MissionLine), "My Mission" grey then the Mission, one line ending in "…", a hairline under it, 24px to what follows.
   const mbox = [...document.querySelectorAll('.hdr-frame .hdr-mbox')].find(seen);
-  if (mbox) {
+  if (mbox && W >= 1024) say('mission', 'a My Mission box is drawn in the laptop header (the Mission is a line under the title on Home and Dashboard)');
+  for (const ml of document.querySelectorAll('.ds-mline')) {
+    if (!seen(ml)) continue;
+    if (W < 1024) { say('mission', 'the laptop\'s Mission line shows under 1024px (the phone header box is the Mission there)'); continue; }
+    const st = getComputedStyle(ml);
+    const b = ml.getBoundingClientRect();
+    const prev = ml.previousElementSibling;
+    if (!prev || !prev.matches('.ds-open-title, h1')) say('mission', 'the Mission line is not straight under the page title');
+    if (scale === 1 && !near(parseFloat(st.fontSize), 13, 0.3)) say('mission', `the Mission line is ${parseFloat(st.fontSize)}px, not 13`);
+    const v = ml.querySelector('.ds-mline-v');
+    if (v && lines(v, parseFloat(st.fontSize)) > 1) say('mission', 'the Mission line wraps (one line ending in "…")');
+    if (v && v.scrollWidth > v.clientWidth + 1 && getComputedStyle(v).textOverflow !== 'ellipsis') say('mission', 'a long Mission is cut without "…"');
+    const k = ml.querySelector('.ds-mline-k');
+    if (k && v && !ml.matches('.ds-mline--none') && getComputedStyle(k).color === getComputedStyle(v).color) say('mission', '"My Mission" and the Mission are the same colour (grey, then the text colour)');
+    if (!(parseFloat(st.borderBottomWidth) > 0) || clear(st.borderBottomColor)) say('mission', 'the Mission line has no hairline under it');
+    const next = ml.nextElementSibling;
+    if (next && seen(next)) {
+      const gap = next.getBoundingClientRect().top - b.bottom;
+      if (!near(gap, 24, 1)) say('mission', `${Math.round(gap)}px from the Mission line's hairline to ${name(next).slice(0, 20)}, not 24`);
+    }
+  }
+  if (mbox && W < 1024) {
     const b = mbox.getBoundingClientRect();
     const head = mbox.closest('.hdr-frame');
     const hb = head.getBoundingClientRect();
@@ -509,11 +539,6 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
       if (!near(b.height, 40, 0.5)) say('mission', `My Mission is ${Math.round(b.height)}px high in the phone header, not 40`);
       if (!near(b.right, right, 1)) say('mission', `My Mission ends ${Math.round(right - b.right)}px short of the header's right margin`);
       if (menuBtn && b.left - menuBtn.getBoundingClientRect().right > 24) say('mission', `My Mission starts ${Math.round(b.left - menuBtn.getBoundingClientRect().right)}px after the crosshair`);
-    } else {
-      const natural = [...mbox.childNodes].reduce((w, n) => { const rg = document.createRange(); rg.selectNodeContents(n); return w + rg.getBoundingClientRect().width; }, 0);
-      const ms = getComputedStyle(mbox);
-      const pad = parseFloat(ms.paddingLeft) + parseFloat(ms.paddingRight) + parseFloat(ms.borderLeftWidth) * 2;
-      if (b.width > natural + pad + 16 && mbox.scrollWidth <= mbox.clientWidth + 1) say('mission', `My Mission is ${Math.round(b.width)}px wide on a laptop, wider than its words (${Math.round(natural + pad)}px)`);
     }
   }
 
@@ -646,14 +671,15 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
   const path = (route || '').split(/[?#]/)[0].replace(/\/$/, '') || null;
   // The tools' addresses (inside the function: the page receives it as text, so nothing outside travels with it).
   const TOOL_ROUTES = tools || ['/daily-journal', '/daily-plan', '/plan-meeting', '/pressure-plan', '/time-audit', '/pre-mortem', '/pre-mortem/risks', '/pre-mortem/plan', '/give-difficult-feedback', '/give-difficult-feedback/questions'];
-  if (path && TOOL_ROUTES.includes(path)) {
+  // A client still being prepared sees the preparing page at a tool's address (walk item 15): no tool, so no focus mode.
+  if (path && TOOL_ROUTES.includes(path) && !document.querySelector('[data-preparing]')) {
     const shown = ['.ds-frame-side .ds-mi', '.ds-mbtn', '.hdr-mbox', '.ds-orb--fixed .ds-breathe'].filter((sel) => [...document.querySelectorAll(sel)].some(seen));
     if (shown.length) say('focus', `the tool at ${path} isn't in focus mode: ${shown.join(', ')} show${shown.length === 1 ? 's' : ''}`);
   }
 
   // focus, on any address: while the frame is in focus mode nothing but the tool shows (F1).
   if (document.querySelector('.ds-frame-root--focus')) {
-    const extra = ['.ds-frame-side .ds-mi', '.ds-frame-phead .ds-mbtn', '.hdr-mbox', '.cc-header--frame .cc-search', '.cc-callbar'].filter((sel) => [...document.querySelectorAll(sel)].some(seen));
+    const extra = ['.ds-frame-side .ds-mi', '.ds-frame-phead .ds-mbtn', '.hdr-mbox', '.cc-header--frame .cc-search', '.cc-glass-btn', '.cc-callbar'].filter((sel) => [...document.querySelectorAll(sel)].some(seen));
     if (extra.length) say('focus', `focus mode shows more than the tool: ${extra.join(', ')}`);
   }
 
@@ -690,6 +716,94 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
     if (!seen(track)) continue;
     const tw = track.getBoundingClientRect().width;
     if (tw > 0 && fill.getBoundingClientRect().width < tw * 0.08 - 0.5) say('progress', `the progress line is ${Math.round(fill.getBoundingClientRect().width)}px of ${Math.round(tw)}px filled (step 1 shows a short filled start)`);
+  }
+
+  // add: "+ Add" in a card's head is the square (walk item 4, Tim, 27 Nov, option B): 32 by 32, the soft surface grey with
+  // no outline, 8px corners, a 16px plus, centred on the card label's line at the head's right end, a 44px tap area, and
+  // named by what it adds ("Add a to-do"). An add in a card's head drawn as the words "+ Add" fails.
+  for (const head of top.querySelectorAll('.ds-card-head')) {
+    if (!vis(head)) continue;
+    const label = head.querySelector(':scope > .ds-label, :scope > h2, :scope > h3, :scope > .ds-card-head-l .ds-label');
+    for (const old of head.querySelectorAll('.ds-addrow')) {
+      if (vis(old) && words(old) === 'Add') say('add', `"+ Add" in the head of ${name(label || head)} is drawn as words, not the square`);
+    }
+    for (const sq of head.querySelectorAll('.ds-addsq')) {
+      if (!vis(sq)) continue;
+      const st = getComputedStyle(sq);
+      const b = sq.getBoundingClientRect();
+      const who = `the "+ Add" square of ${name(label || head)}`;
+      if (!near(b.width, 32, 0.5) || !near(b.height, 32, 0.5)) say('add', `${who} is ${Math.round(b.width)} by ${Math.round(b.height)}px, not 32 by 32`);
+      if (!near(parseFloat(st.borderTopLeftRadius) || 0, 8, 0.5)) say('add', `${who} has ${parseFloat(st.borderTopLeftRadius) || 0}px corners, not 8`);
+      if (parseFloat(st.borderTopWidth) > 0 && st.borderTopStyle !== 'none' && !clear(st.borderTopColor)) say('add', `${who} has an outline`);
+      if (clear(st.backgroundColor)) say('add', `${who} has no fill`);
+      const plus = sq.querySelector('.ds-addsq-plus')?.getBoundingClientRect();
+      if (plus && !near(plus.width, 16, 0.5)) say('add', `${who}'s plus is ${Math.round(plus.width)}px, not 16`);
+      const lab = (sq.getAttribute('aria-label') || '').trim();
+      if (!/^Add \S/.test(lab) || lab === 'Add') say('add', `${who} isn't named by what it adds ("${lab}")`);
+      let tap = Math.min(b.width, b.height);
+      const ps = getComputedStyle(sq, '::after');
+      if (ps.content && ps.content !== 'none' && ps.position === 'absolute') tap = Math.max(tap, Math.min(parseFloat(ps.width) || 0, parseFloat(ps.height) || 0));
+      if (tap < 44 - 0.5) say('add', `${who} has a ${Math.round(tap)}px tap area (44px)`);
+      if (label && vis(label)) {
+        const lb = label.getBoundingClientRect();
+        if (Math.abs((b.top + b.height / 2) - (lb.top + lb.height / 2)) > 1.5) say('add', `${who} isn't level with the label (${Math.round((b.top + b.height / 2) - (lb.top + lb.height / 2))}px off its middle)`);
+        const card = head.closest('.ds-card');
+        if (card) {
+          const cb = card.getBoundingClientRect();
+          const cs = getComputedStyle(card);
+          const inner = cb.right - (parseFloat(cs.borderRightWidth) || 0) - (parseFloat(cs.paddingRight) || 0);
+          if (inner - b.right > 1) say('add', `${who} ends ${Math.round(inner - b.right)}px short of the card's right padding`);
+        }
+      }
+    }
+  }
+
+  // squeeze (walk item 17, 27 Nov): two columns only while the main column is at least 560px wide; and a row's name, a
+  // figure's label or a card never narrower than its longest word (the value moves under the name instead).
+  if (W >= 1024) {
+    for (const cols of top.querySelectorAll('.ds-cols')) {
+      if (!vis(cols)) continue;
+      const kids = [...cols.children].filter(vis);
+      if (kids.length < 2) continue;
+      const [a, b2] = kids.map((k) => k.getBoundingClientRect());
+      const side = a.right <= b2.left + 1 || b2.right <= a.left + 1;
+      if (side) {
+        const main = Math.max(a.width, b2.width) === a.width ? a : b2;
+        if (main.width < 560 - 0.5) say('squeeze', `two columns with the main one ${Math.round(main.width)}px wide (one column under 560px)`);
+      }
+    }
+  }
+  if (scale === 1) {
+    const canvas = document.createElement('canvas').getContext('2d');
+    const longest = (el) => {
+      const st = getComputedStyle(el);
+      canvas.font = `${st.fontStyle} ${st.fontWeight} ${st.fontSize} ${st.fontFamily}`;
+      const ls = parseFloat(st.letterSpacing) || 0;
+      const ws = (el.innerText || '').split(/\s+/).filter((w) => w.length >= 4 && /\p{L}/u.test(w));
+      let best = { w: 0, word: '' };
+      for (const word of ws) {
+        const shown = st.textTransform === 'uppercase' ? word.toUpperCase() : word;
+        const w = canvas.measureText(shown).width + ls * shown.length;
+        if (w > best.w) best = { w, word };
+      }
+      return best;
+    };
+    const SQUEEZE = '.ds-li-name, .ds-fig-label, .ds-stat-label, .ds-label, .ds-card-head > h2, .ds-card-head > h3';
+    const said = new Set();
+    for (const el of top.querySelectorAll(SQUEEZE)) {
+      if (!vis(el) || el.closest('[role=dialog] .ds-chart, svg')) continue;
+      const st = getComputedStyle(el);
+      const room = el.getBoundingClientRect().width - (parseFloat(st.paddingLeft) || 0) - (parseFloat(st.paddingRight) || 0);
+      const { w, word } = longest(el);
+      if (word && room < w - 1 && !said.has(word)) { said.add(word); say('squeeze', `${name(el)} is ${Math.round(room)}px wide, narrower than its word "${word.slice(0, 24)}" (${Math.round(w)}px)`); }
+    }
+    for (const card of top.querySelectorAll('.ds-card')) {
+      if (!vis(card)) continue;
+      const cs = getComputedStyle(card);
+      const room = card.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const { w, word } = longest(card);
+      if (word && room < w - 1) say('squeeze', `the card ${name(card).slice(0, 24)} is ${Math.round(room)}px wide inside, narrower than "${word.slice(0, 24)}" (${Math.round(w)}px)`);
+    }
   }
 
   // duplicate: one action offered twice on one screen (outside list rows, where each row has its own).

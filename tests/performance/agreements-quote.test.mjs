@@ -27,7 +27,7 @@ test('ticking a £2,500 visit day on £15,300 makes £17,800, and the settling o
   const visit = q.total(sam, ['visit'], 'plan');
   assert.equal(none.planTotal, 1530000);
   assert.equal(visit.planTotal, 1780000);
-  assert.equal(visit.settleOptions.find((o) => o.value === 'equal').label, '6 monthly instalments, the first £2,966.70 and then £2,966.66');
+  assert.equal(visit.settleOptions.find((o) => o.value === 'equal').label, '6 monthly payments of £2,966.66, with £2,966.70 for the first');
   assert.equal(visit.firstPayment, 296670, 'the leftover pennies go on the first instalment');
   const up = q.total(sam, ['visit'], 'upfront');
   assert.equal(up.invest, 1691000);

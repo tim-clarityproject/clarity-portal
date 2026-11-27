@@ -286,8 +286,12 @@ function measure({ phone }) {
     const reach = (p) => (p.content !== 'none' && p.position === 'absolute' && p.display !== 'none' && p.pointerEvents !== 'none')
       ? { w: parseFloat(p.width) || 0, h: parseFloat(p.height) || 0 } : { w: 0, h: 0 };
     const [ra, rb] = [reach(getComputedStyle(el, '::after')), reach(getComputedStyle(el, '::before'))];
-    const tapW = Math.max(b.width, ra.w, rb.w);
-    const tapH = Math.max(b.height, ra.h, rb.h);
+    // An input whose label lays the 44px band round it (the debrief's count boxes, drawn 40px; the lead's call, walk
+    // round 27 Nov): pressing the band is pressing the label, which focuses the input.
+    const host = el.tagName === 'INPUT' ? el.closest('label') : null;
+    const rh = host ? reach(getComputedStyle(host, '::after')) : { w: 0, h: 0 };
+    const tapW = Math.max(b.width, ra.w, rb.w, rh.w);
+    const tapH = Math.max(b.height, ra.h, rb.h, rh.h);
     if (tapW >= 43.5 && tapH >= 43.5) continue;
     if (el.matches('.ds-seg-btn') && b.height >= 38) continue;
     // My Mission is a 40px box on a laptop and a phone (the 25 Nov reference, Polish 1: "My Mission is a 40px box"); the reference wins over the 44px here.
@@ -695,8 +699,11 @@ function measureHealthCheck({ layer }) {
     const reach = (p) => (p.content !== 'none' && p.position === 'absolute' && p.display !== 'none' && p.pointerEvents !== 'none')
       ? { w: parseFloat(p.width) || 0, h: parseFloat(p.height) || 0 } : { w: 0, h: 0 };
     const [ra, rb] = [reach(getComputedStyle(el, '::after')), reach(getComputedStyle(el, '::before'))];
-    const tapW = Math.max(b.width, ra.w, rb.w);
-    const tapH = Math.max(b.height, ra.h, rb.h);
+    // An input whose label lays the 44px band round it (the debrief's count boxes; the lead's call, 27 Nov).
+    const host = el.tagName === 'INPUT' ? el.closest('label') : null;
+    const rh = host ? reach(getComputedStyle(host, '::after')) : { w: 0, h: 0 };
+    const tapW = Math.max(b.width, ra.w, rb.w, rh.w);
+    const tapH = Math.max(b.height, ra.h, rb.h, rh.h);
     if (tapW >= 43.5 && tapH >= 43.5) continue;
     // A pill in the segmented control reaches 44px high through its ::after, and is as wide as its word.
     const after = getComputedStyle(el, '::after');
