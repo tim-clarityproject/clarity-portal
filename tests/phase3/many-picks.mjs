@@ -98,18 +98,20 @@ async function signedIn(width, mode) {
   return { context, page, errors };
 }
 
-const heading = (page) => page.locator('.ds-guide-question').first().innerText().then((t) => t.trim()).catch(() => '');
+// Stage D: the Daily plan runs on ToolFrame (StepFrame) and the Daily review on GuidedTool: both questions are .ds-q.
+const heading = (page) => page.locator('.ds-q').first().innerText().then((t) => t.trim()).catch(() => '');
 async function next(page) {
   const before = await heading(page);
   for (let i = 0; i < 6; i += 1) {
-    await page.locator('.ds-guide-next').click();
+    await page.locator('.ds-tool-foot .ds-btn--primary').first().click();
     if (await until(async () => (await heading(page)) !== before, 1200)) return;
   }
   throw new Error(`Next didn't move on from "${before}"`);
 }
 const shot = async (page, name) => { if (out) await page.screenshot({ path: `${out}/${name}.png`, fullPage: true }); };
-const names = (page, sel) => page.locator(`${sel} .ds-todo-text`).allInnerTexts().then((a) => a.map((t) => t.replace(/\s+/g, ' ').trim()));
+const names = (page, sel) => page.locator(`${sel} .ds-todo-text`).allInnerTexts().then((a) => a.map((t) => t.replace(/\s+/g, ' ').trim().replace(/\s*, highest priority$/, '')) /* the first row's screen-reader words */);
 const ORDER = [TOP, ...TODOS.filter((t) => t !== TOP), ...HABITS];
+const SIZES = (process.env.SIZES || '1280,390,360').split(',').map(Number);
 
 // Every row on a phone laid out as the first: the same left edge, the same
 // height for one line of words, the tick box in the same place.
@@ -132,18 +134,18 @@ async function run(width, mode) {
   const { context, page, errors } = await signedIn(width, mode);
   try {
     await page.goto(`${APP}/daily-plan`);
-    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    await page.waitForSelector('.ds-q', { timeout: 30000 });
     // Sleep, gratitude and Be, quickly.
     await page.getByRole('button', { name: 'Half an hour more' }).click();
     await page.getByRole('radio', { name: 'Very good', exact: true }).click();
     await next(page);
-    await page.locator('.ds-guide-body textarea').first().fill('A quiet start.');
+    await page.locator('.ds-tool-step-body textarea').first().fill('A quiet start.');
     await next(page);
-    await page.getByRole('radio', { name: 'Decisive' }).click();
+    await page.locator('.ds-tool-step-body input, .ds-tool-step-body textarea').first().fill('Decisive'); // Stage D, Q1: suggestions behind See an example
     await next(page);
 
     pass(`${tag}: Do`, (await heading(page)) === 'What will you do today?', await heading(page));
-    pass(`${tag}: no nudge and no count`, (await page.locator('.ds-guide-nudge, .ds-pick-count').count()) === 0);
+    pass(`${tag}: no nudge and no count`, (await page.locator('.ds-guide-nudge, .ds-tool-hint, .ds-pick-count').count()) === 0);
     const pick = (name) => page.locator('.ds-answer--pick', { hasText: name }).first();
     for (const name of [...TODOS, ...HABITS]) {
       await pick(name).click();
@@ -164,10 +166,10 @@ async function run(width, mode) {
     await until(async () => (await page.locator('.ds-answer--pick', { hasText: TOP }).first().innerText()).includes('Most important'), 4000);
     await next(page);
     // Strategy, then Risk.
-    await page.locator('.ds-guide-body button[aria-pressed]').first().click();
+    await page.locator('.ds-tool-step-body button[aria-pressed]').first().click();
     await next(page);
-    await page.locator('.ds-guide-body textarea').nth(0).fill('Calls run over.');
-    await page.locator('.ds-guide-body textarea').nth(1).fill('Leave ten minutes between calls.');
+    await page.locator('.ds-tool-step-body textarea').nth(0).fill('Calls run over.');
+    await page.locator('.ds-tool-step-body textarea').nth(1).fill('Leave ten minutes between calls.');
     await next(page);
 
     const summary = (await page.locator('.ds-guide-summary').innerText()).replace(/\s+/g, ' ');
@@ -177,7 +179,7 @@ async function run(width, mode) {
     await shot(page, `${width}-${mode}-summary`);
     await until(async () => {
       if (/performance-sprint/.test(page.url())) return true;
-      await page.getByRole('button', { name: 'Set my day' }).click({ timeout: 2000 }).catch(() => null);
+      await page.getByRole('button', { name: 'Finish', exact: true }).click({ timeout: 2000 }).catch(() => null);
       return page.waitForURL(/performance-sprint/, { timeout: 1500 }).then(() => true, () => false);
     }, 15000);
 
@@ -194,7 +196,9 @@ async function run(width, mode) {
     // Home: every item, the 4th first.
     await page.goto(`${APP}/welcome`);
     await page.locator('.home-todos').waitFor({ timeout: 20000 });
-    const home = await names(page, '.home-todos');
+    // The device's copy shows first and the page refreshes quietly (Smoothness, Phase 0e): wait for it to settle.
+    let home = [];
+    await until(async () => { home = await names(page, '.home-todos'); return JSON.stringify(home) === JSON.stringify(ORDER); }, 10000);
     pass(`${tag}: Home lists all eight, the highest priority first, then in order`, JSON.stringify(home) === JSON.stringify(ORDER), home.join(' | '));
     if (width < 769) {
       const r = await sameRows(page, '.home-todos');
@@ -204,11 +208,12 @@ async function run(width, mode) {
 
     // Daily review: the same, in the same order.
     await page.goto(`${APP}/daily-review`);
-    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    await page.waitForSelector('.ds-q', { timeout: 30000 });
     const reached = await until(async () => (await page.locator('.rev-list').count()) > 0 || (await heading(page)).startsWith('Which of today'), 8000);
     if (reached && !(await page.locator('.rev-list').count())) await next(page);
     await page.locator('.rev-list').first().waitFor({ timeout: 15000 });
-    const review = await names(page, '.rev-list');
+    let review = [];
+    await until(async () => { review = await names(page, '.rev-list'); return JSON.stringify(review.slice(0, 8)) === JSON.stringify(ORDER); }, 10000);
     pass(`${tag}: the Daily review lists all eight, in the same order`, JSON.stringify(review.slice(0, 8)) === JSON.stringify(ORDER), review.join(' | '));
     if (width < 769) {
       const r = await sameRows(page, '.rev-list');
@@ -216,9 +221,53 @@ async function run(width, mode) {
     }
     await shot(page, `${width}-${mode}-review`);
     pass(`${tag}: no page errors`, errors.length === 0, errors.join(' | '));
+    if (width === SIZES[0]) await freshDevice(width, mode);
   } catch (e) {
     pass(`${tag}: the run finished`, false, `${e.message}`.split('\n')[0]);
     await shot(page, `${width}-${mode}-error`);
+  }
+  await context.close();
+}
+
+// The functionality tester's F1 (Stage D): the finished plan opened on another device (a fresh browser context, so
+// nothing of the day is on it) reads day_plan_habits for its summary, its Edit ticks and its order, so nothing is
+// dropped and the most important stays first; editing the to-dos there and saving keeps every habit.
+async function freshDevice(width, mode) {
+  const tag = `${width}px ${mode}, another device`;
+  const { context, page, errors } = await signedIn(width, mode);
+  try {
+    await page.goto(`${APP}/daily-plan`);
+    await page.waitForSelector('.ds-q', { timeout: 30000 });
+    const summaryNames = async () => (await page.locator('.ds-guide-summary').innerText().catch(() => '')).replace(/\s+/g, ' ');
+    const inOrder = (text) => { const at = ORDER.map((n) => text.indexOf(n)); return at.every((i) => i >= 0) && at.every((i, k) => !k || i > at[k - 1]); };
+    let summary = '';
+    await until(async () => inOrder(summary = await summaryNames()), 12000);
+    pass(`${tag}: the summary shows all eight, habits included, the most important first`, inOrder(summary) && summary.includes(`1. ${TOP}`), summary.slice(0, 300));
+    pass(`${tag}: no "Skipped" on the to-dos`, !/To-dos Skipped/.test(summary));
+    // Edit the to-dos: every pick ticked, the habits too, then one more change saved.
+    await page.locator('.ds-guide-summary-row', { hasText: 'To-dos' }).getByRole('button', { name: /^Edit/ }).first().click();
+    await until(async () => (await heading(page)) === 'What will you do today?', 8000);
+    const ticked = async (name) => (await page.locator('.ds-answer--pick', { hasText: name }).first().getAttribute('aria-pressed')) === 'true';
+    const all = await until(async () => (await Promise.all(ORDER.map(ticked))).every(Boolean), 8000);
+    pass(`${tag}: Edit shows every pick ticked, the habits included`, Boolean(all), JSON.stringify(await Promise.all(ORDER.map(ticked))));
+    pass(`${tag}: Edit keeps the most important first`, (await page.locator('.ds-answer--pick', { hasText: TOP }).first().innerText()).includes('Most important'));
+    await page.locator('.ds-answer--pick', { hasText: TODOS[5] }).first().click();
+    await until(async () => !(await ticked(TODOS[5])), 5000);
+    await page.locator('.ds-tool-foot .ds-btn--primary').first().click();
+    await until(async () => (await heading(page)) === 'This was your plan', 8000);
+    const want = ORDER.filter((n) => n !== TODOS[5]);
+    summary = await summaryNames();
+    pass(`${tag}: after Save my edit the summary keeps the habits and the order`, (() => { const at = want.map((n) => summary.indexOf(n)); return at.every((i) => i >= 0) && at.every((i, k) => !k || i > at[k - 1]); })() && !summary.includes(TODOS[5]), summary.slice(0, 300));
+    const ids = (await db.from('sprint_habits').select('id, name').eq('sprint_id', sprint.id).in('name', HABITS)).data.map((h) => h.id);
+    const row = await until(async () => {
+      const r = (await db.from('day_plan_habits').select('habit_ids, top_pick').eq('user_id', me).eq('local_date', today)).data?.[0];
+      return r && ids.every((id) => (r.habit_ids || []).includes(id)) ? r : null;
+    }, 10000);
+    pass(`${tag}: day_plan_habits still holds both habits after the edit`, Boolean(row), JSON.stringify(row));
+    pass(`${tag}: no page errors`, errors.length === 0, errors.join(' | '));
+  } catch (e) {
+    pass(`${tag}: the run finished`, false, `${e.message}`.split('\n')[0]);
+    await shot(page, `${width}-${mode}-fresh-error`);
   }
   await context.close();
 }
@@ -234,13 +283,13 @@ async function tester() {
   try {
     await page.evaluate((id) => localStorage.setItem(`clarity-cache:${id}:day-plan-cap`, JSON.stringify({ cap: 3, at: Date.now() + 3600000 })), me);
     await page.goto(`${APP}/daily-plan`);
-    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    await page.waitForSelector('.ds-q', { timeout: 30000 });
     await page.getByRole('button', { name: 'Half an hour more' }).click();
     await page.getByRole('radio', { name: 'Very good', exact: true }).click();
     await next(page);
-    await page.locator('.ds-guide-body textarea').first().fill('A quiet start.');
+    await page.locator('.ds-tool-step-body textarea').first().fill('A quiet start.');
     await next(page);
-    await page.getByRole('radio', { name: 'Decisive' }).click();
+    await page.locator('.ds-tool-step-body input, .ds-tool-step-body textarea').first().fill('Decisive'); // Stage D, Q1: suggestions behind See an example
     await next(page);
     const pick = (name) => page.locator('.ds-answer--pick', { hasText: name }).first();
     for (const name of TODOS.slice(0, 5)) {
@@ -261,7 +310,7 @@ async function tester() {
       await sleep(2500);
       return route.fallback();
     });
-    await page.getByRole('button', { name: 'Add to-do' }).click();
+    await page.getByRole('button', { name: 'Add a to-do' }).click(); // Polish 1: the + square
     const panel = page.locator('[role=dialog]').last();
     await panel.locator('textarea').first().fill('Many seven: added in the panel');
     await panel.getByRole('button', { name: 'Add to-do' }).click();
@@ -286,7 +335,7 @@ async function tester() {
       localStorage.removeItem(`clarity-cache:${id}:day-plan-cap`);
     }, { id: me, day: today, extra: waiting });
     await page.goto(`${APP}/daily-plan`);
-    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    await page.waitForSelector('.ds-q', { timeout: 30000 });
     const back = await until(async () => {
       const r = (await db.from('day_plan_todos').select('todo_id').eq('day_plan_id', plan.id)).data || [];
       return waiting.every((w) => r.some((t) => t.todo_id === w)) ? r : null;
@@ -302,7 +351,6 @@ async function tester() {
   await db.from('todos').delete().eq('user_id', me).eq('text', 'Many seven: added in the panel');
 }
 
-const SIZES = (process.env.SIZES || '1280,390,360').split(',').map(Number);
 for (const width of SIZES) await run(width, width === 390 ? 'light' : 'dark');
 if (!process.env.SIZES) await tester();
 await browser.close();

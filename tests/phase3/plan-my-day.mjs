@@ -266,6 +266,8 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await shot(page, `${tag}-1-sleep`);
   // Empty, the counter shows the sleep target's middle (7 to 9 hours: 8), in half hours (Polish 1).
   pass(`${tag}: the empty counter shows the sleep target`, (await page.locator('.ds-count span').first().textContent()).trim() === '8');
+  // Stage D, Q1 (question rule 9): nothing under the question, so no line about the target.
+  pass(`${tag}: no line under the sleep question`, (await page.locator('.sf-note').count()) === 0 && !/sleep target is/i.test(await page.locator('.ds-tool').innerText()));
   await page.getByRole('button', { name: 'Half an hour more' }).click();
   pass(`${tag}: the first press adds half an hour to the target`, (await page.locator('.ds-count span').first().textContent()).trim() === '8½');
   // Sleep quality is the five words (Tim, 10 Nov): "Very good" saves the key 'good', as "Good" did.
@@ -291,8 +293,11 @@ async function playThrough(page, tag, { deep = false } = {}) {
   pass(`${tag}: Be`, (await heading(page)) === 'How do you want to be today?');
   pass(`${tag}: a way of being used recently is offered`, await page.getByRole('radio', { name: 'Calm under pressure' }).isVisible());
   await checkScreen(page, `${tag} be`);
-  await page.getByRole('radio', { name: 'Decisive' }).click();
-  pass(`${tag}: a suggestion fills the box`, (await body(page).locator('textarea').first().inputValue()) === 'Decisive');
+  // Stage D, Q1 (question rules 9 and 10): the suggestions are behind "See an example", all three at once.
+  pass(`${tag}: no suggestions under the question until asked`, (await page.getByRole('radio', { name: 'Decisive' }).count()) === 0 && (await page.getByText('Try one of these.').count()) === 0);
+  await page.getByRole('button', { name: 'See an example' }).click();
+  pass(`${tag}: See an example shows the three suggestions together`, (await page.locator('.sf-example-text li').allInnerTexts()).join('|') === 'Curious, not defensive|Decisive|Patient', (await page.locator('.sf-example-text li').allInnerTexts()).join('|'));
+  await body(page).locator('textarea').first().fill('Decisive');
   await next(page);
 
   // 4. Do

@@ -19,7 +19,7 @@ import {
 } from '../../../lib/agreements/duringAgreement';
 import { firstPaymentReminderEmail, signReminderEmail } from '../../../lib/email/agreementEmails';
 import { invoiceReminderEmail } from '../../../lib/email/billingEmails';
-import { dayIn, dayKeyWords } from '../../../lib/time/index.js';
+import { dayIn, daysBetween, dayKeyWords } from '../../../lib/time/index.js';
 import { keyOf, loadCoach, newId, removeRow, rowsOf, saveChange, saveRow } from '../../../lib/coach/store';
 import { doneRow } from '../../../lib/agreements/needsYou';
 import { TextLink, useCoachPortal } from '../parts';
@@ -251,7 +251,9 @@ function OverdueBody({ item, close }) {
     settleByWords: r.settle_by ? dayKeyWords(r.settle_by, { year: true, today: p.todayKey }) : null, coachFirst: p.coach.display_first_name || 'Tim', settleLink: inv.hosted_url || 'https://invoice.stripe.com/',
     coachee: org && inv.profile_id ? (p.clients || []).find((c) => c.id === inv.profile_id)?.name || null : null, poNumber: org ? inv.po_number || null : null,
     toOrganisation: inv.settles_to === 'organisation' || Boolean(org),
-  })) : null), [inv, r, first, left, org, p.clients, p.coach.display_first_name]);
+    // The true days overdue today, as the server says it when it goes (Stage D, F3).
+    daysOverdue: inv.due_on && p.todayKey ? Math.max(0, daysBetween(inv.due_on, p.todayKey)) : null,
+  })) : null), [inv, r, first, left, org, p.clients, p.coach.display_first_name, p.todayKey]);
   const pause = (p.reminderPauses || []).find((x) => (org ? x.organisation_id === org.id : x.profile_id === inv?.profile_id)) || null;
   const togglePause = async () => {
     try {

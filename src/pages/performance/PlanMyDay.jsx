@@ -37,7 +37,7 @@ import { friendlyError } from '../../lib/friendlyError';
 import { keepForLater, newId, saveOrQueue, useQueueState, useSuperseded } from '../../lib/syncQueue';
 import { createDayPlan, dayPlanAnswersOp, loadDayPlan, loadDayPlanRow, readDayPlanTodos, saveTodo, setTodoDeleted } from '../../lib/performance/api';
 import { useLatestWhenSuperseded } from '../../lib/performance/hooks';
-import { dayLimitRefused, dayTodoCap, fitDayTodos, learnDayTodoCap, readDayChoices, refreshDayChoices, saveDayChoices } from '../../lib/performance/dayPlanHabits';
+import { dayLimitRefused, dayTodoCap, fitDayTodos, learnDayTodoCap, readDayChoices, refreshDayChoices, saveDayChoices, subscribeDayChoices } from '../../lib/performance/dayPlanHabits';
 import { lastNightThoughts, refreshWindDown, windDownTodoSource } from '../../lib/performance/windDownStore';
 import {
   DAY_TEXT_MAX,
@@ -81,7 +81,6 @@ import './performance.css';
 import './stepFrame.css';
 import StepFrame from './StepFrame';
 import { DAILY_PLAN } from '../../content/pageLines/client';
-import { rangeWords } from '../../lib/performance/sleepChart';
 
 // Daily plan (mock-up M5, version 19, approved by Tim on 23 Oct; read in
 // full with its notes). One guided tool, one question per screen on phone
@@ -206,6 +205,21 @@ function PlanFlow({ userId, date, today, loaded }) {
 
   // Another device's choices and last night's thoughts, once 039 has run
   // (nothing until then): read quietly, shown when they differ.
+  // The page follows the device's copy whenever it changes (another
+  // device's choices read by any refresh, this page's or one started by a
+  // mount that has since gone), never only on its own refresh's answer: a
+  // second device opening a finished plan shows its habits, their order
+  // and the most important (the functionality tester, Stage D, F1).
+  useEffect(() => {
+    const follow = () => {
+      const fresh = readDayChoices(userId, date);
+      if (JSON.stringify(fresh) === JSON.stringify(localRef.current)) return;
+      localRef.current = fresh;
+      setLocalState(fresh);
+    };
+    follow();
+    return subscribeDayChoices(follow);
+  }, [userId, date]);
   useEffect(() => {
     let live = true;
     refreshDayChoices(userId, date).then((changed) => {
@@ -696,7 +710,7 @@ function PlanFlow({ userId, date, today, loaded }) {
               lessLabel="Half an hour less"
               moreLabel="Half an hour more"
             />
-            {answers.hours == null && <p className="sf-note">{`Your sleep target is ${rangeWords(sleepTarget)}. Change it if last night was different.`}</p>}
+            {/* Nothing under the question (question rule 9; Stage D, Q1): the counter starts at the sleep target's middle, with no line about it. */}
           </div>
           {odd && (
             <div className="day-confirm">
@@ -748,6 +762,9 @@ function PlanFlow({ userId, date, today, loaded }) {
       key: 'be',
       name: 'Be',
       question: 'How do you want to be today?',
+      // The suggestions are behind "See an example", all three at once (question rules 9 and 10;
+      // Stage D, Q1): Draft 11 keeps the question and writes nothing under it.
+      example: [...WAY_SUGGESTIONS],
       render: () => {
         const pick = (list, name) => (
           <Choice ariaLabel={name} form="rows" options={list.map((w) => ({ value: w, label: w }))} value={list.find((w) => w === answers.way.trim()) ?? null} onChange={(way) => change({ way })} />
@@ -761,8 +778,6 @@ function PlanFlow({ userId, date, today, loaded }) {
                 {pick(view.recent, 'Ways of being you’ve used recently')}
               </>
             )}
-            <p className="day-sgh">{view.recent.length ? 'Or try one of these.' : 'Try one of these.'}</p>
-            {pick(WAY_SUGGESTIONS.filter((w) => !view.recent.includes(w)), 'Suggested ways of being')}
           </div>
         );
       },

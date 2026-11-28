@@ -22,6 +22,7 @@ import {
   StrategyDetailBody,
   StrategyTile,
   StrategyTiles,
+  SystemLink,
   WhoSees,
   useIsPhone,
   useToast,
@@ -330,6 +331,8 @@ export default function PerformancePlan() {
 
             <div className="cp-foot ipp-actions">
               <MoreLink onClick={() => navigate('/performance-plan/history')}>See version history</MoreLink>
+              {/* The pop-up mounted below had nothing opening it since the frame replaced the My Mission panel (Stage D, the functionality tester): "How the system fits together", Draft 9's words with "Open my plan". */}
+              <SystemLink onClick={() => setSystem(true)} aria-haspopup="dialog" />
             </div>
           </>
         )}

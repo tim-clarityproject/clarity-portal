@@ -84,7 +84,7 @@ import {
   weeklyFoldLine,
   backToday,
 } from '../lib/performance';
-import { readDayChoices, refreshDayChoices } from '../lib/performance/dayPlanHabits';
+import { readDayChoices, refreshDayChoices, subscribeDayChoices } from '../lib/performance/dayPlanHabits';
 import { finishedNights, refreshWindDown } from '../lib/performance/windDownStore';
 import { DayRow, WeekRow } from './performance/LogRows';
 import { RecoveryDay } from './performance/Recovery';
@@ -237,6 +237,9 @@ function TodayBody({ userId, user, now, today, sprint, view, day, setDay = () =>
     refreshWindDown(userId, { since: addDayKey(today, -1) }).then(bump);
     return () => { live = false; };
   }, [userId, today]);
+  // Any change to the device's copy of the day's choices redraws the list, whichever refresh read it (a mount that has
+  // since gone included): another device's habits, order and most important show (Stage D, F1).
+  useEffect(() => subscribeDayChoices(() => setFresh((n) => n + 1)), []);
 
   // "Not tonight" tapped on another device (Tim, 10 Nov): the evenings are
   // in the account's page settings, read when Home opens and each time it

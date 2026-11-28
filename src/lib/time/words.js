@@ -26,11 +26,16 @@ export function clockWords(instant, zone) {
 /** "7:30 am New York time", "15:00 UK time". */
 export const timeWords = (instant, zone) => `${clockWords(instant, zone)} ${zoneLabel(zone)}`;
 
-/** "Mon 16 Nov"; with { year: true }, "Mon 16 Nov 2026"; with { long: true }, "Monday 16 Nov". */
-export function dayWords(instant, zone, { year = false, long = false } = {}) {
+/**
+ * "Mon 16 Nov"; with { long: true }, "Monday 16 Nov". The year shows only when the day isn't in this year where the
+ * reader is ("Thu 7 Jan 2027" read in 2026; writing rule 28, Stage D, P2): `now` is the moment read as this year
+ * (the clock's, unless given). { year: true } always shows it, { year: false } never does.
+ */
+export function dayWords(instant, zone, { year = 'auto', long = false, now = null } = {}) {
   const w = wallClock(instant, zone);
   const name = (long ? LONG_DAY_NAMES : DAY_NAMES)[w.weekday - 1];
-  return `${name} ${w.day} ${MONTHS[w.month - 1]}${year ? ` ${w.year}` : ''}`;
+  const shown = year === 'auto' ? w.year !== wallClock(now == null ? new Date() : new Date(now), zone).year : Boolean(year);
+  return `${name} ${w.day} ${MONTHS[w.month - 1]}${shown ? ` ${w.year}` : ''}`;
 }
 
 /**

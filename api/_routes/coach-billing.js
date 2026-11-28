@@ -36,7 +36,7 @@ import { moneyWords } from '../../src/lib/billing/money.js';
 import { stripeApi, keyAllowed } from '../../src/lib/billing/stripe.js';
 import { dueToDraft, invoicesFor } from '../../src/lib/billing/invoicePlan.js';
 import { addDays, dayIn, isZone } from '../../src/lib/time/index.js';
-import { reminderDue, settleBy } from '../../src/lib/billing/money.js';
+import { daysOverdue, reminderDue, settleBy } from '../../src/lib/billing/money.js';
 import { currencyOf } from '../../src/lib/billing/stripeWebhook.js';
 import { cleanName } from '../../src/lib/coaching/agreementRules.js';
 // Phase 6b run 3 (065)
@@ -962,7 +962,7 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
 
 /** The reminder email, from the coach, in the shared template, to whoever settles the invoice, with Stripe's own link. */
 /** @returns {Promise<'sent'|'refused'|'unsure'>} what is known about it (sendOutcome) */
-export async function sendReminder(env, server, coach, { reminder, invoice, settleBy: by }, options = {}) {
+export async function sendReminder(env, server, coach, { reminder, invoice, settleBy: by, at = null }, options = {}) {
   if (!invoice.payer_email || !/^https:\/\//.test(invoice.hosted_url || '')) return 'refused';
   const { data: me } = await server.from('coaches').select('display_first_name').eq('id', coach.id).maybeSingle();
   let coachee = null;
@@ -975,6 +975,8 @@ export async function sendReminder(env, server, coach, { reminder, invoice, sett
     amountWords: moneyWords(invoice.total_minor - invoice.paid_minor, invoice.currency), dueDayWords: dayKeyWords(invoice.due_on),
     settleByWords: by?.words || null, coachFirst: me?.display_first_name || '', settleLink: invoice.hosted_url, coachee, poNumber: invoice.po_number,
     toOrganisation: invoice.settles_to === 'organisation',
+    // The days overdue on the day it goes, on the payer's own clock (Stage D, F3).
+    daysOverdue: invoice.due_on ? daysOverdue(invoice.due_on, at || new Date(), invoice.payer_zone) : null,
   });
   // The coach's own words after Edit (Group D): they replace the drafted lines; the greeting, the button and the name stay.
   if (typeof reminder.text === 'string' && reminder.text.trim()) {

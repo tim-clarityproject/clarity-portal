@@ -96,6 +96,8 @@ import './design.css';
 //   percent:   the % bar's own figure, where the steps aren't equal parts
 //              (three questions for each person on a list);
 //   noProgress: no % bar on this step (a results page with its own title);
+//   place:     { n, of }, the step's own "Step n of m" where the screens grow as answers come in (the Emotional
+//              wash counts its nine kinds of screen, so the total stays steady: Stage D, P3); the line follows it;
 //   footAside: a quiet link at the bottom bar's left, where Skip would be
 //              ("Download my PDF" beside "Add to-do");
 //   onward:    () => the key of the step Next goes to from here, or null
@@ -541,7 +543,9 @@ export default function GuidedTool({
 
   const skip = () => {
     if (Date.now() - lastMove.current < NEXT_GUARD_MS) return;
-    if (!skipMoves) {
+    // A step may say for itself (`step.skipMoves`): the First check-in's questions move on
+    // while its opening screen's "Do this later" leaves (Stage D, Q2).
+    if (!(step.skipMoves ?? skipMoves)) {
       onSkip?.(step.key);
       return;
     }
@@ -562,13 +566,15 @@ export default function GuidedTool({
 
   // Where you are, for the step list and for screen readers.
   const listed = steps.map((s, j) => ({ s, j })).filter(({ s }) => !s.bare);
-  const position = listed.findIndex(({ j }) => j === i);
+  const place = step.place && Number.isInteger(step.place.n) && Number.isInteger(step.place.of) ? step.place : null;
+  const position = place ? place.n - 1 : listed.findIndex(({ j }) => j === i);
+  const countOf = place ? place.of : listed.length;
   const stepPercent = steps.length > 1 ? Math.round((i / (steps.length - 1)) * 100) : 100;
   // One question opened from the summary: the plan is whole, so the bar is full (M9).
   const percent = calm && returnTo != null && returnTo !== i ? 100 : (Number.isFinite(step.percent) ? step.percent : stepPercent);
   const positionText = progress === 'percent'
     ? `${percent}% complete`
-    : `Step ${position + 1} of ${listed.length}: ${step.name}`;
+    : `Step ${position + 1} of ${countOf}: ${step.name}`;
 
   // A titled step (a screen, not a question) has no Skip unless it says so (`skippable`: the Daily review's Log today).
   const showSkip = !(step.required || (step.title && !last && !step.skippable) || (last && !step.skippable));
@@ -631,8 +637,9 @@ export default function GuidedTool({
   // Step 1 already shows a short filled start (the example's Plan my day: a third of a step's share; UI tester P15),
   // as ToolFrame's line does (at least 8%, the example's first step); each later step adds its share, and the last fills it.
   const firstShare = Math.max(8, 100 / Math.max(1, steps.length) / 3);
-  const lineWidth = last ? 100 : progress === 'percent' ? Math.max(firstShare, percent) : Math.min(100, (i / Math.max(1, steps.length)) * 100 + firstShare);
-  const stepWords = step.noProgress ? '' : `Step ${position + 1} of ${listed.length}`;
+  const lineWidth = last ? 100 : progress === 'percent' ? Math.max(firstShare, percent)
+    : place ? Math.min(100, (position / Math.max(1, countOf)) * 100 + firstShare) : Math.min(100, (i / Math.max(1, steps.length)) * 100 + firstShare);
+  const stepWords = step.noProgress ? '' : `Step ${position + 1} of ${countOf}`;
   const progressLine = (
     <div
       id={progress === 'percent' ? positionId : undefined}

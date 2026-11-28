@@ -203,7 +203,8 @@ test('the handler: a reminder Resend refuses is let go and the coach is told it 
   await b.draft('a-ben');
   await b.send(db.tables.invoices[0].id);
   await deliver(db, stripe);
-  now.value = new Date('2026-12-18T09:00:00Z');
+  // First seen 9 days overdue (Stage D, F3): the 7-day reminder, saying 9 days.
+  now.value = new Date('2026-12-24T09:00:00Z');
   await b.draftReminders();
   const r = await b.reminderToSend(db.tables.invoice_reminders[0].id);
   const real = globalThis.fetch;
@@ -215,8 +216,15 @@ test('the handler: a reminder Resend refuses is let go and the coach is told it 
     assert.equal(await sendReminder(env, db, COACH, r), 'refused', 'a refusal: it never went');
     globalThis.fetch = async () => { throw new DOMException('timed out', 'TimeoutError'); };
     assert.equal(await sendReminder(env, db, COACH, r), 'unsure', 'no answer in time: it may have gone');
-    globalThis.fetch = async () => new Response('{"id":"x"}', { status: 200 });
+    let sentBody = '';
+    globalThis.fetch = async (_u, init = {}) => { sentBody = String(init.body || ''); return new Response('{"id":"x"}', { status: 200 }); };
     assert.equal(await sendReminder(env, db, COACH, r), 'sent');
+    // Stage D, F3: the email states the true days overdue on the day it goes, whichever stage it is.
+    const { daysOverdue } = await import('../../src/lib/billing/money.js');
+    const late = daysOverdue(r.invoice.due_on, r.at, r.invoice.payer_zone);
+    assert.deepEqual([r.reminder.stage, late], [7, 9], 'the 7-day reminder, 9 days overdue');
+    const said = r.reminder.stage === 3 ? 'was due on' : r.reminder.stage === 7 ? `is now ${late} days past its due date` : `is now ${late} days overdue`;
+    assert.ok(JSON.parse(sentBody).text.includes(said), said);
   } finally { globalThis.fetch = real; }
 });
 

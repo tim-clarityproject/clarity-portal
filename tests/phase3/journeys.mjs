@@ -92,6 +92,7 @@ const WIN = `${TAG}: ran a workshop that led to two referrals`;
 const THINGS = [`${TAG}: call Evan about the referral`, `${TAG}: send the Harbour proposal`, `${TAG}: book the physio`];
 const dayThing = (i) => `${TAG}: follow up from day ${i + 1}`;
 const NEXT_TODO = `${TAG}: plan the referral breakfast`;
+const MONDAY_FIRST = `${TAG}: call the two referrals first thing`;
 const OLD_WEEKLY = `${TAG}: an old weekly check-in`;
 const DEBRIEF = { well: 'Five days planned and reviewed.', way: 'Late calls on Thursday.', adjust: 'Stop work by 18:30.' };
 
@@ -185,12 +186,14 @@ await page.fill('input[type=password]', env.TEST_CLIENT_PASSWORD);
 await page.keyboard.press('Enter');
 await page.waitForURL(/welcome/, { timeout: 30000 });
 
-const heading = async () => (await page.locator('.ds-guide-question, .ds-guide-title').first().textContent()).trim();
-const body = () => page.locator('.ds-guide-body');
+// Stage D: the Daily plan runs on ToolFrame (StepFrame, .ds-tool-q and .ds-tool-step-body); the other tools on
+// GuidedTool (.ds-guide-question and .ds-guide-body). Both questions are .ds-q, and both foots .ds-tool-foot.
+const heading = async () => (await page.locator('.ds-q').first().textContent()).trim();
+const body = () => page.locator('.ds-guide-body, .ds-tool-step-body').first();
 async function next() {
   const before = await heading();
   for (let i = 0; i < 6; i += 1) {
-    await page.locator('.ds-guide-next').click();
+    await page.locator('.ds-tool-foot .ds-btn--primary').first().click();
     const moved = await until(async () => (await heading()) !== before, 1200);
     if (moved) return;
   }
@@ -198,7 +201,7 @@ async function next() {
 }
 async function open(path) {
   await page.goto(`${APP}${path}`);
-  await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+  await page.waitForSelector('.ds-q', { timeout: 30000 });
 }
 // The last button, tapped until the page goes back to the sprint.
 async function finishWith(label) {
@@ -221,7 +224,8 @@ async function closeDay() {
   await page.getByRole('button', { name: 'Back to Home' }).click();
   await until(async () => new URL(page.url()).pathname === '/welcome', 10000);
 }
-const checkbox = (name) => page.getByRole('checkbox', { name, exact: true }).first();
+// Each row reads its name then its Strategy (Tim's walk, item 19: two lines), so the name starts the label.
+const checkbox = (name) => page.getByRole('checkbox', { name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) }).first();
 async function tick(name) {
   if ((await checkbox(name).getAttribute('aria-checked')) !== 'true') await checkbox(name).click();
   return until(async () => (await checkbox(name).getAttribute('aria-checked')) === 'true', 5000);
@@ -230,8 +234,14 @@ async function sprintScoreMatches(day, tag) {
   // Daily review now ends on Work's done, then Home (Phase 4 step 6), so
   // the sprint page is opened here when the journey isn't already on it.
   if (new URL(page.url()).pathname !== '/performance-sprint') await page.goto(`${APP}/performance-sprint`);
-  await page.waitForSelector('.ds-sdial-big--score', { timeout: 30000 });
   const v = sprintPageView(await rowsNow(), { today: day });
+  // Polish 1 (bare-zero): a week with nothing logged yet shows a sentence, not 0%.
+  await page.waitForSelector('.ds-sdial-big--score, .ds-sdial', { timeout: 30000 });
+  if (!(await page.locator('.ds-sdial-big--score').count())) {
+    const empty = await until(async () => /Your score starts with your first log/.test(await page.locator('.ui-root').first().innerText()), 10000);
+    pass(`${tag}: nothing logged yet, so the dial says so and src/lib/scores has no score above 0`, Boolean(empty) && !(v.soFar?.value > 0), JSON.stringify(v.soFar));
+    return v;
+  }
   const shown = await until(async () => {
     const t = (await page.locator('.ds-sdial-big--score').textContent()).trim();
     return t === `${v.soFar.value}%` ? t : null;
@@ -254,7 +264,8 @@ async function planDay(day, i, { picks, lastNight = [], panel = false }) {
   await next();
   await body().locator('textarea').first().fill(`Grateful for day ${i + 1}.`);
   await next();
-  await page.getByRole('radio', { name: 'Decisive' }).click();
+  // Stage D, Q1: the suggestions are behind See an example now, so the way of being is typed.
+  await body().locator('input, textarea').first().fill('Decisive');
   await next();
   pass(`${tag}: Do`, (await heading()) === 'What will you do today?', await heading());
   const shown = await page.locator('.ds-answer--pick').allInnerTexts();
@@ -267,7 +278,8 @@ async function planDay(day, i, { picks, lastNight = [], panel = false }) {
     await until(async () => (await pick.getAttribute('aria-pressed')) === 'true', 8000);
   }
   if (panel) {
-    await page.getByRole('button', { name: 'Add to-do' }).click();
+    // Polish 1: the + square in Your to-dos' head, named by what it adds.
+    await page.getByRole('button', { name: 'Add a to-do' }).click();
     const p = page.locator('[role=dialog]').last();
     await p.locator('textarea').first().fill(PANEL_TODO);
     await p.getByRole('button', { name: 'Add to-do' }).click();
@@ -282,12 +294,13 @@ async function planDay(day, i, { picks, lastNight = [], panel = false }) {
   await next();
   pass(`${tag}: the summary`, (await heading()) === 'This was your plan', await heading());
   await shot(`${day}-plan-summary`);
-  await finishWith('Set my day');
+  await finishWith('Finish'); // StepFrame's Finish on the summary (Polish 1)
   const row = await until(async () => {
     const r = (await db.from('day_plans').select('id, status, sleep_hours, sleep_quality').eq('user_id', me).eq('local_date', day)).data?.[0];
     return r?.status === 'finished' ? r : null;
   });
-  pass(`${tag}: saved as set, with its sleep`, Boolean(row) && Number(row.sleep_hours) === 7.5 && row.sleep_quality === 'good', JSON.stringify(row));
+  // The counter starts at the sleep target's middle (8 hours for 7 to 9; Polish 1), so half an hour more is 8.5.
+  pass(`${tag}: saved as set, with its sleep`, Boolean(row) && Number(row.sleep_hours) === 8.5 && row.sleep_quality === 'good', JSON.stringify(row));
   return row;
 }
 
@@ -327,7 +340,7 @@ async function reviewDay(day, i, { ticks, win = false, tomorrow = [] }) {
   pass(`${tag}: Went well`, (await heading()) === 'What went well today?', await heading());
   await body().locator('textarea').first().fill(`Day ${i + 1} went to plan.`);
   if (win) {
-    await page.getByRole('button', { name: 'Add unplanned win' }).click();
+    await page.getByRole('button', { name: 'Add an unplanned win' }).click(); // Polish 1: the + square, named by what it adds
     const p = page.getByRole('dialog', { name: 'Add unplanned win' });
     await p.locator('textarea').first().waitFor();
     await p.locator('textarea').first().fill(WIN);
@@ -413,7 +426,8 @@ try {
       }, 15000);
       pass('Tuesday: last night\'s things show on /performance-sprint', Boolean(t));
     }
-    const tomorrow = i < 4 ? [dayThing(i)] : [];
+    // Stage D (Draft 11): "What will you do first tomorrow?" is the commit question, so Friday names one too.
+    const tomorrow = [dayThing(i)];
     await reviewDay(day, i, { ticks: lastNight, tomorrow });
     lastNight = tomorrow;
   }
@@ -446,7 +460,7 @@ try {
   await body().locator('textarea').first().fill(DEBRIEF.adjust);
   await next();
   pass('debrief: Next week', (await heading()) === 'What’s planned for next week?', await heading());
-  await page.getByRole('button', { name: 'Add to-do' }).click();
+  await page.getByRole('button', { name: 'Add a to-do' }).click(); // Polish 1: the + square, named by what it adds
   const panel = page.getByRole('dialog', { name: 'Add to-do' });
   await panel.locator('textarea').first().waitFor();
   await panel.locator('textarea').first().fill(NEXT_TODO);
@@ -454,11 +468,19 @@ try {
   await panel.getByRole('button', { name: 'Add to-do' }).click();
   pass('debrief: the to-do goes to week 5', Boolean(await until(async () => (await page.getByText('Added to week 5.').count()) > 0, 8000)));
   await next();
+  // Stage D (Draft 11): the commit question, which can't be skipped; its answer is a to-do in next week.
+  pass('debrief: What will you do first on Monday?', (await heading()) === 'What will you do first on Monday?', await heading());
+  pass('debrief: the commit question has no Skip', (await page.locator('.ds-tool-skip').count()) === 0);
+  await body().locator('textarea, input').first().fill(MONDAY_FIRST);
+  await next();
   pass('debrief: the summary', /^(Here’s your week, \S+\.|Great week, \S+! You smashed your standard\.)$/.test(await heading()), await heading());
   const streakLine = await page.locator('.ds-stat', { hasText: 'Debrief streak' }).innerText();
   pass('debrief: the streak counts four weeks', streakLine.includes('You’ve debriefed 4 weeks in a row, including this one.'), streakLine);
   const summaryScore = (await page.locator('.ds-stat', { hasText: 'performance score' }).locator('.ds-stat-value').textContent()).trim();
-  pass('debrief: no coach, so no share switch', (await page.getByRole('switch').count()) === 0);
+  // The local stand-in's client has a coach (Alex Morgan), so the share switch shows there; with no coach it never does.
+  const hasCoach = ((await db.from('client_profiles').select('id').eq('user_id', me)).data || []).length > 0;
+  if (hasCoach) results.push('NOTE  debrief: this client has a coach, so the share switch is theirs to set');
+  else pass('debrief: no coach, so no share switch', (await page.getByRole('switch').count()) === 0);
   await shot('debrief-summary');
   await finishWith('Finish my debrief');
   pass('debrief: Finish says so', Boolean(await until(async () => (await page.getByText(/^Week 4 debriefed at \d+%\.$/).count()) > 0, 8000)));
@@ -480,6 +502,8 @@ try {
   const fig = (await db.from('objective_figures').select('value, recorded_on, sprint_week').eq('objective_id', oid('Coaching clients')).eq('sprint_id', sprint.id)).data;
   pass('debrief: the figure is saved for week 4, on its last day', fig.length === 1 && Number(fig[0].value) === 33 && fig[0].recorded_on === SUNDAY && fig[0].sprint_week === WEEK, JSON.stringify(fig));
   const nt = (await db.from('todos').select('sprint_id, planned_week, source').eq('user_id', me).eq('text', NEXT_TODO)).data;
+  const mt = (await db.from('todos').select('sprint_id, planned_week').eq('user_id', me).eq('text', MONDAY_FIRST)).data;
+  pass('debrief: Monday\'s first step is a to-do in week 5', mt.length === 1 && mt[0].sprint_id === sprint.id && mt[0].planned_week === 5, JSON.stringify(mt));
   pass('debrief: next week\'s to-do is in the sprint, week 5', nt.length === 1 && nt[0].sprint_id === sprint.id && nt[0].planned_week === 5 && nt[0].source === 'debrief', JSON.stringify(nt));
 
   // ---------------------------------------------------------- 6: sharing, with no coach

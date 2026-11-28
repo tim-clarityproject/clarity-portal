@@ -251,6 +251,13 @@ export default function EmotionalWashTool({
   const story = storyOf(wash);
   const hasFamily = wordsOf(wash.family).length > 0;
   const line = strengthLine(wash);
+  // "Step n of 9" by the kind of screen (Draft 6's nine screens, the summary the ninth), so the total stays steady
+  // while thoughts are typed and chosen; each thought's own screens say "Thought 2 of 3" above the question (Stage D, P3).
+  const SCREENS = { what: 1, family: 2, words: 3, strength: 4, story: 5, others: 6, d: 7, c: 8 };
+  const placed = (step) => {
+    const n = SCREENS[String(step.key).split(':')[0]];
+    return n ? { ...step, place: { n, of: 9 } } : step;
+  };
 
   const steps = [
     {
@@ -434,7 +441,7 @@ export default function EmotionalWashTool({
     <GuidedTool
       calm
       name={TOOL_NAME}
-      steps={steps}
+      steps={steps.map(placed)}
       finishLabel="Finish my wash"
       draftKey={draftKey}
       initialStep={initialStep}

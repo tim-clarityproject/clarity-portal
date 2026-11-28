@@ -206,3 +206,22 @@ test('Read shows both ways to settle until the client chooses; signed and the PD
   assert.match(invest(agreementPdf({ version: v, raw: { settle_choice: null } })), /up front.*, or .*monthly instalments/, 'unsigned: both ways');
   assert.equal(invest(agreementPdf({ version: { ...v, signedAt: '2026-12-02T18:40:00Z' }, raw: { settle_choice: 'plan' } })), '£18,000, in 6 monthly instalments of £3,000', 'signed: what was signed');
 });
+
+test('a sponsor’s PDF keeps the money clauses their Read shows; the person coached still gets theirs without (Stage D, F2)', async () => {
+  const { agreementPdf } = await import('../../src/lib/pdf/docs/agreement.js');
+  const clauses = await import('../../src/lib/agreements/clauses.js');
+  const T = { ...blankTerms('team'), coaching: 'Leadership team programme', funder: 'org', fundedBy: 'Harbour Rowing', orgName: 'Harbour Rowing',
+    totalMinor: 900000, clientName: 'Jo Patel', coachName: 'Dr. Tim Dutton', coachFirst: 'Tim', startsOn: '2027-01-04', endsOn: '2027-07-02' };
+  const stored = clauses.forStorage(T);
+  const money = stored.filter((c) => c.money === true || c.money === 'true');
+  assert.ok(money.length > 0, 'the team programme has a money clause to keep');
+  const v = { id: 'x', reference: 'CLARITY-AG-0001', version: 1, terms: T, clauses: stored, fundedBy: 'Harbour Rowing', sentAt: '2026-12-01T09:00:00Z' };
+  const titles = (d) => d.sections.map((s) => s.title).filter((t) => /^\d+\. /.test(t));
+  const sponsor = titles(agreementPdf({ version: v, seesMoney: true }));
+  const coached = titles(agreementPdf({ version: v }));
+  assert.equal(sponsor.length, stored.length, 'the sponsor reads every clause, as on Read');
+  assert.ok(money.every((c) => sponsor.some((t) => t.endsWith(c.title))), 'the sponsor keeps the money clauses');
+  assert.equal(coached.length, stored.length - money.length, 'the person coached has no money clause');
+  assert.ok(!money.some((c) => coached.some((t) => t.endsWith(c.title))));
+  assert.deepEqual(sponsor.map((t) => Number(t.split('.')[0])), sponsor.map((_, i) => i + 1), 'numbered with no gaps');
+});

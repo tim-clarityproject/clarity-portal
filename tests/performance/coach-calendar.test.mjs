@@ -264,7 +264,7 @@ test('a repeat edited "this one", "this and following" and "all"', () => {
   const data = { items: [series, lateStandIn] };
   const e = view(data, '2026-11-16', '2026-11-16')[0];
   const planned = cal.moveEntry(e, { day: '2026-11-17', startMin: 14 * 60 }, ctx(data, { scope: 'following' }));
-  assert.equal(planned.words, 'Moved to Tue 14:00.');
+  assert.equal(planned.words, 'Moved to Tue 17 Nov, 14:00.');
   assert.deepEqual(planned.undo.save.map(([, r]) => r.id).sort(), ['s', 's9']);
   assert.equal(planned.undo.remove.length, 1);
   assert.deepEqual(days(apply(apply(data.items, planned), planned.undo)), days(data.items));
@@ -521,7 +521,7 @@ test('drag to create, move and resize in 15-minute steps; typed times in 5-minut
   const entries = view(data, '2026-11-16', '2026-11-20');
   const writing = entries.find((e) => e.key === 'writing');
   const moved = cal.moveEntry(writing, { day: '2026-11-19', startMin: 13 * 60 }, ctx(data));
-  assert.equal(moved.words, 'Moved to Thu 13:00.');
+  assert.equal(moved.words, 'Moved to Thu 19 Nov, 13:00.');
   assert.deepEqual([moved.save[0][1].starts_at, moved.save[0][1].ends_at], [at('2026-11-19', '13:00'), at('2026-11-19', '16:00')]);
   assert.deepEqual(moved.undo, { save: [['coach_cal_items', data.items.find((i) => i.id === 'writing')]], remove: [] });
   const longer = cal.resizeEntry(writing, { endDay: '2026-11-18', endMin: 12 * 60 + 40 }, ctx(data));
@@ -537,14 +537,18 @@ test('moving a client call takes its session with it and tells the client, with 
   const moved = cal.moveEntry(sam, { day: '2026-11-18', startMin: 16 * 60 + 15 }, ctx(data, { coachFirstName: 'Tim' }));
   assert.deepEqual(moved.save.map(([t, r]) => [t, r.id, r.starts_at]), [['coach_cal_items', 'sam', at('2026-11-18', '16:15')], ['coach_sessions', 'ses-sam', at('2026-11-18', '16:15')]]);
   // Nothing sends by itself: without Google the coach is told to tell Sam, and the note is drafted.
-  assert.equal(moved.words, 'Moved to Wed 16:15. Tell Sam the new time.');
+  assert.equal(moved.words, 'Moved to Wed 18 Nov, 16:15. Tell Sam the new time.');
   assert.deepEqual(moved.tell, { name: 'Sam Okafor', subject: 'Our call has moved', body: 'Hi Sam,\n\nI’ve moved our call to Wed 18 Nov at 16:15 UK time. It was Tue 17 Nov at 12:30 UK time.\n\nThe Zoom link stays the same: https://zoom.example/j/1\n\nTim' });
   // With invites going out through Google, M11's words.
-  assert.equal(cal.moveEntry(sam, { day: '2026-11-18', startMin: 16 * 60 + 15 }, ctx(data, { invites: true })).words, 'Moved to Wed 16:15. Sam gets the new time.');
+  assert.equal(cal.moveEntry(sam, { day: '2026-11-18', startMin: 16 * 60 + 15 }, ctx(data, { invites: true })).words, 'Moved to Wed 18 Nov, 16:15. Sam gets the new time.');
   assert.equal(cal.resizeEntry(sam, { endDay: '2026-11-17', endMin: 14 * 60 }, ctx(data, { invites: true })).words, 'Now 12:30 to 14:00. Sam gets the new time.');
   assert.equal(cal.resizeEntry(sam, { endDay: '2026-11-17', endMin: 14 * 60 }, ctx(data)).save[1][1].minutes, 90);
   const group = view(data, '2026-11-17', '2026-11-17').find((e) => e.key === 'kestrel');
-  assert.equal(cal.moveEntry(group, { day: '2026-11-17', startMin: 15 * 60 }, ctx(data, { invites: true })).words, 'Moved to Tue 15:00. Everyone invited gets the new time.');
+  assert.equal(cal.moveEntry(group, { day: '2026-11-17', startMin: 15 * 60 }, ctx(data, { invites: true })).words, 'Moved to Tue 17 Nov, 15:00. Everyone invited gets the new time.');
+  // Stage D, P1: the day and date, and the year only outside this year (writing rule 28).
+  const nextYear = cal.moveEntry(sam, { day: '2027-01-07', startMin: 9 * 60 }, ctx(data, { now: new Date('2026-11-28T10:00:00Z') })).words;
+  assert.equal(nextYear, 'Moved to Thu 7 Jan 2027, 09:00. Tell Sam the new time.');
+  assert.equal(cal.moveEntry(sam, { day: '2027-01-07', startMin: 9 * 60 }, ctx(data, { now: new Date('2027-01-02T10:00:00Z') })).words, 'Moved to Thu 7 Jan, 09:00. Tell Sam the new time.');
   // The client's note is in the client's own time, 12-hour for the US.
   const jordan = view(data, '2026-11-17', '2026-11-17').find((e) => e.key === 'jordan');
   assert.match(cal.moveEntry(jordan, { day: '2026-11-18', startMin: 15 * 60 }, ctx(data)).tell.body, /to Wed 18 Nov at 9:00 am Chicago time\. It was Tue 17 Nov at 9:45 am Chicago time\./);
@@ -564,7 +568,7 @@ test('a call dragged across midnight keeps its length and shows in both days', (
   const e = view(data, '2026-11-17', '2026-11-17')[0];
   const moved = cal.moveEntry(e, { day: '2026-11-17', startMin: 23 * 60 + 30 }, ctx(data));
   assert.deepEqual([moved.save[0][1].starts_at, moved.save[0][1].ends_at], [at('2026-11-17', '23:30'), at('2026-11-18', '00:30')]);
-  assert.equal(moved.words, 'Moved to Tue 23:30. Tell Nora the new time.');
+  assert.equal(moved.words, 'Moved to Tue 17 Nov, 23:30. Tell Nora the new time.');
   const after = view({ items: [moved.save[0][1]] }, '2026-11-17', '2026-11-18');
   assert.deepEqual([after[0].fromDay, after[0].toDay, after[0].minutes], ['2026-11-17', '2026-11-18', 60]);
   const tue = cal.layoutDay(after, '2026-11-17', LON).tiles[0];
@@ -624,7 +628,7 @@ test('to-dos on the calendar: place, move, resize, and Remove from calendar puts
   const e = view(data, '2026-11-18', '2026-11-18')[0];
   assert.deepEqual([e.type, e.sub, e.oneLine, uk(e.startsAt)], ['todo', 'To-do', true, '10:15']);
   const moved = cal.moveEntry(e, { day: '2026-11-19', startMin: 14 * 60 }, ctx(data));
-  assert.deepEqual([moved.save[0][1].planned_on, moved.save[0][1].planned_time, moved.words], ['2026-11-19', '14:00', 'Moved to Thu 14:00.']);
+  assert.deepEqual([moved.save[0][1].planned_on, moved.save[0][1].planned_time, moved.words], ['2026-11-19', '14:00', 'Moved to Thu 19 Nov, 14:00.']);
   const longer = cal.resizeEntry(e, { endDay: '2026-11-18', endMin: 11 * 60 + 15 }, ctx(data));
   assert.deepEqual([longer.save[0][1].minutes, longer.save[0][1].planned_time, longer.words], [60, '10:15', 'Now 10:15 to 11:15.']);
   // Remove from calendar: it keeps its day and loses only its time; Delete is for calendar items only.
@@ -1228,4 +1232,11 @@ test('an event Google gives that can\'t be kept is skipped, and never stops the 
   assert.equal(made[2].time_zone, LON);
   assert.deepEqual([made[3].all_day, made[3].starts_on, made[3].ends_on], [true, '2026-11-20', '2026-11-20']);
   for (const r of made) assert.ok(new Date(r.ends_at) > new Date(r.starts_at));
+});
+
+test('a client’s own session outside this year shows its year on /coaching (Stage D, P2)', () => {
+  const s = { starts_at: at('2027-01-07', '09:00'), minutes: 60 };
+  const year = new Date().getFullYear() === 2027 ? '' : ' 2027';
+  assert.equal(cal.mySessionWords(s, LON), `Thu 7 Jan${year}, 09:00 UK time, 1 hour`);
+  assert.equal(cal.mySessionWords({ starts_at: at(`${new Date().getFullYear()}-12-03`, '09:00'), minutes: 60 }, LON).includes(String(new Date().getFullYear())), false, 'this year: no year');
 });

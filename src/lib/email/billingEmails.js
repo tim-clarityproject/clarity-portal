@@ -64,8 +64,10 @@ export function organisationLine(coachee, poNumber = null) {
  * @param {string|null} [o.coachee]   for an organisation: whose coaching it is ("Sam Reid")
  * @param {string|null} [o.poNumber]  for an organisation: its purchase order, when there is one
  * @param {boolean} [o.toOrganisation] to an organisation's finance contact (its own words: "Pay the invoice")
+ * @param {number} [o.daysOverdue]    how many days overdue it is on the day it's drafted or sent: the 7-day and 14-day
+ *   texts state it truly ("now 9 days past its due date"), the stage still choosing which reminder it is (Stage D, F3)
  */
-export function invoiceReminderEmail({ stage, firstName, number, amountWords, dueDayWords, settleByWords = null, coachFirst, settleLink, coachee = null, poNumber = null, toOrganisation = false }) {
+export function invoiceReminderEmail({ stage, firstName, number, amountWords, dueDayWords, settleByWords = null, coachFirst, settleLink, coachee = null, poNumber = null, toOrganisation = false, daysOverdue = null }) {
   if (!REMINDER_STAGES.includes(stage)) throw new Error('A reminder goes at 3, 7 or 14 days overdue.');
   const inv = oneLine(number);
   const amount = oneLine(amountWords);
@@ -79,6 +81,8 @@ export function invoiceReminderEmail({ stage, firstName, number, amountWords, du
   const settle = org2 ? 'pay' : 'settle';
   const button = { type: 'button', label: org2 ? 'Pay the invoice' : 'Settle my invoice', href: httpsOnly(settleLink) };
   const org = forWhom ? { type: 'text', text: forWhom } : null;
+  // The true count, never fewer days than the stage itself (a reminder drafted late says how late it really is).
+  const late = Number.isInteger(daysOverdue) && daysOverdue >= stage ? daysOverdue : stage;
   const words = {
     3: {
       subject: `Invoice ${inv} is now due`,
@@ -94,7 +98,7 @@ export function invoiceReminderEmail({ stage, firstName, number, amountWords, du
     7: {
       subject: `A reminder about invoice ${inv}`,
       blocks: [
-        { type: 'text', text: `Invoice ${inv} for ${amount} is now 7 days past its due date.` },
+        { type: 'text', text: `Invoice ${inv} for ${amount} is now ${late} days past its due date.` },
         org,
         { type: 'text', text: `Could you ${settle} it this week?` },
         button,
@@ -102,9 +106,9 @@ export function invoiceReminderEmail({ stage, firstName, number, amountWords, du
       ],
     },
     14: {
-      subject: `Invoice ${inv} is 14 days overdue`,
+      subject: `Invoice ${inv} is ${late} days overdue`,
       blocks: [
-        { type: 'text', text: `Invoice ${inv} for ${amount} is now 14 days overdue.` },
+        { type: 'text', text: `Invoice ${inv} for ${amount} is now ${late} days overdue.` },
         org,
         { type: 'text', text: `I’d like to keep our coaching sessions going without a gap, so please ${settle} it by ${by}.` },
         button,

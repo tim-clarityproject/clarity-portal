@@ -70,6 +70,24 @@ test('14 days overdue: the settle-by day is worked out from when it goes (7 days
   assert.throws(() => invoiceReminderEmail({ ...base, stage: 10 }), /3, 7 or 14/);
 });
 
+test('a reminder drafted or sent late states the true days overdue, the stage still choosing which one (Stage D, F3)', () => {
+  const seven = lines(invoiceReminderEmail({ ...base, stage: 7, daysOverdue: 9 }));
+  assert.equal(seven.subject, 'A reminder about invoice CLARITY-1243');
+  assert.equal(seven.body[1], 'Invoice CLARITY-1243 for £3,000 is now 9 days past its due date.');
+  assert.equal(seven.body[2], 'Could you settle it this week?', 'still the 7-day reminder');
+  const fourteen = lines(invoiceReminderEmail({ ...base, stage: 14, daysOverdue: 17, settleByWords: 'Fri 4 Dec' }));
+  assert.equal(fourteen.subject, 'Invoice CLARITY-1243 is 17 days overdue');
+  assert.equal(fourteen.body[1], 'Invoice CLARITY-1243 for £3,000 is now 17 days overdue.');
+  assert.match(fourteen.text, /please settle it by Fri 4 Dec\./, 'still the 14-day reminder');
+  // On its own day, or with no count (or a count under the stage), the words are draft-2's.
+  for (const daysOverdue of [7, null, 5, 7.5]) {
+    assert.equal(lines(invoiceReminderEmail({ ...base, stage: 7, daysOverdue })).body[1], 'Invoice CLARITY-1243 for £3,000 is now 7 days past its due date.');
+  }
+  assert.equal(lines(invoiceReminderEmail({ ...base, stage: 14, daysOverdue: 14, settleByWords: 'Fri 4 Dec' })).subject, 'Invoice CLARITY-1243 is 14 days overdue');
+  // The 3-day one names the due day, not a count, so it reads the same however late.
+  assert.deepEqual(lines(invoiceReminderEmail({ ...base, stage: 3, daysOverdue: 5 })).body, lines(invoiceReminderEmail({ ...base, stage: 3 })).body);
+});
+
 test('an organisation: the finance contact’s name, and the coachee and PO line, whole without a PO', () => {
   assert.equal(organisationLine('Sam Reid', 'PO-7781'), 'It’s for Sam Reid’s coaching, purchase order PO-7781.');
   assert.equal(organisationLine('Sam Reid', ''), 'It’s for Sam Reid’s coaching.');
@@ -133,6 +151,8 @@ test('A change asked for, to the coach from The Clarity Portal, with the section
 });
 
 test('Signed, with the first session line only when one is booked, in the reader’s own zone', () => {
+  // The year only outside this year (writing rule 28; Stage D, P2).
+  const Y = new Date().getFullYear() === 2027 ? '' : ' 2027';
   const withSession = lines(agreementSignedEmail({ firstName: 'Sam', coachFirst: 'Tim', firstSession: { at: instantAt('2027-01-04', '10:00', 'Europe/London'), zone: 'Europe/London', placeKind: 'zoom' } }));
   assert.equal(withSession.subject, 'Your signed coaching agreement');
   assert.deepEqual(withSession.body, [
@@ -140,11 +160,11 @@ test('Signed, with the first session line only when one is booked, in the reader
     'Thanks for signing your coaching agreement.',
     'Your copy is attached, and it’s always in My Account, Coaching.',
     'Let’s get started.',
-    'Your first coaching session is on Mon 4 Jan at 10:00 UK time on Zoom.',
+    `Your first coaching session is on Mon 4 Jan${Y} at 10:00 UK time on Zoom.`,
     'Tim',
   ]);
   const ny = lines(agreementSignedEmail({ firstName: 'Sam', coachFirst: 'Tim', firstSession: { at: instantAt('2027-01-04', '10:00', 'Europe/London'), zone: 'America/New_York' } }));
-  assert.ok(ny.body.includes('Your first coaching session is on Mon 4 Jan at 5:00 am New York time on Zoom.'));
+  assert.ok(ny.body.includes(`Your first coaching session is on Mon 4 Jan${Y} at 5:00 am New York time on Zoom.`));
   const none = lines(agreementSignedEmail({ firstName: 'Sam', coachFirst: 'Tim' }));
   assert.ok(!none.body.some((l) => /first coaching session/.test(l)));
   assert.equal(none.body.at(-1), 'Tim');

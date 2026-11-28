@@ -47,7 +47,9 @@ export const formatDayMonthTime = (value) => {
   const date = parseDbTimestamp(value);
   if (Number.isNaN(date.getTime())) return '';
   const month = date.toLocaleDateString('en-US', { month: 'short' });
-  return `${date.getDate()} ${month}, ${formatClockTime(value)}`;
+  // The year only outside this year (writing rule 28; Stage D, P2).
+  const year = date.getFullYear() === new Date().getFullYear() ? '' : ` ${date.getFullYear()}`;
+  return `${date.getDate()} ${month}${year}, ${formatClockTime(value)}`;
 };
 
 export const formatDateWithOrdinal = (dateStr) => {

@@ -662,6 +662,8 @@ if (part('C') && !others?.length) {
     pass('first: Who sees my answers? with a coach', (await text(page, '.ck-who-lines')).split(/\n+/)[0] === 'Only you and Tim see your answers.');
     await checkScreen(page, 'C opening 1280 light');
     pass('first: Start with my goals', (await text(page, '.ds-guide-next')).toLowerCase() === 'start with my goals');
+    // Stage D, Q2: only the opening screen's quiet word leaves the tool.
+    pass('first: the opening keeps Do this later', (await text(page, '.ds-guide-skip')) === 'Do this later');
     await nextStep(page);
     await until(async () => (await heading(page)) === 'Imagine it’s a year on. How will you know coaching worked?');
     // Stage D: Draft 11's words, and nothing under the question.
@@ -669,7 +671,8 @@ if (part('C') && !others?.length) {
     await page.locator('.ds-guide-example-link').click();
     pass('G1: See an example opens three different examples (question rule 10)', (await page.locator('.ds-guide-examples li').count()) === 3);
     pass('G1: the eye says You and Tim can see this', /you and tim can see this/i.test((await page.locator('.ds-guide-page .ds-page-aside [aria-label]').first().getAttribute('aria-label').catch(() => '')) || ''));
-    pass('first: Do this later, never Skip', (await text(page, '.ds-guide-skip')) === 'Do this later');
+    // Stage D, Q2 (question rule 34): every question but the commit one can be skipped, so the questions say Skip this step.
+    pass('first: Skip this step on the questions (Stage D, Q2)', (await text(page, '.ds-guide-skip')) === 'Skip this step');
     await page.locator('.ds-guide-body textarea').first().fill('I’d lead the board calmly through the merger.');
     await nextStep(page);
     await page.locator('.ds-guide-body textarea').first().fill('A new role in January.');
@@ -681,8 +684,9 @@ if (part('C') && !others?.length) {
     await nextStep(page);
     await until(async () => (await heading(page)) === 'What has got in the way of progress before?');
     await sleep(1200);
-    await page.locator('.ds-guide-skip').click();
-    pass('Do this later: "Saved. Home will ask you to finish before your first session."', Boolean(await toastSeen(page, 'Saved. Home will ask you to finish before your first session.')));
+    // Stage D, Q2: Skip this step moves on now, so the tool is left with its × here.
+    await page.locator('.ds-guide-close').click();
+    pass('×: "Saved. Pick up where you left off from Home."', Boolean(await toastSeen(page, 'Saved. Pick up where you left off from Home.')));
     await until(async () => path(page) === '/welcome');
     await home(page);
     const heldBy2 = await held();

@@ -467,6 +467,9 @@ function CheckinFlow({ userId, today, month, loaded }) {
     label: 'Your goals',
     question: g.question,
     example: g.example,
+    // Every question but the commit one can be skipped (question rule 34; Stage D, Q2): only
+    // the opening screen's "Do this later" leaves the tool.
+    ...(first ? { skipLabel: 'Skip this step', skipMoves: true } : {}),
     // The eye beside the question (Tim, 5 Nov, 11:09).
     eye,
     render: () => (g.three ? (
@@ -495,7 +498,10 @@ function CheckinFlow({ userId, today, month, loaded }) {
     label: <AreaLabel label={q.label} />,
     info: q.why ? { explain: whyExplain(q.why, sharing ? coach : null), helpKey: `checkin-why-${q.why}` } : undefined,
     question: q.question,
-    nudges: q.trip ? [TRIP_NUDGE] : q.nudges,
+    // Nothing under a question (question rule 9; Stage D, Q2): the lines that help someone
+    // answer are behind "See an example", word for word, all at once.
+    example: q.trip ? [TRIP_NUDGE] : q.nudges,
+    ...(first ? { skipLabel: 'Skip this step', skipMoves: true } : {}),
     // One answer moves on by itself, with no Next (Tim, 5 Nov, 10:23); the drinks keep Next.
     oneTap: !q.drinks,
     // The eye beside the question (Tim, 5 Nov, 11:09).
@@ -628,7 +634,7 @@ function CheckinFlow({ userId, today, month, loaded }) {
         role={role}
         skipLabel={first ? 'Do this later' : 'Skip'}
         skipMoves={!first}
-        onSkip={first ? () => leave(LATER_TOAST) : undefined}
+        onSkip={first ? (key) => { if (key === 'start') leave(LATER_TOAST); } : undefined}
         finishLabel={first ? 'Finish my first check-in' : 'Finish my monthly review'}
         saveState={save}
         draftKey={draftKey}

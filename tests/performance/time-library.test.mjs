@@ -207,8 +207,14 @@ test('a Sydney Monday-morning call shows both days', () => {
 
 test('dates are written in words, never numbers', () => {
   const at = instantAt('2026-11-03', '10:00', UK);
-  assert.equal(dayWords(at, UK), 'Tue 3 Nov');
+  assert.equal(dayWords(at, UK, { now: '2026-11-28T10:00:00Z' }), 'Tue 3 Nov');
   assert.equal(dayWords(at, UK, { year: true }), 'Tue 3 Nov 2026');
+  // Stage D, P2: the year only outside this year where the reader is, the clock's unless `now` is given.
+  assert.equal(dayWords(instantAt('2027-01-07', '09:00', UK), UK, { now: '2026-11-28T10:00:00Z' }), 'Thu 7 Jan 2027');
+  assert.equal(dayWords(instantAt('2027-01-07', '09:00', UK), UK, { now: '2027-01-02T10:00:00Z' }), 'Thu 7 Jan');
+  assert.equal(dayWords(instantAt('2027-01-07', '09:00', UK), UK, { year: false, now: '2026-11-28T10:00:00Z' }), 'Thu 7 Jan');
+  // New Year's Eve in London is already the new year in Sydney: the reader's own year decides.
+  assert.equal(dayWords(instantAt('2027-01-01', '09:00', 'Australia/Sydney'), 'Australia/Sydney', { now: '2026-12-31T14:00:00Z' }), 'Fri 1 Jan');
   // A day key: the year with { year: true }, and with today's key only when it isn't today's year (writing rule 28).
   assert.equal(dayKeyWords('2026-11-03'), 'Tue 3 Nov');
   assert.equal(dayKeyWords('2026-11-03', { year: true }), 'Tue 3 Nov 2026');

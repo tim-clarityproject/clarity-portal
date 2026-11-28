@@ -1227,7 +1227,7 @@ PARTS['b-midnight'] = async (role) => {
   let row = await t.one('coach_cal_items', CAL.priyaTue);
   let said = await toast(page);
   pass(`${tag}: a call dragged to 23:30 runs over midnight and keeps its hour`, same(row.starts_at, at(D.tue, '23:30')) && same(row.ends_at, at(D.wed, '00:30')), `${row.starts_at} ${row.ends_at}`);
-  pass(`${tag}: its toast says where it went and to tell the client`, /^Moved to Tue 23:30\. Tell Priya the new time\.$/.test(said), said);
+  pass(`${tag}: its toast says where it went and to tell the client`, /^Moved to Tue \d{1,2} [A-Z][a-z]{2}( \d{4})?, 23:30\. Tell Priya the new time\.$/.test(said) /* Stage D, P1: the day and date */, said);
   if (priya0.session_id) pass(`${tag}: its session goes with it`, same((await t.one('coach_sessions', priya0.session_id)).starts_at, at(D.tue, '23:30')));
   pass(`${tag}: it is drawn on both days: Tuesday to midnight, and Wednesday from midnight`, (await keyed(D.tue).count()) === 1 && (await keyed(D.wed).count()) === 1
     && await keyed(D.wed).first().evaluate((el) => { const c = el.closest('[data-cal-day]').getBoundingClientRect(); const r = el.getBoundingClientRect(); return Math.abs(r.top - c.top) <= 3 && r.height > 4; }).catch(() => false), `${await keyed(D.tue).count()} on Tue; on Wed: ${(await keyed(D.wed).evaluateAll((els) => els.map((el) => `${el.getAttribute('aria-label')} [${el.dataset.calKey.slice(-8)} ${Math.round(el.getBoundingClientRect().top)} ${Math.round(el.getBoundingClientRect().height)}]`))).join(' | ')}`);
@@ -1298,7 +1298,7 @@ PARTS['b-midnight'] = async (role) => {
     const wall = wallClock(row.starts_at, LON);
     console.log(`  COUNT midnight: ${day}: an item dragged to 01:15, in ${what}, is saved at ${wall.time} UK time (${row.starts_at}) and the toast reads “${said}”.`);
     pass(`${tag}: ${day}: an item dragged onto ${what} is saved at a real moment, an hour long, on that day`, mins === 60 && wall.date === day && wall.time === wantWall, `${row.starts_at} for ${mins}`);
-    pass(`${tag}: ${day}: the toast and the tile say the time it was really given`, said === `Moved to Sun ${wall.time}.` && (await tiles(page, day, name).count()) === 1 && new RegExp(`${wall.time} to `).test((await tile(page, day, name).getAttribute('aria-label')) || ''), `${said} / ${await tile(page, day, name).getAttribute('aria-label')}`);
+    pass(`${tag}: ${day}: the toast and the tile say the time it was really given`, said === `Moved to Sun ${Number(day.slice(8))} ${day.slice(5, 7) === '03' ? 'Mar' : 'Oct'}${day.slice(0, 4) === String(new Date().getFullYear()) ? '' : ` ${day.slice(0, 4)}`}, ${wall.time}.` /* Stage D, P1 */ && (await tiles(page, day, name).count()) === 1 && new RegExp(`${wall.time} to `).test((await tile(page, day, name).getAttribute('aria-label')) || ''), `${said} / ${await tile(page, day, name).getAttribute('aria-label')}`);
     // Made new by dragging over the hour itself.
     await dragTo(page, await point(page, day, 60 + 2, 0.8), await point(page, day, 120 - 3, 0.8));
     const quick = page.locator('.cc-cal-quick');

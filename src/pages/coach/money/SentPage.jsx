@@ -128,7 +128,8 @@ async function sentPdf({ version, agreement, clientName, clientEmail }) {
   const tidy = tidyVersion({ ...version, terms, reference: version.reference || agreement?.reference });
   if (!tidy) throw new Error('No version to print.');
   const facts = await businessFacts().catch(() => null);
-  const spec = agreementPdf({ version: tidy, clientName, raw: version, business: facts || null });
+  // A sponsor's agreement prints as the sponsor signed it, money clauses and all (Stage D, F2).
+  const spec = agreementPdf({ version: tidy, clientName, raw: version, business: facts || null, ...(agreement?.kind === 'sponsor' ? { seesMoney: true } : {}) });
   const assets = await loadPdfAssets(spec);
   return renderPdf(spec, { variant: 'light', paper: paperFor({ country: null }), assets });
 }

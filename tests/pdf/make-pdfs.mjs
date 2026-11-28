@@ -1084,7 +1084,8 @@ for (const [name, spec] of Object.entries(DOCS)) {
   const titles = (spec) => spec.sections.filter((x) => x.blocks.length).map((x) => x.title).join(' > ');
   const steps = (spec) => spec.sections[0].blocks[0]?.items || [];
   const normal = GU['Get unstuck, normal'];
-  if (titles(normal) !== 'Your next steps > Your goal > What’s in the way > What’s already working > Your options') problems.push(`the sections are in the wrong order: ${titles(normal)}`);
+  // Draft 11 (Tim's answer 8): Get unstuck asks what's working first, and the PDF follows the summary's order.
+  if (titles(normal) !== 'Your next steps > Your goal > What’s already working > What’s in the way > Your options') problems.push(`the sections are in the wrong order: ${titles(normal)}`);
   if (normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ') !== 'Your goal: Cut our time to hire to 30 days by March.; Next steps: 3 next steps; Options you thought of: 5 options') problems.push('At a glance is not the goal, the next steps and the options');
   if (steps(normal).join(' | ') !== 'Agree a 48-hour feedback rule with the four hiring managers\nIt’s in this week’s sprint. | Book Priya for 30 minutes at Thursday’s team meeting\nIt’s in your backlog. | Ask the recruiter to draft the careers page') problems.push('a next step doesn’t say where it is');
   if (normal.details.join(' · ') !== 'Sam Carter · Fri 13 Nov 2026 · Get unstuck plan' || !normal.updatedAt) problems.push(`the details line reads "${normal.details.join(' · ')}"`);
@@ -1149,27 +1150,34 @@ for (const [name, spec] of Object.entries(DOCS)) {
   if (problems.length) failed += 1;
 }
 
-// ---- Emotional wash: the summary's order, blanks and trashed thoughts left out, no ratings ----
+// ---- Emotional wash (Draft 6 and Draft 7, 27 Nov): the summary's order, blanks left out, the strength in words ----
+// A wash saved before 27 Nov reads as Your wash does now: its first thought is what you're telling yourself, a parked
+// thought keeps its question under "Parked for now", and a thought let go is listed under "Letting go" (Draft 6).
 {
   const problems = [];
   const titles = (spec) => spec.sections.filter((x) => x.blocks.length).map((x) => x.title).join(' > ');
   const items = (spec, title) => spec.sections.find((x) => x.title === title)?.blocks[0]?.items || [];
+  const text = (spec, title) => (spec.sections.find((x) => x.title === title)?.blocks || []).map((b) => b.text).join(' | ');
   const normal = EW['Emotional wash, normal'];
-  if (titles(normal) !== 'What happened > The feeling > Related to > To act on > To reflect on') problems.push(`the sections are not in the summary's order: ${titles(normal)}`);
-  if (normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ') !== 'The feeling: Present angst; To act on: 1 small step; To reflect on: 1 question') problems.push(`At a glance reads "${normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ')}"`);
-  if (normal.sections[1].blocks.map((b) => b.text).join(' | ') !== 'Present angst | Disappointment, anger and contempt.') problems.push('the feeling is not its kind, then its words as a sentence');
-  if (normal.sections[2].blocks[0].text !== 'Respect and loyalty') problems.push('"Related to" is not said as words');
+  if (titles(normal) !== 'What happened > The feeling > Related to > What you’re telling yourself > To act on > Parked for now > Letting go') problems.push(`the sections are not in the summary's order: ${titles(normal)}`);
+  if (normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ') !== 'The feeling: Disappointment, anger and contempt; To act on: 1 step') problems.push(`At a glance reads "${normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ')}"`);
+  if (text(normal, 'The feeling') !== 'Disappointment, anger and contempt') problems.push(`the feeling reads "${text(normal, 'The feeling')}"`);
+  if (text(normal, 'Related to') !== 'Respect and loyalty') problems.push('"Related to" is not said as words');
+  if (text(normal, 'What you’re telling yourself') !== 'The chair has never rated me.') problems.push('the first thought is not what you’re telling yourself');
   if (items(normal, 'To act on').join(' | ') !== 'Ask the chair for 20 minutes before the next board meeting.\nIt’s in this week’s to-dos.') problems.push('a step doesn’t say where it is');
-  if (items(normal, 'To reflect on').join(' | ') !== 'What would show me where I stand with the chair?') problems.push('the question to reflect on is missing');
+  if (items(normal, 'Parked for now').join(' | ') !== 'The chair has never rated me.\nWhat would show me where I stand with the chair?') problems.push('a parked thought has lost its question');
+  if (items(normal, 'Letting go').join(' | ') !== 'If I push back, I’ll look weak.') problems.push('a thought let go is not under Letting go');
   if (normal.details.join(' · ') !== 'Sam Carter · Sat 14 Nov 2026 · Emotional wash') problems.push(`the details line reads "${normal.details.join(' · ')}"`);
-  if (JSON.stringify(normal).includes('look weak')) problems.push('a trashed thought is in the PDF');
   if (items(EW['Emotional wash, not added'], 'To act on').join('') !== 'Ask the chair for 20 minutes.') problems.push('a step that wasn’t added says where it is');
   const blankDoc = EW['Emotional wash, blank answers'];
-  if (titles(blankDoc) !== 'What happened > The feeling') problems.push(`blank answers are not left out: ${titles(blankDoc)}`);
-  if (titles(EW['Emotional wash, nothing to act on']) !== 'What happened > The feeling > Related to') problems.push(`with every thought trashed, a section is still there: ${titles(EW['Emotional wash, nothing to act on'])}`);
+  if (titles(blankDoc) !== 'What happened > Letting go') problems.push(`blank answers are not left out: ${titles(blankDoc)}`);
+  if (titles(EW['Emotional wash, nothing to act on']) !== 'What happened > The feeling > Related to > What you’re telling yourself > Letting go') problems.push(`with nothing to act on: ${titles(EW['Emotional wash, nothing to act on'])}`);
+  const now = EW['Emotional wash, 27 Nov'];
+  if (!/^What happened > The feeling > How strong it is > What you’re telling yourself > To act on > Parked for now > Letting go$/.test(titles(now))) problems.push(`Draft 6's wash: ${titles(now)}`);
   for (const [name, spec] of Object.entries(EW)) {
     if (spec.glance.length < 2 || spec.glance.length > 4 || spec.glance.some((g) => !String(g.value).trim())) problems.push(`${name}: At a glance has ${spec.glance.length} item(s), or an empty one`);
-    if (/how strong|\/10|out of 10|\bstrength\b/i.test(JSON.stringify(spec))) problems.push(`${name}: has a strength rating`);
+    // Draft 7: the strength is a word, Slight to Intense, never a number.
+    if (/\/10|out of 10|"How strong","value":"?\d/i.test(JSON.stringify(spec))) problems.push(`${name}: has the strength as a number`);
     if (only && !name.includes(only)) continue;
     let text = '';
     const flatWords = (t) => seen(t).replace(/[\s-]+/g, '');
@@ -1180,7 +1188,7 @@ for (const [name, spec] of Object.entries(DOCS)) {
     said.filter((w) => !/\p{Extended_Pictographic}/u.test(w)).forEach((w) => { if (!text.includes(flatWords(w))) problems.push(`${name}: the PDF's text doesn't hold "${w.slice(0, 50)}"`); });
     spec.sections.filter((x) => !x.blocks.length).forEach((x) => { if (text.toLocaleLowerCase('en-GB').includes(flatWords(x.title).toLocaleLowerCase('en-GB'))) problems.push(`${name}: the empty section "${x.title}" still has its heading`); });
   }
-  report.push(`Emotional wash (the summary's order, blanks and trashed thoughts left out, where each step is, no ratings)\n  ${problems.length ? `PROBLEMS:\n    ${problems.join('\n    ')}` : 'all checks pass'}`);
+  report.push(`Emotional wash (Draft 6 and 7: the summary's order, blanks left out, where each step is, the strength in words)\n  ${problems.length ? `PROBLEMS:\n    ${problems.join('\n    ')}` : 'all checks pass'}`);
   if (problems.length) failed += 1;
 }
 

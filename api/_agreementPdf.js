@@ -212,6 +212,8 @@ export async function sponsorFile(server, versionId) {
     coachSignature: coachSig && coachSig.user_id === coach?.user_id ? safeSignature(coachSig, version.terms?.coachName) : null,
     clientName: org?.name || version.terms?.orgName || '',
     raw: v,
+    // The sponsor funds it, so their file keeps the money clauses their Read shows (Stage D, F2).
+    seesMoney: true,
     sponsorSignature: safeSignature(sponsorSignature, v.sponsor_name),
     business: await businessDetails(),
   });

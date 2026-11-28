@@ -992,15 +992,16 @@ const sessionMinutes = (minutes, was) => (SESSION_LENGTHS.includes(minutes) ? mi
 const whoGets = (e) => (e.item?.group_id || e.session?.group_id ? 'Everyone invited' : firstName(e.title));
 
 /**
- * The toast after a move or a resize: "Moved to Wed 14:00." or "Now 12:30
- * to 14:00.", and for a call who hears: "Sam gets the new time." when
- * invites go out through Google, otherwise "Tell Sam the new time." (the
- * drafted note is offered; nothing sends by itself).
+ * The toast after a move or a resize: "Moved to Wed 18 Nov, 14:00." (the
+ * year too outside this year: "Moved to Thu 7 Jan 2027, 09:00."; Stage D,
+ * P1) or "Now 12:30 to 14:00.", and for a call who hears: "Sam gets the new
+ * time." when invites go out through Google, otherwise "Tell Sam the new
+ * time." (the drafted note is offered; nothing sends by itself).
  */
-export function movedWords({ e, starts_at, ends_at, coachZone, invites = false }) {
+export function movedWords({ e, starts_at, ends_at, coachZone, invites = false, now = null }) {
   const moved = ms(starts_at) !== e.startsAt.getTime();
   const w = wallClock(starts_at, coachZone);
-  const what = moved ? `Moved to ${SHORT_DAYS[w.weekday - 1]} ${w.time}` : `Now ${spanWords(starts_at, ends_at, coachZone)}`;
+  const what = moved ? `Moved to ${zoneDayWords(starts_at, coachZone, { now })}, ${w.time}` : `Now ${spanWords(starts_at, ends_at, coachZone)}`;
   if (!e.isCall || e.kind !== 'client_call') return `${what}.`;
   return invites ? `${what}. ${whoGets(e)} gets the new time.` : `${what}. Tell ${whoGets(e) === 'Everyone invited' ? 'everyone invited' : whoGets(e)} the new time.`;
 }
@@ -1114,19 +1115,19 @@ export function moveEntry(e, to, { coachZone, data = {}, scope = 'one', newId, i
   if (e.type === 'todo') {
     const row = todoAt(e.todo, { day: to.day, startMin: to.startMin, minutes });
     const at = timesAt({ day: row.planned_on, startMin: minutesOfTime(row.planned_time), minutes: row.minutes, coachZone });
-    return plan(data, { save: [[T.todos, row]], words: movedWords({ e, ...at, coachZone }) });
+    return plan(data, { save: [[T.todos, row]], words: movedWords({ e, ...at, coachZone, now }) });
   }
   const at = to.times || timesAt({ day: to.day, startMin: to.startMin, minutes, coachZone });
   if (e.type === 'open') return placeOpen({ block: e.block, ...at }, { data, coachZone, newId, now });
   if (e.type === 'session') {
     if (e.session.recap_sent_at) return refused(SENT_LINE);
     const length = Math.round((ms(at.ends_at) - ms(at.starts_at)) / MIN);
-    return plan(data, { save: [[T.sessions, { ...e.session, starts_at: at.starts_at, minutes: sessionMinutes(length, e.session.minutes) }]], words: movedWords({ e, ...at, coachZone, invites }), tell: movedNote({ e, starts_at: at.starts_at, coachFirstName, coachZone }) });
+    return plan(data, { save: [[T.sessions, { ...e.session, starts_at: at.starts_at, minutes: sessionMinutes(length, e.session.minutes) }]], words: movedWords({ e, ...at, coachZone, invites, now }), tell: movedNote({ e, starts_at: at.starts_at, coachFirstName, coachZone }) });
   }
   const i = e.item;
   if (e.session?.recap_sent_at) return refused(SENT_LINE);
   const tell = e.kind === 'client_call' ? movedNote({ e, starts_at: at.starts_at, coachFirstName, coachZone }) : null;
-  const words = movedWords({ e, ...at, coachZone, invites });
+  const words = movedWords({ e, ...at, coachZone, invites, now });
   if (i.repeat_rule) return plan(data, { ...editRepeat({ series: i, on: e.on, scope, times: at, items: data.items || [], newId }), words, tell });
   const shift = ms(at.starts_at) - ms(i.starts_at);
   const length = Math.round((ms(at.ends_at) - ms(at.starts_at)) / MIN);

@@ -252,7 +252,7 @@ async function run() {
       await dragTile(page, admin(), { fromDay: D.wed, toDay: D.wed, minutes: 60 });
       let row = await t.one('coach_cal_items', CAL.admin);
       pass(`${tag}: a tile dragged an hour later moves an hour, in quarter hours`, same(row.starts_at, at(D.wed, '15:00')) && same(row.ends_at, at(D.wed, '17:00')), `${row.starts_at} ${await toast(page)}`);
-      pass(`${tag}: and says where it went`, /^Moved to Wed 15:00/.test(await toast(page)), await toast(page));
+      pass(`${tag}: and says where it went`, /^Moved to Wed \d{1,2} [A-Z][a-z]{2}( \d{4})?, 15:00/.test(await toast(page)) /* Stage D, P1 */, await toast(page));
       await page.locator('.cc-cal-day').first().click();
       await page.keyboard.press('Meta+z'); await settle(page, 900);
       row = await t.one('coach_cal_items', CAL.admin);

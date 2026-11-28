@@ -35,7 +35,7 @@ import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { extrasKnown } from '../../lib/performance/answerExtras';
-import { readDayChoices, refreshDayChoices } from '../../lib/performance/dayPlanHabits';
+import { readDayChoices, refreshDayChoices, subscribeDayChoices } from '../../lib/performance/dayPlanHabits';
 import { friendlyError } from '../../lib/friendlyError';
 import { keepForLater, newId, saveOrQueue, useQueueState, useSuperseded } from '../../lib/syncQueue';
 import { toStored } from '../../lib/units';
@@ -229,6 +229,11 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     refreshDayChoices(userId, date).then((changed) => { if (live && changed) setPlanLocal(readDayChoices(userId, date)); });
     return () => { live = false; };
   }, [userId, date]);
+  // Follows the device's copy whenever any refresh changes it (Stage D, F1), as the Daily plan does.
+  useEffect(() => subscribeDayChoices(() => setPlanLocal((was) => {
+    const now = readDayChoices(userId, date);
+    return JSON.stringify(now) === JSON.stringify(was) ? was : now;
+  })), [userId, date]);
   // What the device keeps for this review: the habits ticked, the things
   // ticked on this week's list, and the wins added here.
   const [local, setLocalState] = useState(() => readJson(localKey(userId, date)) || {});

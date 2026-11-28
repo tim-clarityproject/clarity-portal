@@ -79,7 +79,12 @@ const reasonBlocks = (c) => (c.paragraphs || []).flatMap((p) => (typeof p === 's
  *   settle_choice, sponsor_*), for the new parts of the signing record
  * @param {{ kind: 'drawn'|'typed', image?: string, typed_name?: string }|null} [input.sponsorSignature]
  */
-export function agreementPdf({ version: v, signature = null, coachSignature = null, clientName = '', timeZone = ZONE, raw = null, sponsorSignature = null, business = null }) {
+/**
+ * @param {boolean} [input.seesMoney] whether the reader sees the money: by default only a self-funded client does
+ *   (`!fundedBy`); the sponsor who funds it does too (sponsorFile, the coach's Sent), so their PDF keeps the
+ *   investment clause and Main points their Read shows (Stage D, the functionality tester's F2).
+ */
+export function agreementPdf({ version: v, signature = null, coachSignature = null, clientName = '', timeZone = ZONE, raw = null, sponsorSignature = null, business = null, seesMoney = null }) {
   const biz = businessOf(business);
   const words = signingWords(oneLine(v?.terms?.coachFirst) || 'your coach');
   const t = termsFor(v);
@@ -91,7 +96,9 @@ export function agreementPdf({ version: v, signature = null, coachSignature = nu
   const fingerprint = printWords(v.fingerprint);
 
   const newStyle = (v.clauses || []).some(isNewClause);
-  const sees = !v.fundedBy;
+  const sees = typeof seesMoney === 'boolean' ? seesMoney : !v.fundedBy;
+  // The start-now tick and the way of settling are a self-funded client's alone, whoever reads the file.
+  const selfFunded = !v.fundedBy;
   // A signed version keeps what was signed; an unsigned one the client can still choose for reads both ways ('either';
   // the functionality tester, Q1), never "in full, up front" by default.
   const choice = raw?.settle_choice || t.choice || (!v.signedAt && canChoose(t) ? 'either' : null);
@@ -111,9 +118,9 @@ export function agreementPdf({ version: v, signature = null, coachSignature = nu
     }));
   }
   // The signing record's new rows (065): the start-now tick for a self-funded client, and the way of settling chosen.
-  const startRow = raw && sees && raw.start_now != null
+  const startRow = raw && selfFunded && raw.start_now != null
     ? ['Start straight away', raw.start_now ? `Ticked, ${whenWords(raw.start_now_at, zone)}` : 'Not ticked'] : null;
-  const settleRow = raw && sees && raw.settle_choice && canChoose(t)
+  const settleRow = raw && selfFunded && raw.settle_choice && canChoose(t)
     ? ['How it’s settled', raw.settle_choice === 'upfront' ? 'Up front, with 5% off' : 'As planned'] : null;
   const sponsorParty = raw?.sponsor_signed_at ? {
     role: 'Sponsor',
