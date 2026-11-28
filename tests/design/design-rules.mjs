@@ -861,7 +861,10 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
     if (w.split(' ').length < 3) continue;
     const scope = el.closest('.ds-card, .ds-objective, .ds-objed, .ds-carry-row, section[class*="card"]');
     if (!scopes.has(scope)) scopes.set(scope, scopes.size);
-    const key = `${scopes.get(scope)}|${w}`;
+    // An action whose name says what it is for is that thing's own (Stage D: the Dashboard's "Plan it into this week"
+    // under each Strategy below the standard is named "Plan it into this week, for “…”"): counted by that name.
+    const named = (el.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim();
+    const key = `${scopes.get(scope)}|${named || w}`;
     actions.set(key, (actions.get(key) || 0) + 1);
   }
   for (const [key, n] of actions) if (n > 1) say('duplicate', `"${key.slice(key.indexOf('|') + 1).slice(0, 40)}" is offered ${n} times`);

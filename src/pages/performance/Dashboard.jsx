@@ -390,7 +390,10 @@ function SumItem({ item, holding, phone, go }) {
       <div className="dash-sit">
         <b>{item.title}</b>
         {tap.line}
-        {item.fix && <Button variant="text" className="dash-fix" onClick={() => go(item.fix)}>{item.fix.label}</Button>}
+        {/* Each item's own action, named for its Strategy, habit or objective after the words people see (label in
+            name), so three Strategies below the standard are three different actions, never "Plan it into this week"
+            offered three times (Stage D). The words stay the reference's; "it" is the title just above. */}
+        {item.fix && <Button variant="text" className="dash-fix" aria-label={item.fix.name} onClick={() => go(item.fix)}>{item.fix.label}</Button>}
       </div>
       {tap.visual && <div className="dash-siv">{tap.visual}</div>}
     </div>

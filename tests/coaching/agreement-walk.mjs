@@ -190,6 +190,8 @@ async function signTyped(width, mode) {
   await page.waitForTimeout(300);
   await page.getByText('I’ve read this agreement and I agree to it.').click();
   await page.locator('.cl-ticks').getByRole('checkbox').nth(1).click().catch(() => page.locator('.cl-ticks label').nth(1).click());
+  // A tap in the first moment after a step moves is ignored on purpose (ToolFrame's guard, as GuidedTool's NEXT_GUARD_MS).
+  await page.waitForTimeout(450);
   await next(page).click();
   await page.waitForURL(/\/(settle|welcome)/, { timeout: 15000 }).catch(() => {});
   pass('typed: signed with the typed name', /\/(settle|welcome)/.test(page.url()), page.url());

@@ -14,7 +14,7 @@ import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
 import { checkinMonth } from '../../src/lib/performance/checkin.js';
 
-const APP = 'http://localhost:5173';
+const APP = (process.env.APP_URL || 'http://localhost:5173').replace(/\/$/, ''); // APP_URL: the build or dev server on the stand-in
 const TEST_HOST = TARGET_HOST;
 const LOG = process.env.BREAKIT_LOG || 'tmp-phase5-breakit.txt';
 writeFileSync(LOG, '');
@@ -51,6 +51,9 @@ await context.route('**/*', (route) => {
   if (/supabase\.co/.test(url) && !url.includes(TEST_HOST)) return route.abort();
   if (/\/functions\/v1\/|\/api\//.test(url)) return route.abort();
   if (/\/rest\/v1\/checkins/.test(url) && ['POST', 'PATCH'].includes(route.request().method())) writes.push(route.request().postData() || '');
+  // The attacks are on the monthly review: the standing client has a coach on the stand-in's seed, whose first month
+  // would be the First check-in instead, so no coach is answered here, as tests/phase5/checkin.mjs's part A does.
+  if (/\/rest\/v1\/rpc\/my_coach$/.test(url.split('?')[0])) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
   return route.fallback();
 });
 const watch = (p, name) => p.on('pageerror', (e) => errors.push(`${name}: ${e.message}`));
@@ -119,6 +122,9 @@ try {
     const label = (await p2.locator('.ds-guide-next').count()) ? await p2.locator('.ds-guide-next').innerText() : '';
     if (/finish/i.test(label)) { await next(p2); finished = true; break; }
     if (!label) break;
+    // The commit question at the end (Stage D, Draft 11) can't be skipped: what and when, typed.
+    const box = p2.locator('.ds-guide-body textarea, .ds-guide-body input[type=text]').first();
+    if ((await box.count()) && !(await box.inputValue()).trim()) await box.fill('Book the physio this week.');
     await next(p2);
   }
   const toasts = new Set();

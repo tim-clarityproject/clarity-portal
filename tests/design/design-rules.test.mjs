@@ -512,6 +512,15 @@ test('duplicate (walk B, item 10): one action offered twice fails; each row’s 
   const pickRow = (n) => `<div class="ds-pick-wrap"><button class="ds-answer ds-answer--pick" aria-pressed="true">To-do ${n}</button><button class="ds-pick-act" aria-label="Move “To-do ${n}” to the top">Move to top</button></div>`;
   r = await check(`<div class="ds-rows ds-rows--pick" role="group" aria-label="What will you do today?">${pickRow(1)}${pickRow(2)}${pickRow(3)}</div>`);
   assert.ok(!has(r, 'duplicate'), all(r));
+  // Stage D: the Dashboard's "Plan it into this week" under each Strategy below the standard, each named for its
+  // Strategy, is three actions; the same words with no name, or the same name twice, is one action offered again.
+  const fixItem = (name, label) => `<div class="dash-si"><div class="dash-sit"><b>“${name}” has been below your standard for 2 weeks.</b><button class="ds-link dash-fix"${label ? ` aria-label="${label}"` : ''}>Plan it into this week</button></div></div>`;
+  r = await check(['Grow through referrals', 'Sustain my energy', 'Lead the team'].map((n) => fixItem(n, `Plan it into this week, for “${n}”`)).join(''));
+  assert.ok(!has(r, 'duplicate'), all(r));
+  r = await check(['Grow through referrals', 'Sustain my energy'].map((n) => fixItem(n)).join(''));
+  assert.match(all(r), /duplicate: "Plan it into this week" is offered 2 times/);
+  r = await check(['Grow through referrals', 'Grow through referrals'].map((n) => fixItem(n, `Plan it into this week, for “${n}”`)).join(''));
+  assert.ok(has(r, 'duplicate'), all(r));
 });
 
 test('card with no label (walk B, item 11): its first row starts at the padding; pushed down it fails', async () => {

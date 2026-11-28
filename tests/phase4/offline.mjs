@@ -178,6 +178,9 @@ async function newContext(kind) {
     if (/resend\.com|sendgrid|mailgun|postmarkapp|smtp/i.test(url)) return route.abort();
     if (/supabase\.co/.test(url) && !url.includes(TEST_HOST)) return route.abort();
     if (/\/functions\/v1\/|\/api\//.test(url)) return route.abort();
+    // The check-in part is the monthly review: the standing client has a coach on the stand-in's seed, whose month
+    // would be the First check-in, so no coach is answered (as tests/phase5/checkin.mjs's part A does).
+    if (/\/rest\/v1\/rpc\/my_coach$/.test(url.split('?')[0])) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     return route.fallback();
   });
   // Requests to the database, from now on (the pass-through's record).
@@ -215,14 +218,18 @@ const queued = (page) => page.evaluate((id) => {
   const s = JSON.parse(localStorage.getItem(`clarity-sending:${id}`) || '[]');
   return q.length + s.length;
 }, me);
-const heading = async (page) => ((await page.locator('.ds-guide-question, .ds-guide-title').first().textContent().catch(() => '')) || '').trim();
+// The Daily plan runs on ToolFrame since Polish 1, Stage A (.ds-tool-q, its Next the foot's main button); the other
+// tools keep GuidedTool's parts.
+const Q = '.ds-guide-question, .ds-guide-title, .ds-tool-q';
+const NEXT = '.ds-guide-next, .ds-tool-foot .ds-btn--primary';
+const heading = async (page) => ((await page.locator(Q).first().evaluate((el) => (el.classList.contains('ds-tool-q') ? [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('') : el.textContent)).catch(() => '')) || '').trim();
 const bodyText = (page) => page.locator('body').innerText();
 const FIRST_OPEN = 'This page needs a connection the first time it opens on this device, so try again when you’re back online.';
 
 async function next(page) {
   const before = await heading(page);
   for (let i = 0; i < 6; i += 1) {
-    await page.locator('.ds-guide-next').click({ timeout: 5000 });
+    await page.locator(NEXT).first().click({ timeout: 5000 });
     if (await until(async () => (await heading(page)) !== before, 1500)) return;
   }
   throw new Error(`Next didn't move on from "${before}"`);
@@ -236,14 +243,14 @@ async function openPage(page, path, selector) {
 
 // Daily plan, start to Set my day, with the fewest answers.
 async function planMyDay(page) {
-  await openPage(page, '/daily-plan', '.ds-guide-question');
+  await openPage(page, '/daily-plan', '.ds-tool-q');
   for (let i = 0; i < 14; i += 1) {
     const h = await heading(page);
-    const body = page.locator('.ds-guide-body');
+    const body = page.locator('.ds-guide-body, .ds-tool-step-body');
     if (h === 'This was your plan') {
       return until(async () => {
         if (!/\/daily-plan/.test(new URL(page.url()).pathname)) return true;
-        await page.getByRole('button', { name: 'Set my day' }).click({ timeout: 2000 }).catch(() => null);
+        await page.getByRole('button', { name: 'Finish' }).click({ timeout: 2000 }).catch(() => null); // Polish 1: it was Set my day
         return !/\/daily-plan/.test(new URL(page.url()).pathname);
       }, 15000);
     }
@@ -331,7 +338,7 @@ for (const kind of BROWSERS) {
       pass(`${tag}: offline, the calm offline line shows`, Boolean(await until(async () => (await page.locator('.ds-connection').count()) > 0, 20000)));
       pass(`${tag}: offline, the sprint opens with its score`, await openPage(page, '/performance-sprint', '.ds-sdial-big--score'));
       pass(`${tag}: offline, the plan opens with its Strategies`, await openPage(page, '/performance-plan', '.ds-page-title') && Boolean(await until(async () => (await bodyText(page)).includes('Grow through referrals'), 10000)));
-      pass(`${tag}: offline, Daily plan opens`, await openPage(page, '/daily-plan', '.ds-guide-question'));
+      pass(`${tag}: offline, Daily plan opens`, await openPage(page, '/daily-plan', '.ds-tool-q'));
       pass(`${tag}: offline, Daily review opens`, await openPage(page, '/daily-review', '.ds-guide-question'));
       const debrief = await openPage(page, '/performance-sprint/debrief', '.ds-page-title, .ds-guide-question');
       pass(`${tag}: offline, the debrief opens without a load error`, debrief && !(await bodyText(page)).includes('didn’t load') && !(await bodyText(page)).includes(FIRST_OPEN), ((await bodyText(page)).match(/.{0,120}(didn’t load|needs a connection the first time).{0,60}/s) || [''])[0]);
@@ -409,6 +416,9 @@ for (const kind of BROWSERS) {
   const runs = (p) => p.evaluate(() => document.querySelector('script[type=module][src*="/assets/index-"]')?.getAttribute('src'));
   const DRAFT = 'Notes typed just before the update arrived.';
   try {
+    // When the page last asked for anything (the database or the app's own files), for "the page has gone quiet" below.
+    let lastRequest = Date.now();
+    context.on('request', () => { lastRequest = Date.now(); });
     await signInPage(page);
     await until(() => controlled(page), 20000);
     pass(`${tag}: version a runs`, (await runs(page)) === SCRIPT_A);
@@ -420,6 +430,9 @@ for (const kind of BROWSERS) {
     await openPage(page, '/daily-journal', 'textarea');
     const box = page.locator('textarea').first();
     await box.click();
+    // The Journal saves as it goes (Polish 1, Stage B: Done and autosave), so today's entry may hold an earlier run's
+    // words (the other browser's): the box starts empty here.
+    await box.fill('');
     await box.pressSequentially(DRAFT, { delay: 5 });
     await page.evaluate(() => { window.__notReloaded = true; });
     // Version b is deployed; the browser finds and installs it.
@@ -444,6 +457,14 @@ for (const kind of BROWSERS) {
     // Typing stops and the cursor leaves the box; then hidden again.
     await page.evaluate(() => document.activeElement?.blur());
     await page.clock.runFor(12000);
+    // Then the page is left alone until it has gone quiet, as it would be once someone stops and puts the phone down.
+    // The clock jump above runs 12 seconds of the app's timers at once just after the page was shown again, with the
+    // write still failing: the connection is marked lost and found again, and every loader asks again in a burst. A
+    // waiting version's take-over landing in that burst sends requests through the old worker as Chromium stops it;
+    // Chromium starts the old worker again and the take-over never finishes while the test's DevTools keep that
+    // worker running (DY, Stage D: the old worker stopped, then started again, and the new one sat installed with
+    // its skipWaiting() unanswered for over 150 seconds; with the page quiet first it took over every time).
+    await until(async () => Date.now() - lastRequest > 2000, 20000, 250);
     await hide(true);
     await page.clock.runFor(65000);
     const reloaded = await until(() => page.evaluate(() => window.__notReloaded !== true).catch(() => false), 30000, 500);
@@ -578,7 +599,10 @@ for (const kind of BROWSERS) {
       const statement = () => page.evaluate(() => document.querySelector('.ds-statement')?.textContent || '');
       const before = `${await heading(page)}|${await statement()}`;
       const radio = page.locator('.ds-guide-body [role=radio]:not([aria-checked="true"])');
+      // The commit question at the end (Stage D, Draft 11: what and when) can't be skipped: it is typed.
+      const commitBox = (await heading(page)) === 'What will you do first, and when?' ? page.locator('.ds-guide-body textarea').first() : null;
       if (await radio.count()) { await radio.nth(Math.min(1, (await radio.count()) - 1)).click(); answered += 1; }
+      else if (commitBox && !(await commitBox.inputValue()).trim()) { await commitBox.fill('Book the physio on Monday.'); answered += 1; }
       else { await sleep(450); await page.locator('.ds-guide-next').click(); }
       await until(async () => `${await heading(page)}|${await statement()}` !== before, 4000, 150);
     }

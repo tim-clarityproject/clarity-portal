@@ -18,9 +18,10 @@
 //    menu, kept across a reload and on a second device, the 4th greyed out
 //    and untickable, and a pin made offline is sent once the connection is
 //    back.
-// 5. The phone bar at 390px and 360px: Home, the menu and This week, each
-//    44px or more, inside the safe area, no sideways scrolling, the tile
-//    menu above the bar, its tiles opening their routes, Escape closing it.
+// 5. The phone at 390px and 360px (Polish 1, "Frame and menu"; the phone bar
+//    and its tile menu are gone): the header's crosshair, 44px, opens the
+//    frame's menu (Home, pins, the areas, the foot), no sideways scrolling,
+//    each item opening its route, Escape and the × closing it.
 // 6. Measured against M3 at desktop and phone, dark and light (the mock-up
 //    opened as a page, with the real fonts; nothing in it is run but its
 //    own drawing). Known, approved differences are listed as NOTE.
@@ -399,6 +400,9 @@ if (part(4)) {
 
 // ---------------------------------------------------------------- 5: the phone bar
 if (part(5)) {
+  // Polish 1, Stage B ("Frame and menu"; the 25 Nov reference; replaces the phone bar and its tile menu): on a phone
+  // the header's crosshair opens the frame's menu over the page; there is no phone bar. The menu lists Home, the
+  // pinned tools, the areas and the foot as the laptop's column does; Escape, the × or choosing an item closes it.
   await setPins(['meet', 'journal', 'grow']);
   for (const [width, mode] of [[390, 'dark'], [360, 'light']]) {
     const tag = `${width}px ${mode}`;
@@ -406,93 +410,56 @@ if (part(5)) {
     const { page } = c;
     try {
       await goHub(page, '/personal');
-      const bar = page.locator('.ds-phone-bar');
-      pass(`${tag}: the phone bar shows`, await bar.isVisible());
-      const parts = await page.evaluate(() => [...document.querySelectorAll('.ds-phone-bar > a, .ds-phone-bar > button')].map((el) => {
-        const r = el.getBoundingClientRect();
-        return { name: el.getAttribute('aria-label'), w: r.width, h: r.height };
-      }));
-      pass(`${tag}: Home, Menu and This week, in that order`, parts.map((p) => p.name).join(',') === 'Home,Menu,This week', parts.map((p) => p.name).join(','));
-      pass(`${tag}: every bar control is at least 44px by 44px`, parts.every((p) => p.w >= 44 && p.h >= 44), JSON.stringify(parts));
-      const edge = await bar.evaluate((el) => { const r = el.getBoundingClientRect(); return { bottom: r.bottom, left: r.left, right: r.right, vh: window.innerHeight, vw: window.innerWidth }; });
-      pass(`${tag}: the bar sits on the bottom edge, full width`, Math.abs(edge.bottom - edge.vh) < 1 && edge.left === 0 && Math.abs(edge.right - edge.vw) < 1, JSON.stringify(edge));
-      const safe = await page.evaluate(() => {
-        const found = [];
-        for (const sheet of document.styleSheets) {
-          let rules;
-          try { rules = sheet.cssRules; } catch { continue; }
-          const walk = (list) => {
-            for (const r of list) {
-              if (r.selectorText?.includes('.ds-phone-bar') && /safe-area-inset-bottom/.test(r.cssText)) found.push(r.selectorText);
-              if (r.cssRules) walk(r.cssRules);
-            }
-          };
-          walk(rules);
-        }
-        return found.length > 0;
-      });
-      pass(`${tag}: the bar keeps clear of the home bar (safe-area-inset-bottom)`, safe);
+      pass(`${tag}: no phone bar`, (await page.locator('.ds-phone-bar').count()) === 0);
+      const cross = page.locator('.hdr-frame .hdr-frame-menu, .ds-frame-phead .ds-mbtn').filter({ visible: true }).first();
+      const cb = await cross.evaluate((el) => { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, w: r.width, h: r.height, vw: window.innerWidth }; });
+      pass(`${tag}: the header's crosshair opens the menu, a 44px tap area at the left`, cb.w >= 43.5 && cb.h >= 43.5 && cb.left >= 0 && cb.left < cb.vw / 2 && cb.top >= 0, JSON.stringify(cb));
       for (const to of ['/welcome', '/personal', '/personal/plan', '/personal/reset', '/personal/review', '/interpersonal', '/strategic', '/my-account']) {
         await page.goto(`${APP}${to}`);
-        await until(async () => (await page.locator('.ds-phone-bar').count()) > 0, 20000);
+        await until(async () => (await page.locator('.hdr-frame-menu, .ds-frame-phead .ds-mbtn').count()) > 0, 20000);
         await sleep(400);
         const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
         pass(`${tag}: no sideways scrolling on ${to}`, over <= 0, `${over}px`);
       }
 
+      const openMenu = async () => {
+        await page.locator('.hdr-frame .hdr-frame-menu, .ds-frame-phead .ds-mbtn').filter({ visible: true }).first().click();
+        await page.waitForSelector('#ds-phone-menu .ds-mi', { timeout: 5000 });
+      };
+      const shut = () => until(async () => (await page.locator('#ds-phone-menu').count()) === 0, 3000);
       await goHub(page, '/personal/plan');
-      await openPhoneMenu(page);
+      await openMenu();
       await shot(page, `phone-menu-${width}-${mode}`);
-      pass(`${tag}: the centre crosshair says the menu is open`, (await page.locator('.ds-bar-menu').getAttribute('aria-expanded')) === 'true');
-      pass(`${tag}: the crosshair turns 45 degrees`, await until(async () => /matrix\(0\.707/.test(await page.locator('.ds-bar-menu .ds-bold-cross').evaluate((el) => getComputedStyle(el).transform)), 3000));
-      const tiles = (await page.locator('.ds-tmenu-tile b').allInnerTexts()).map((t) => t.trim());
-      pass(`${tag}: the four tiles are Personal, Interpersonal, Strategic, My Account`, tiles.join(',') === 'Personal,Interpersonal,Strategic,My Account', tiles.join(','));
-      const geo = await page.evaluate(() => {
-        const m = document.querySelector('.ds-tmenu').getBoundingClientRect();
-        const b = document.querySelector('.ds-phone-bar').getBoundingClientRect();
-        const t = [...document.querySelectorAll('.ds-tmenu-tile')].map((el) => el.getBoundingClientRect());
-        return { menuBottom: m.bottom, barTop: b.top, tilesTop: Math.min(...t.map((r) => r.top)), vh: window.innerHeight, inside: t.every((r) => r.left >= 0 && r.right <= window.innerWidth), low: Math.min(...t.map((r) => r.top)) >= window.innerHeight * 0.4 };
-      });
-      pass(`${tag}: the menu sits above the bar`, geo.menuBottom <= geo.barTop, JSON.stringify(geo));
-      pass(`${tag}: the menu ends just above the bar`, Math.abs(geo.barTop - geo.menuBottom - 12) < 1, JSON.stringify(geo));
-      pass(`${tag}: the area tiles are in the lower part of the screen, within the thumb's reach`, geo.low, JSON.stringify(geo));
-      pass(`${tag}: the tiles fit the screen`, geo.inside);
-      pass(`${tag}: one coral button in the menu`, (await page.locator('#site-tile-menu .ds-btn--primary').count()) === 1);
-      const cur = await page.locator('.ds-tmenu-tile[aria-current="page"] b').allInnerTexts();
-      pass(`${tag}: Personal is marked as the current area`, cur.join(',') === 'Personal', cur.join(','));
+      const menu = page.locator('#ds-phone-menu');
+      pass(`${tag}: the crosshair says the menu is open, and is now the thin ×`, (await page.locator('#ds-phone-menu .ds-mbtn').getAttribute('aria-expanded')) === 'true' && (await page.locator('#ds-phone-menu .ds-mbtn .ds-x').count()) === 1);
+      const groups = await menu.locator('.ds-mgroup').evaluateAll((gs) => gs.map((g) => [...g.querySelectorAll('.ds-mi')].map((a) => a.textContent.trim())));
+      pass(`${tag}: Home first, the pinned tools next, then the areas`, groups[0]?.join(',') === 'Home' && groups[1]?.length === 3 && groups.some((g) => g.join(',') === 'Dashboard,Plan,Reset,Review') && groups.some((g) => g.join(',') === 'Interpersonal,Strategic'), JSON.stringify(groups));
+      const foot = (await menu.locator('.ds-mfoot .ds-mi, .ds-mfoot .ds-mlegal').allInnerTexts()).map((t) => t.trim());
+      pass(`${tag}: Breathe, My Account, Sign out and Privacy at the foot`, JSON.stringify(foot) === JSON.stringify(['Breathe', 'My Account', 'Sign out', 'Privacy']), foot.join(', '));
+      const geo = await menu.evaluate((el) => { const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, vw: window.innerWidth, wide: el.scrollWidth - el.clientWidth }; });
+      pass(`${tag}: the menu fits the screen`, geo.left >= 0 && geo.right <= geo.vw + 0.5 && geo.wide <= 0, JSON.stringify(geo));
+      pass(`${tag}: no counts and no coral button in the menu`, (await menu.locator('.ds-mi-n').count()) === 0 && (await menu.locator('.ds-btn--primary').count()) === 0);
+      const cur = await menu.locator('.ds-mi[aria-current="page"]').allInnerTexts();
+      pass(`${tag}: Plan is marked as the page you’re on`, cur.map((t) => t.trim()).join(',') === 'Plan', cur.join(','));
       await page.keyboard.press('Escape');
-      pass(`${tag}: Escape closes the menu`, await until(async () => (await page.locator('#site-tile-menu').count()) === 0, 3000));
-      pass(`${tag}: focus goes back to the crosshair`, await page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Menu'));
-      await openPhoneMenu(page);
-      await page.locator('.ds-bar-menu').click();
-      pass(`${tag}: the crosshair closes the menu again`, await until(async () => (await page.locator('#site-tile-menu').count()) === 0, 3000));
-      await openPhoneMenu(page);
-      await page.locator('.ds-tmenu-scrim').click({ position: { x: 20, y: 40 } });
-      pass(`${tag}: a tap on the scrim closes the menu`, await until(async () => (await page.locator('#site-tile-menu').count()) === 0, 3000));
+      pass(`${tag}: Escape closes the menu`, await shut());
+      await openMenu();
+      await page.locator('#ds-phone-menu .ds-mbtn').click();
+      pass(`${tag}: the × closes the menu again`, await shut());
 
-      for (const [name, want] of AREAS.filter((a) => a[0] !== 'Home')) {
-        await goHub(page, name === 'Personal' ? '/strategic' : '/personal');
-        await openPhoneMenu(page);
-        await page.locator('.ds-tmenu-tile b', { hasText: new RegExp(`^${name}$`) }).click();
-        pass(`${tag}: the ${name} tile opens ${want}`, await landsOn(page, want), path(page));
+      for (const [name, want] of MENU_ROWS) {
+        await goHub(page, want === '/strategic' ? '/personal' : '/strategic');
+        await openMenu();
+        await page.locator('#ds-phone-menu .ds-mi', { hasText: new RegExp(`^${name}$`) }).first().click();
+        pass(`${tag}: ${name} opens ${want}, and the menu closes`, (await landsOn(page, want)) && (await shut()), path(page));
       }
       if (width === 390) {
         await goHub(page, '/personal');
-        await openPhoneMenu(page);
-        await page.locator('#site-tile-menu').getByRole('button', { name: 'Log today', exact: true }).click();
-        pass(`${tag}: Log today opens Home's Log today`, await landsOn(page, '/welcome'), path(page));
-        await goHub(page, '/personal');
-        await openPhoneMenu(page);
-        pass(`${tag}: the pinned tools show at the top of the phone menu`, await until(async () => (await page.locator('#site-tile-menu .ds-menu-pins a').count()) === 3, 10000));
+        await openMenu();
+        pass(`${tag}: the pinned tools show in the phone menu`, (await page.locator('#ds-phone-menu .ds-mgroup').nth(1).locator('.ds-mi').count()) === 3);
         await shot(page, `phone-menu-pinned-${width}-${mode}`);
         await page.keyboard.press('Escape');
       }
-      await goHub(page, '/personal');
-      await page.locator('.ds-phone-bar a[aria-label="Home"]').click();
-      pass(`${tag}: Home opens /welcome`, await landsOn(page, '/welcome'), path(page));
-      pass(`${tag}: Home is marked current on Home`, await until(async () => (await page.locator('.ds-phone-bar a[aria-label="Home"]').getAttribute('aria-current')) === 'page', 3000));
-      await page.locator('.ds-phone-bar a[aria-label="This week"]').click();
-      pass(`${tag}: This week opens /performance-sprint`, await landsOn(page, '/performance-sprint'), path(page));
       await goHub(page, '/personal/review');
       pass(`${tag}: Personal's hubs have a back link to Personal on phone`, await page.locator('.ds-hub-back').isVisible());
       await page.locator('.ds-hub-back button').click();
@@ -534,15 +501,6 @@ const PARTS = {
     ['page title', '#dk .page h2.t', '.ds-hub-page .ds-page-title', ['fs', 'ff'], 'The shared PageHeader title is 24px on every page (rule 7); M3 drew 28px.'],
   ],
   phone: [
-    ['phone bar', '#ph .nbar', '.ds-phone-bar', ['h', 'bg']],
-    ['bar button', '#ph .nbar .tb', '.ds-bar-btn', ['minH']],
-    ['bar crosshair button', '#ph .nbar .ctr', '.ds-bar-menu', ['w', 'h']],
-    ['bar crosshair', '#ph .nbar .ctr svg', '.ds-bar-menu .ds-bold-cross', ['w'], 'The bold crosshair uses the shared bar size, 36px (--bold-cross-bar); M3 drew 34px.'],
-    ['bar icon', '#ph .nbar .tb svg', '.ds-bar-icon', ['w']],
-    ['bar icon line', '#ph .nbar .tb svg path', '.ds-bar-btn:not([aria-current]) .ds-bar-icon path', ['stroke']],
-    ['menu tile', '#ph .tl .t', '.ds-tmenu-tile', ['minH', 'pt', 'radius', 'bg']],
-    ['menu tile name', '#ph .tl .t b', '.ds-tmenu-tile b', ['fs', 'color']],
-    ['menu tile line', '#ph .tl .t small', '.ds-tmenu-tile small', ['fs', 'color']],
     ['hub tile (phone)', '#ph .page .hub .ht:not(.big)', '.ds-hub-grid .ds-hub-tile:not(.ds-hub-tile--big)', ['pt', 'pl', 'radius', 'bg']],
     ['hub tile name (phone)', '#ph .page .hub .ht:not(.big) b', '.ds-hub-grid .ds-hub-tile:not(.ds-hub-tile--big) .ds-hub-tile-name', ['fs']],
   ],
@@ -593,9 +551,7 @@ if (part(6)) {
       await goHub(dk.page, '/personal/plan');
       const appDesk = {};
       for (const [what, , as] of PARTS.desktop) if (!/menu|Log today/.test(what)) appDesk[what] = await dk.page.evaluate(MEASURE, as);
-      await openDesktopMenu(dk.page);
-      await sleep(600);
-      for (const [what, , as] of PARTS.desktop) if (/menu|Log today/.test(what)) appDesk[what] = await dk.page.evaluate(MEASURE, as);
+      // No menu to open on a laptop (Polish 1, Stage B: the frame's column), and no M3 menu rows are measured.
       for (const [what, , , fields, known] of PARTS.desktop) compare('desktop', mode, what, mockHub[what], appDesk[what], fields, known);
       await dk.context.close();
 
@@ -603,9 +559,7 @@ if (part(6)) {
       await goHub(ph.page, '/personal/plan');
       const appPhone = {};
       for (const [what, , as] of PARTS.phone) if (!/menu tile/.test(what)) appPhone[what] = await ph.page.evaluate(MEASURE, as);
-      await openPhoneMenu(ph.page);
-      await sleep(600);
-      for (const [what, , as] of PARTS.phone) if (/menu tile/.test(what)) appPhone[what] = await ph.page.evaluate(MEASURE, as);
+      // The phone bar and M3's tile menu are gone (Polish 1, "Frame and menu"): part 5 checks the phone menu.
       for (const [what, , , fields, known] of PARTS.phone) compare('phone', mode, what, mockHub[what], appPhone[what], fields, known);
       await ph.context.close();
     }

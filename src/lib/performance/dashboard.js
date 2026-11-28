@@ -539,13 +539,13 @@ function improvingAndHoldingBack(d, weeks, sprint, objectives, signals) {
         // Named once, as one full sentence with its one action (Phase 5
         // follow-up 2; 5e rules 1 and 9): no second line under it, as the
         // grey week bars already show the weeks below.
-        return { key: `s:${x.id}`, kind: x.kind, title: `“${x.name}” has been below your standard for ${x.weeksBelow || 2} weeks.`, label: x.name, line: null, strip: strategyStrip(x.id), fix: { label: 'Plan it into this week', to: '/performance-sprint', state: { addTodoFor: x.id } } };
+        return { key: `s:${x.id}`, kind: x.kind, title: `“${x.name}” has been below your standard for ${x.weeksBelow || 2} weeks.`, label: x.name, line: null, strip: strategyStrip(x.id), fix: { label: 'Plan it into this week', name: `Plan it into this week, for “${x.name}”`, to: '/performance-sprint', state: { addTodoFor: x.id } } };
       case 'objective_not_moving': {
         const o = byId.get(x.id);
-        return { key: `o:${x.id}`, kind: x.kind, title: x.name, line: o.stillWords, big: { text: '±0' }, fix: { label: 'Review its Strategies', to: '/performance-plan', hash: '#strategies' } };
+        return { key: `o:${x.id}`, kind: x.kind, title: x.name, line: o.stillWords, big: { text: '±0' }, fix: { label: 'Review its Strategies', name: `Review its Strategies, for “${x.name}”`, to: '/performance-plan', hash: '#strategies' } };
       }
       case 'habit_low':
-        return { key: `h:${x.id}`, kind: x.kind, title: habitNames.get(x.id) || x.name, line: `It’s averaged ${m0Round(x.average)}% this sprint.`, repeats: true, mini: habitMini(finished, x.id), fix: { label: 'Make it easier this week', to: '/performance-sprint', state: { openHabit: x.id } } };
+        return { key: `h:${x.id}`, kind: x.kind, title: habitNames.get(x.id) || x.name, line: `It’s averaged ${m0Round(x.average)}% this sprint.`, repeats: true, mini: habitMini(finished, x.id), fix: { label: 'Make it easier this week', name: `Make it easier this week, for “${habitNames.get(x.id) || x.name}”`, to: '/performance-sprint', state: { openHabit: x.id } } };
       case 'recovery_signals': {
         const s = signals.sleep;
         if (x.sleepDown) {

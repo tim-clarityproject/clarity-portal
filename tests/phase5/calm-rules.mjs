@@ -155,7 +155,8 @@ const PAGES_ALL = [
   // (nothing saved); then a guest's start and end pages, on stand-in
   // answers (migration 035 isn't on the test project until Tim runs it).
   ['get-unstuck-goal', '/get-unstuck', 'unstuck:0'],
-  ['get-unstuck-reality', '/get-unstuck', 'unstuck:1'],
+  // Stage D, Draft 11 (Tim's answer 8): what's already working comes first (step 1), so what's in the way is step 2.
+  ['get-unstuck-reality', '/get-unstuck', 'unstuck:2'],
   ['get-unstuck-options', '/get-unstuck', 'unstuck:3'],
   ['get-unstuck-plan', '/get-unstuck', 'unstuck:6'],
   ['guest-start', `/guest/${GUEST_TOKEN}?email=${encodeURIComponent(M9.guestEmail)}`, 'guest:start'],
@@ -546,7 +547,7 @@ for (const width of PAGES.length ? WIDTHS : []) {
         }
         if (kind) {
           await page.waitForSelector(act === 'team:16' || act === 'wash:10' ? '.ds-guide-title' : '.ds-guide-question', { timeout: 20000 });
-          const want = { 'review:1': 'What worked best in this sprint?', 'review:2': 'What would make the next sprint even better?', 'build:4': 'Which days do you work?', 'unstuck:0': 'What do you want to achieve?', 'unstuck:1': 'What’s in the way of', 'unstuck:3': 'What could you do to reach', 'unstuck:6': 'Here’s your plan', 'team:0': 'Who reports to you?', 'team:1': 'How much does Priya Shah trust you as their leader?', 'team:22': 'YOUR TEAM', 'wash:0': 'What happened?', 'wash:2': 'Which word fits best?', 'wash:3': 'How strong is it right now?', 'wash:5': 'What other thoughts come with it?', 'wash:6': 'For “The chair has never rated me”, what will you do with it?', 'wash:9': 'What will you do about “I need to win the board back', 'wash:10': 'YOUR WASH' }[act];
+          const want = { 'review:1': 'What worked best in this sprint?', 'review:2': 'What would make the next sprint even better?', 'build:4': 'Which days do you work?', 'unstuck:0': 'What do you want to achieve?', 'unstuck:2': 'What’s in the way of', 'unstuck:3': 'What could you do to reach', 'unstuck:6': 'Here’s your plan', 'team:0': 'Who reports to you?', 'team:1': 'How much does Priya Shah trust you as their leader?', 'team:22': 'YOUR TEAM', 'wash:0': 'What happened?', 'wash:2': 'Which word fits best?', 'wash:3': 'How strong is it right now?', 'wash:5': 'What other thoughts come with it?', 'wash:6': 'For “The chair has never rated me”, what will you do with it?', 'wash:9': 'What will you do about “I need to win the board back', 'wash:10': 'YOUR WASH' }[act];
           const got = (await page.locator('.ds-guide-question, .ds-guide-title').first().innerText()).replace(/\s+/g, ' ').trim();
           pass(`${tag}: opened on "${want}"`, got.toUpperCase().startsWith(want.toUpperCase()), got);
           const eyes = await page.locator('.ds-guide-question .ds-who, .ds-guide-question .ds-page-aside, .ds-guide-title .ds-who').count();
@@ -984,7 +985,9 @@ if (CHEVRONS) {
         await page2.mouse.move(2, 2);
         await sleep(700);
         const question = await measureChevrons(page2);
-        pass(`chevrons, Health Check question ${width}px: Back's chevron is centred on the tool's name`, question.length >= 1 && chevronsOff(question).length === 0, question.length ? chevronsOff(question).join('; ') : 'no chevron found');
+        if (width >= 1024) pass(`chevrons, Health Check question ${width}px: Back's chevron is centred on the tool's name`, question.length >= 1 && chevronsOff(question).length === 0, question.length ? chevronsOff(question).join('; ') : 'no chevron found');
+        // On a phone the foot's Back is the word alone (rule 29t's Polish 1 note): no chevron to centre, and none drawn.
+        else pass(`chevrons, Health Check question ${width}px: the foot's Back is the word alone`, (await page2.locator('.ds-tool-foot .ds-tool-back').first().isVisible().catch(() => false)) && chevronsOff(question).length === 0, chevronsOff(question).join('; '));
         // The dates: two drop-downs with their arrows.
         await page2.locator('.ds-guide-back').click();
         await page2.locator('button.hc-prow').first().waitFor({ timeout: 10000 });
@@ -995,7 +998,8 @@ if (CHEVRONS) {
         await page2.mouse.move(2, 2);
         await sleep(700);
         const dates = await measureChevrons(page2);
-        pass(`chevrons, Health Check dates ${width}px: every chevron is centred on its text (${dates.length})`, dates.length >= 3 && chevronsOff(dates).length === 0, dates.length ? chevronsOff(dates).join('; ') : 'no chevron found');
+        // The two drop-downs' arrows, and Back's chevron on a laptop (on a phone the foot's Back is the word alone, rule 29t).
+        pass(`chevrons, Health Check dates ${width}px: every chevron is centred on its text (${dates.length})`, dates.length >= (width >= 1024 ? 3 : 2) && chevronsOff(dates).length === 0, dates.length ? chevronsOff(dates).join('; ') : 'no chevron found');
       } catch (e) {
         pass(`chevrons, Health Check ${width}px: measured`, false, e.message.split('\n')[0]);
       }

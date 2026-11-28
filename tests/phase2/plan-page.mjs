@@ -16,7 +16,7 @@
 //    12px inside both screen edges;
 //  - a tile opens its detail (inline on a laptop, a panel on a phone);
 //  - "How the system fits together" opens the pop-up; Escape closes it;
-//  - the header's pill opens the My Mission panel;
+//  - the phone header's My Mission box opens the plan at My Mission (no box on a laptop; walk item 5);
 //  - version history lists versions and one opens.
 // It seeds the plan around a FIXED day and starts every browser's clock on
 // it (tests/phase2/fixed-day.mjs), and waits for the real condition (the
@@ -191,28 +191,25 @@ for (const mode of ['dark', 'light']) {
       pass(`${tag}: Escape closes it`, (await page.locator('.ds-popup').count()) === 0);
       }
 
-      // The header pill opens the My Mission panel.
-      // Polish 1: the frame's My Mission box (.hdr-mbox) on a phone and a laptop alike.
-      await page.locator('.hdr-frame .hdr-mbox').first().click();
-      await page.waitForSelector('.ds-drop', { timeout: 10000 });
-      // Its rise has finished: on a phone it has reached the bottom edge,
-      // and nothing in it is still moving.
-      await page.waitForFunction((ph) => {
-        const d = document.querySelector('.ds-drop');
-        if (!d) return false;
-        const still = d.getAnimations({ subtree: true }).every((a) => a.playState !== 'running');
-        return still && (!ph || Math.abs(window.innerHeight - d.getBoundingClientRect().bottom) <= 1);
-      }, phone, { timeout: 10000, polling: 100 }).catch(() => null);
-      const mp = await page.evaluate(() => {
-        const d = document.querySelector('.ds-drop');
-        const b = d.getBoundingClientRect();
-        return { text: d.textContent, rows: d.querySelectorAll('.ds-mpanel-objectives li').length, bottom: window.innerHeight - b.bottom, top: b.top };
-      });
-      if (phone) pass(`${tag}: My Mission panel rises from the bottom`, Math.abs(mp.bottom) <= 1, `${mp.bottom}px from the bottom`);
-      pass(`${tag}: My Mission panel`, mp.rows === 4 && mp.text.includes('Open my plan') && mp.text.includes('world-class'), JSON.stringify({ rows: mp.rows }));
-      await page.screenshot({ path: out ? `${out}/mission-panel-${width}-${mode}.png` : undefined });
-      await page.keyboard.press('Escape');
-      await gone(page, '.ds-drop');
+      // My Mission (walk item 5, 27 Nov; CLAUDE.md "No My Mission box on a laptop"): the phone header's
+      // box opens the plan at its My Mission card (/performance-plan#my-mission, missionPlace.js), and a
+      // laptop has no box at all (Home and the Dashboard draw MissionLine under their title instead).
+      if (phone) {
+        await page.locator('.hdr-frame .hdr-mbox').first().click();
+        await page.waitForURL(/\/performance-plan#my-mission$/, { timeout: 10000 }).catch(() => null);
+        await page.waitForTimeout(400);
+        const mp = await page.evaluate(() => {
+          const c = document.getElementById('my-mission');
+          if (!c) return null;
+          const b = c.getBoundingClientRect();
+          return { url: location.pathname + location.hash, text: c.textContent, top: b.top, inView: b.top >= 0 && b.top < window.innerHeight - 40 };
+        });
+        pass(`${tag}: the My Mission box opens the plan at My Mission`, Boolean(mp && mp.url === '/performance-plan#my-mission' && mp.inView && mp.text.includes('world-class') && mp.text.includes('Edit')), JSON.stringify(mp && { url: mp.url, top: Math.round(mp.top) }));
+        await page.screenshot({ path: out ? `${out}/mission-place-${width}-${mode}.png` : undefined });
+      } else {
+        const boxes = await page.locator('.hdr-frame .hdr-mbox').evaluateAll((l) => l.filter((b) => b.getBoundingClientRect().width > 0).length);
+        pass(`${tag}: no My Mission box on a laptop`, boxes === 0, `${boxes} shown`);
+      }
     }
 
     if (width === 1280 || width === 390) {

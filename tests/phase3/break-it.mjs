@@ -210,16 +210,25 @@ async function signedIn({ width = 1280, mode = 'dark', timezoneId = 'Europe/Lond
   return { context, page };
 }
 const shot = async (page, name) => { if (out) await page.screenshot({ path: `${out}/${name}.png`, fullPage: false }); };
-const heading = async (page) => ((await page.locator('.ds-guide-question, .ds-guide-title').first().textContent().catch(() => '')) || '').trim();
-const toolName = async (page) => ((await page.locator('.ds-guide-name').first().textContent().catch(() => '')) || '').trim();
-const body = (page) => page.locator('.ds-guide-body');
+// The Daily plan runs in focus mode on ToolFrame since Polish 1, Stage A (.ds-tool-q, its Next the foot's main
+// button, Back .ds-tool-back); the Daily review and the debrief keep GuidedTool's parts. Both are read here.
+const Q = '.ds-guide-question, .ds-guide-title, .ds-tool-q';
+const NEXT = '.ds-guide-next, .ds-tool-foot .ds-btn--primary';
+const BACK = '.ds-guide-back, .ds-tool-back';
+const heading = async (page) => ((await page.locator(Q).first().evaluate((el) => (el.classList.contains('ds-tool-q') ? [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('') : el.textContent)).catch(() => '')) || '').trim();
+const toolName = async (page) => ((await page.locator('.ds-guide-name, .ds-tool-step-body > .ds-open-label').first().textContent().catch(() => '')) || '').trim();
+const body = (page) => page.locator('.ds-guide-body, .ds-tool-step-body');
+// A to-do's tick box is named by its words, with ", highest priority" for the day's most important (TodoRow; Stage D,
+// Draft 11: the first chosen is the most important). Its ", highest priority" is a visually hidden span, which the
+// browser reads as a block of its own, so the name has a space before the comma ("… study , highest priority").
+const todoName = (text) => new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}( ?, highest priority)?$`);
 const signedOut = (page) => /\/auth\/login/.test(page.url());
 // No sideways scroll, on the page or inside the tool; what sticks out, if anything.
 const sideways = (page) => page.evaluate(async () => {
   await Promise.race([Promise.all(document.getAnimations().map((a) => a.finished.catch(() => null))), new Promise((r) => { setTimeout(r, 3000); })]);
   const over = [document.documentElement.scrollWidth - window.innerWidth, ...[...document.querySelectorAll('.ds-guide-scroll')].map((s) => s.scrollWidth - s.clientWidth)];
   if (over.every((n) => n <= 1)) return '';
-  const wide = [...document.querySelectorAll('.ds-guide *')].filter((el) => el.getBoundingClientRect().right > window.innerWidth + 1)
+  const wide = [...document.querySelectorAll('.ds-guide *, .ds-tool *')].filter((el) => el.getBoundingClientRect().right > window.innerWidth + 1)
     .map((el) => `${el.tagName.toLowerCase()}.${[...el.classList].join('.')} ${Math.round(el.getBoundingClientRect().right)}`).slice(0, 4);
   return `${over.join(',')} ${wide.join(' | ')}`;
 });
@@ -238,7 +247,7 @@ async function clean(page, what) {
 
 async function open(page, path) {
   await page.goto(`${APP}${path}`);
-  await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+  await page.waitForSelector('.ds-guide-question, .ds-tool-q', { timeout: 30000 });
 }
 // Next: tapped until the question changes (a tap in the first moment
 // after a move is ignored on purpose, so it is tried again).
@@ -247,10 +256,10 @@ async function next(page) {
   for (let i = 0; i < 6; i += 1) {
     // A one-answer screen has no Next and moves on when an answer is
     // tapped (rule 21, 5 Nov): its chosen answer, or the first one.
-    if (await page.locator('.ds-guide-next').count()) await page.locator('.ds-guide-next').click({ timeout: 8000 });
+    if (await page.locator(NEXT).count()) await page.locator(NEXT).first().click({ timeout: 8000 });
     else {
-      const chosen = page.locator('.ds-guide-body [role=radio][aria-checked=true]');
-      await ((await chosen.count()) ? chosen.first() : page.locator('.ds-guide-body [role=radio]').first()).click({ timeout: 8000 });
+      const chosen = body(page).locator('[role=radio][aria-checked=true]');
+      await ((await chosen.count()) ? chosen.first() : body(page).locator('[role=radio]').first()).click({ timeout: 8000 });
     }
     const moved = await until(async () => (await heading(page)) !== before, 1200);
     if (moved) return;
@@ -259,11 +268,11 @@ async function next(page) {
 }
 // Back until the question (or the first step, with question null).
 async function backUntil(page, question) {
-  const there = async () => (question ? (await heading(page)) === question : !(await page.locator('.ds-guide-back').isVisible()));
+  const there = async () => (question ? (await heading(page)) === question : !(await page.locator(BACK).first().isVisible()));
   for (let i = 0; i < 10 && !(await there()); i += 1) {
     const before = await heading(page);
     for (let j = 0; j < 6; j += 1) {
-      await page.locator('.ds-guide-back').click();
+      await page.locator(BACK).first().click();
       if (await until(async () => (await heading(page)) !== before, 1200)) break;
     }
   }
@@ -283,12 +292,32 @@ async function rate(page, n) {
   }
   await page.getByRole('radio', { name, exact: true }).click();
 }
+// The Daily plan's last question holds the commit (Stage D, Draft 11), the one step that can't be skipped:
+// whatever is still empty is filled so Next moves on.
+async function commit(page) {
+  const boxes = body(page).locator('textarea');
+  if (!(await boxes.nth(0).inputValue()).trim()) await boxes.nth(0).fill('Back-to-back calls run over.');
+  await until(async () => (await boxes.count()) > 1, 4000);
+  if (!(await boxes.nth(1).inputValue()).trim()) await boxes.nth(1).fill('Block 11:00 to 12:00.');
+}
+// The debrief's commit (Stage D, Draft 11): "What will you do first on Monday?", the one step that can't be skipped.
+async function monday(page) {
+  if ((await heading(page)) !== DEBRIEF_Q.monday) return;
+  await body(page).locator('textarea').first().fill(`${TAG}: book the physio first thing`);
+  await next(page);
+}
+// The Daily review's commit (Stage D, Draft 11): "What will you do first tomorrow?" can't be skipped, so the first
+// row is filled when it's empty.
+async function firstTomorrow(page) {
+  const first = body(page).getByRole('textbox', { name: 'Priority 1 for tomorrow' });
+  if ((await first.count()) && !(await first.inputValue()).trim()) await first.fill(`${TAG}: first thing tomorrow`);
+}
 async function nextUntil(page, question) {
   for (let i = 0; i < 10 && (await heading(page)) !== question; i += 1) await next(page);
   if ((await heading(page)) !== question) throw new Error(`Never reached "${question}"`);
 }
 // The page has sent everything (no Saving, no Will sync).
-const settled = (page, ms = 20000) => page.waitForFunction(() => !/Saving|Will sync/.test(document.querySelector('.ds-guide-top, .ds-guide')?.innerText || document.body.innerText), null, { timeout: ms }).then(() => true).catch(() => false);
+const settled = (page, ms = 20000) => page.waitForFunction(() => !/Saving|Will sync/.test(document.querySelector('.ds-guide-top, .ds-guide, .ds-tool')?.innerText || document.body.innerText), null, { timeout: ms }).then(() => true).catch(() => false);
 // The last button, pressed until the page leaves the tool.
 async function finishWith(page, label) {
   const gone = await until(async () => {
@@ -314,7 +343,7 @@ async function closeDay(page) {
 // after a move, which the tool ignores on purpose) until the tool is left.
 async function tripleFinish(page) {
   for (let i = 0; i < 8 && new URL(page.url()).pathname !== '/performance-sprint'; i += 1) {
-    await page.locator('.ds-guide-next').click({ clickCount: 3 }).catch(() => null);
+    await page.locator(NEXT).first().click({ clickCount: 3 }).catch(() => null);
     await page.waitForURL((u) => u.pathname === '/performance-sprint', { timeout: 1500 }).catch(() => null);
   }
 }
@@ -340,6 +369,7 @@ const DEBRIEF_Q = {
   way: 'What got in the way?',
   adjust: 'What will you change next week?',
   next: 'What’s planned for next week?',
+  monday: 'What will you do first on Monday?',
 };
 
 // ------------------------------------------------------------------ taps
@@ -352,15 +382,16 @@ if (run('taps')) {
     // ---- Daily plan
     await open(page, '/daily-plan');
     await page.waitForTimeout(900); // past the first moment's guard, so the first tap counts
-    await page.locator('.ds-guide-next').click({ clickCount: 3 });
+    await page.locator(NEXT).first().click({ clickCount: 3 });
     await until(async () => (await heading(page)) !== PLAN_Q.sleep, 3000);
     pass('taps: a triple tap on Next moves one step only', (await heading(page)) === PLAN_Q.gratitude, await heading(page));
     await body(page).locator('textarea').first().fill(`${TAG} grateful`);
     await page.waitForTimeout(900);
-    await page.locator('.ds-guide-next').dblclick();
+    await page.locator(NEXT).first().dblclick();
     await until(async () => (await heading(page)) !== PLAN_Q.gratitude, 3000);
     pass('taps: a double tap on Next moves one step only', (await heading(page)) === PLAN_Q.be, await heading(page));
-    await page.getByRole('radio', { name: 'Decisive' }).click();
+    // Stage D, Q1: the suggestions sit behind "See an example", so the way of being is typed.
+    await body(page).locator('textarea').first().fill('Decisive');
     await next(page);
     pass('taps: on to Do', (await heading(page)) === PLAN_Q.do, await heading(page));
     // Last night's thing, triple tapped: one to-do at most, and the day's picks match the screen.
@@ -381,8 +412,8 @@ if (run('taps')) {
     pass('taps: at most one highest priority', dpt.filter((r) => r.is_top).length <= 1);
     // Add to-do, Add to-do triple tapped.
     const PANEL = `${TAG}: ring the venue`;
-    await page.getByRole('button', { name: 'Add to-do' }).click();
-    const tpanel = page.getByRole('dialog', { name: 'Add to-do' });
+    await page.getByRole('button', { name: 'Add a to-do' }).click(); // walk item 4: the card's add is named "Add a to-do"
+    const tpanel = page.locator('[role=dialog]').last();
     await tpanel.locator('textarea').first().fill(PANEL);
     await tpanel.getByRole('button', { name: 'Add to-do' }).click({ clickCount: 3 });
     await until(async () => (await liveTodos(PANEL)).length >= 1, 10000);
@@ -402,6 +433,7 @@ if (run('taps')) {
     });
     pass('taps: a Strategy triple tapped is saved as shown', savedStrategies.length === shownStrategies, `${savedStrategies.length} saved, ${shownStrategies} shown`);
     await nextUntil(page, PLAN_Q.risk);
+    await commit(page);
     await next(page);
     await tripleFinish(page);
     await page.waitForTimeout(1500);
@@ -412,8 +444,12 @@ if (run('taps')) {
 
     // ---- Daily review
     await open(page, '/daily-review');
-    pass('taps: Review opens on Do', (await heading(page)) === REVIEW_Q.do, await heading(page));
-    const box = page.getByRole('checkbox', { name: PANEL, exact: true }).first();
+    const dayRows = async () => { const pr = (await dayPlans()).find((p) => p.local_date === today); return pr ? (await q(db.from('day_plan_todos').select('todo_id').eq('day_plan_id', pr.id))).length : -1; };
+    // The review draws the device's warmed copy first (warmDevice.js, read after sign-in, before the plan was set) and
+    // refreshes quietly (useCachedLoad): today's choices show once the refresh is in.
+    await until(async () => (await heading(page)) === REVIEW_Q.do, 10000);
+    pass('taps: Review opens on Do', (await heading(page)) === REVIEW_Q.do, `${await heading(page)}; the day holds ${await dayRows()} to-dos; chosen on the plan: ${picked.length}`);
+    const box = page.getByRole('checkbox', { name: todoName(PANEL) }).first();
     await box.click({ clickCount: 3 });
     await settled(page);
     // Wait for the database to agree with the screen, up to 15 seconds.
@@ -447,7 +483,7 @@ if (run('taps')) {
     await next(page);
     pass('taps: on to Went well', (await heading(page)) === REVIEW_Q.well, await heading(page));
     const WIN = `${TAG}: unplanned workshop`;
-    await page.getByRole('button', { name: 'Add unplanned win' }).click();
+    await page.getByRole('button', { name: /^Add (an )?unplanned win$/ }).click(); // walk item 4: the card's add is named "Add an unplanned win"
     const wpanel = page.getByRole('dialog', { name: 'Add unplanned win' });
     await wpanel.locator('textarea').first().fill(WIN);
     await wpanel.getByRole('button', { name: S0 }).click();
@@ -466,7 +502,7 @@ if (run('taps')) {
     await body(page).getByRole('textbox', { name: 'Priority 1 for tomorrow' }).fill(`${TAG}: first thing`);
     // On to "Ready to close the day?" (the summary first; Phase 4, M19).
     await nextUntil(page, 'Ready to close the day?');
-    const finishReview = (await page.locator('.ds-guide-next').textContent()).trim();
+    const finishReview = (await page.locator(NEXT).first().textContent()).trim();
     await tripleFinish(page);
     await page.waitForTimeout(1500);
     const reviews = (await dayReviews()).filter((r) => r.local_date === today);
@@ -493,7 +529,7 @@ if (run('taps')) {
       pass('taps: the once-a-week tick triple tapped is saved as shown, once', on ? days.length === 1 : days.length === 0, `shown ${on}, ${days.length} days logged`);
     } else pass('taps: the once-a-week tick is on the debrief', false);
     const DWIN = `${TAG}: debrief win`;
-    await page.getByRole('button', { name: 'Add unplanned win' }).click();
+    await page.getByRole('button', { name: /^Add (an )?unplanned win$/ }).click(); // walk item 4: the card's add is named "Add an unplanned win"
     const dw = page.getByRole('dialog', { name: 'Add unplanned win' });
     await dw.locator('textarea').first().fill(DWIN);
     await dw.getByRole('button', { name: S0 }).click();
@@ -503,7 +539,7 @@ if (run('taps')) {
     pass('taps: the debrief\'s Add my win triple tapped adds one win', (await myWins(DWIN)).length === 1, `${(await myWins(DWIN)).length}`);
     await nextUntil(page, DEBRIEF_Q.next);
     const DTODO = `${TAG}: next week's to-do`;
-    await page.getByRole('button', { name: 'Add to-do' }).click();
+    await page.getByRole('button', { name: 'Add a to-do' }).click(); // walk item 4: the card's add is named "Add a to-do"
     const dt = page.getByRole('dialog', { name: 'Add to-do' });
     await dt.locator('textarea').first().fill(DTODO);
     await dt.getByRole('radio', { name: S0 }).click();
@@ -512,6 +548,7 @@ if (run('taps')) {
     await settled(page);
     pass('taps: the debrief\'s Add to-do triple tapped adds one to-do', (await liveTodos(DTODO)).length === 1, `${(await liveTodos(DTODO)).length}`);
     await next(page);
+    await monday(page);
     const sw = page.getByRole('switch', { name: `Share with ${COACH}` });
     await sw.click({ clickCount: 3 });
     await settled(page);
@@ -556,7 +593,7 @@ if (run('back')) {
     await page.goBack();
     await page.waitForTimeout(800);
     await page.goForward();
-    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    await page.waitForSelector('.ds-guide-question, .ds-tool-q', { timeout: 30000 });
   };
   try {
     // Daily plan: typed, then Back before the save's delay ran out.
@@ -573,12 +610,16 @@ if (run('back')) {
     // The add panel, Back with the panel open.
     await nextUntil(page, PLAN_Q.do);
     const PT = `${TAG}: half-typed to-do`;
-    await page.getByRole('button', { name: 'Add to-do' }).click();
+    await page.getByRole('button', { name: 'Add a to-do' }).click(); // walk item 4: the card's add is named "Add a to-do"
     await page.getByRole('dialog', { name: 'Add to-do' }).locator('textarea').first().fill(PT);
     await page.waitForTimeout(600);
     await backAndForward();
-    const panelBack = await until(async () => (await page.getByRole('dialog', { name: 'Add to-do' }).locator('textarea').count()) && (await page.getByRole('dialog', { name: 'Add to-do' }).locator('textarea').first().inputValue()) === PT, 8000);
-    pass('back: the half-typed to-do comes back in its panel', Boolean(panelBack));
+    // Back closes an open panel and keeps its typing (useDismissPanel, panelDraft.js; CLAUDE.md "A slide-in panel with
+    // boxes to type in keeps its draft", 22 Nov): the typing comes back the next time it opens.
+    const panelOpen = async () => (await page.getByRole('dialog', { name: 'Add to-do' }).locator('textarea').count()) > 0;
+    if (!(await panelOpen()) && (await heading(page)) === PLAN_Q.do) await page.getByRole('button', { name: 'Add a to-do' }).click();
+    const panelBack = await until(async () => (await panelOpen()) && (await page.getByRole('dialog', { name: 'Add to-do' }).locator('textarea').first().inputValue()) === PT, 8000);
+    pass('back: the half-typed to-do comes back in its panel', Boolean(panelBack), `${await heading(page)}; open ${await panelOpen()}`);
     pass('back: ... and nothing was saved from it', (await liveTodos(PT)).length === 0);
     if (panelBack) await page.getByRole('dialog', { name: 'Add to-do' }).getByRole('button', { name: 'Cancel' }).click();
     await clean(page, 'back, Daily plan');
@@ -644,6 +685,11 @@ if (run('text')) {
     await nextUntil(page, PLAN_Q.risk);
     await body(page).locator('textarea').first().fill(UNBROKEN);
     await body(page).locator('textarea').nth(1).fill('   ');
+    // The commit can't be skipped (Stage D, Draft 11): spaces only are refused, and it stays.
+    await page.waitForTimeout(500);
+    await page.locator(NEXT).first().click();
+    pass('text: a commit of spaces only is refused and stays', Boolean(await until(async () => (await page.getByText('Type what you’ll do to carry on.').count()) === 1, 4000)) && (await heading(page)) === PLAN_Q.risk, await heading(page));
+    await body(page).locator('textarea').nth(1).fill('Block 11:00 to 12:00.');
     await next(page);
     await settled(page);
     const words = await body(page).innerText();
@@ -652,12 +698,12 @@ if (run('text')) {
     pass('text: spaces only count as skipped', (await page.locator('.ds-guide-summary-row, .ds-summary-row, dl > div').filter({ hasText: 'How you want to be' }).innerText().catch(() => '')).includes('Skipped'));
     pass('text: 300 letters with no spaces wrap at 360px', await noSideways(page), await sideways(page));
     const row = (await dayPlans())[0];
-    pass('text: saved as typed, spaces only saved as nothing', row?.grateful_for === MIXED && row.way_of_being == null && row.risk_response == null && row.biggest_risk === UNBROKEN, JSON.stringify({ g: row?.grateful_for?.slice(0, 40), w: row?.way_of_being, r: row?.risk_response }));
+    pass('text: saved as typed, spaces only saved as nothing', row?.grateful_for === MIXED && row.way_of_being == null && row.risk_response === 'Block 11:00 to 12:00.' && row.biggest_risk === UNBROKEN, JSON.stringify({ g: row?.grateful_for?.slice(0, 40), w: row?.way_of_being, r: row?.risk_response }));
     await shot(page, 'text-plan-summary');
     // The to-do panel: spaces only can't be added; tags are text.
     await backUntil(page, PLAN_Q.do);
     if ((await heading(page)) === PLAN_Q.do) {
-      await page.getByRole('button', { name: 'Add to-do' }).click();
+      await page.getByRole('button', { name: 'Add a to-do' }).click(); // walk item 4: the card's add is named "Add a to-do"
       const tp = page.getByRole('dialog', { name: 'Add to-do' });
       await tp.locator('textarea').first().fill('    ');
       // Never greyed out (Phase 8a follow-up, step 2): pressed, it says what's missing and adds nothing.
@@ -683,7 +729,7 @@ if (run('text')) {
     pass('text: Went well keeps 4,000 of 50,000', (await w.inputValue()).length === 4000, `${(await w.inputValue()).length}`);
     pass('text: ... with no sideways scroll', await noSideways(page), await sideways(page));
     const WT = `${TAG} 🎉 שלום <img src=x onerror="window.__pwned=4">`;
-    await page.getByRole('button', { name: 'Add unplanned win' }).click();
+    await page.getByRole('button', { name: /^Add (an )?unplanned win$/ }).click(); // walk item 4: the card's add is named "Add an unplanned win"
     const wp = page.getByRole('dialog', { name: 'Add unplanned win' });
     await wp.locator('textarea').first().fill('   ');
     await wp.getByRole('button', { name: S0 }).click();
@@ -724,6 +770,7 @@ if (run('text')) {
     await body(page).locator('textarea').first().fill(MIXED);
     await nextUntil(page, DEBRIEF_Q.next);
     await next(page);
+    await monday(page);
     await settled(page);
     // The summary shows the score and streak only (M1); the answers stay on their steps.
     pass('text: nothing typed in the debrief runs as code or markup', !(await injected()), await injected());
@@ -793,7 +840,7 @@ if (run('offline')) {
     // Daily review: a tick offline, then a win whose save is cut off mid-way.
     await open(page, '/daily-review');
     await context.setOffline(true);
-    const box = page.getByRole('checkbox', { name: DRAFT, exact: true }).first();
+    const box = page.getByRole('checkbox', { name: todoName(DRAFT) }).first();
     await box.click();
     pass('offline: a tick says Will sync', await willSync());
     await context.setOffline(false);
@@ -801,7 +848,7 @@ if (run('offline')) {
     pass('offline: the tick arrived', Boolean(await until(async () => (await myTodos(DRAFT)).some((t) => t.done_on === today), 15000)));
     await nextUntil(page, REVIEW_Q.well);
     const WIN = `${TAG}: win cut off mid-save`;
-    await page.getByRole('button', { name: 'Add unplanned win' }).click();
+    await page.getByRole('button', { name: /^Add (an )?unplanned win$/ }).click(); // walk item 4: the card's add is named "Add an unplanned win"
     const wp = page.getByRole('dialog', { name: 'Add unplanned win' });
     await wp.locator('textarea').first().fill(WIN);
     await wp.getByRole('button', { name: S0 }).click();
@@ -821,6 +868,7 @@ if (run('offline')) {
     pass('offline: ... with one Confidence Bank row', ev.length === 1, `${ev.length}`);
     // Finish offline.
     await nextUntil(page, REVIEW_Q.tomorrow);
+    await firstTomorrow(page);
     await next(page);
     await context.setOffline(true);
     await closeDay(page);
@@ -840,6 +888,7 @@ if (run('offline')) {
     pass('offline: the debrief says Will sync', await willSync());
     await nextUntil(page, DEBRIEF_Q.next);
     await next(page);
+    await monday(page);
     await finishWith(page, 'Finish my debrief');
     await context.setOffline(false);
     await until(async () => (await debriefs())[0]?.status === 'finished', 25000);
@@ -886,7 +935,7 @@ if (run('refresh')) {
     await s1;
     await page.reload();
     await page.unroute('**/rest/v1/day_plans*');
-    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    await page.waitForSelector('.ds-guide-question, .ds-tool-q', { timeout: 30000 });
     pass('refresh: Daily plan comes back on its step', (await heading(page)) === PLAN_Q.gratitude, await heading(page));
     pass('refresh: ... with the answer', Boolean(await until(async () => (await body(page).locator('textarea').first().inputValue()) === T, 8000)));
     await until(async () => (await dayPlans()).some((x) => x.grateful_for === T), 20000);
@@ -894,10 +943,11 @@ if (run('refresh')) {
     pass('refresh: the answer is saved, on one plan', p.length === 1 && p[0].grateful_for === T, JSON.stringify(p.map((x) => x.grateful_for)));
     // Set my day, refreshed mid-save.
     await nextUntil(page, PLAN_Q.risk);
+    await commit(page);
     await next(page);
     await hold('**/rest/v1/day_plans*', ['PATCH']);
     const s2 = sent('/rest/v1/day_plans', ['PATCH']);
-    await page.locator('.ds-guide-next').click();
+    await page.locator(NEXT).first().click();
     await s2;
     await page.reload();
     await page.unroute('**/rest/v1/day_plans*');
@@ -907,7 +957,7 @@ if (run('refresh')) {
     const onSummary = /This was your plan/.test(await heading(page));
     pass('refresh: Set my day refreshed mid-save is set, or the summary is back to set it again', p2.length === 1 && (p2[0].status === 'finished' || onSummary), `${p2[0]?.status}, "${await heading(page)}"`);
     if (p2[0]?.status !== 'finished' && onSummary) {
-      await finishWith(page, 'Set my day');
+      await finishWith(page, 'Finish'); // Polish 1: the Daily plan's last button is Finish (it was Set my day)
       pass('refresh: ... and it can be set again', Boolean(await until(async () => (await dayPlans()).find((x) => x.local_date === today)?.status === 'finished', 15000)));
     }
     await clean(page, 'refresh, Daily plan');
@@ -916,7 +966,7 @@ if (run('refresh')) {
     await open(page, '/daily-review');
     await nextUntil(page, REVIEW_Q.well);
     const WIN = `${TAG}: win refreshed mid-save`;
-    await page.getByRole('button', { name: 'Add unplanned win' }).click();
+    await page.getByRole('button', { name: /^Add (an )?unplanned win$/ }).click(); // walk item 4: the card's add is named "Add an unplanned win"
     const wp = page.getByRole('dialog', { name: 'Add unplanned win' });
     await wp.locator('textarea').first().fill(WIN);
     await wp.getByRole('button', { name: S0 }).click();
@@ -926,7 +976,7 @@ if (run('refresh')) {
     await s3;
     await page.reload();
     await page.unroute('**/rest/v1/wins*');
-    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    await page.waitForSelector('.ds-guide-question, .ds-tool-q', { timeout: 30000 });
     await until(async () => (await myWins(WIN)).length >= 1 || ((await page.locator('.ds-panel textarea').count()) && (await page.locator('.ds-panel textarea').inputValue()) === WIN), 20000);
     let w = await myWins(WIN);
     const panelBack = (await page.locator('.ds-panel textarea').count()) ? await page.locator('.ds-panel textarea').inputValue() : '';
@@ -940,22 +990,22 @@ if (run('refresh')) {
     pass('refresh: the win ends up saved once', w.length === 1, `${w.length}`);
     // A tick refreshed mid-save.
     await page.goto(`${APP}/daily-review`);
-    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    await page.waitForSelector('.ds-guide-question, .ds-tool-q', { timeout: 30000 });
     await backUntil(page, null);
-    const box = page.getByRole('checkbox', { name: DRAFT, exact: true }).first();
+    const box = page.getByRole('checkbox', { name: todoName(DRAFT) }).first();
     await hold('**/rest/v1/todos*', ['PATCH']);
     const s4 = sent('/rest/v1/todos', ['PATCH']);
     await box.click();
     await s4;
     await page.reload();
     await page.unroute('**/rest/v1/todos*');
-    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    await page.waitForSelector('.ds-guide-question, .ds-tool-q', { timeout: 30000 });
     // The save kept on the device is sent again on the new start: wait for
     // the screen and the database to agree, up to 15 seconds.
     let shownTick = false;
     let savedTick = false;
     await until(async () => {
-      shownTick = (await page.getByRole('checkbox', { name: DRAFT, exact: true }).first().getAttribute('aria-checked').catch(() => null)) === 'true';
+      shownTick = (await page.getByRole('checkbox', { name: todoName(DRAFT) }).first().getAttribute('aria-checked').catch(() => null)) === 'true';
       savedTick = (await myTodos(DRAFT))[0]?.done_on === today;
       return shownTick === savedTick;
     });
@@ -964,11 +1014,19 @@ if (run('refresh')) {
 
     // Finish refused once by the server: it says so plainly, and a second tap finishes.
     await nextUntil(page, REVIEW_Q.tomorrow);
+    await firstTomorrow(page);
     await next(page);
     await nextUntil(page, 'Ready to close the day?');
+    // Every answer's own save is sent first (the commit's, typed just before), so the one refused is Finish's.
+    await settled(page);
+    await page.waitForTimeout(1500);
+    await settled(page);
     let refused = 0;
+    // Finish is sent "newest choice wins" (17 Nov): a plain upsert, a POST, never "only if unchanged" (a PATCH), so the
+    // write refused is the one that finishes the day, whichever method carries it.
     await page.route('**/rest/v1/day_reviews*', async (route) => {
-      if (route.request().method() !== 'PATCH' || refused) return route.fallback();
+      const req = route.request();
+      if (!['PATCH', 'POST'].includes(req.method()) || !/"status":"finished"/.test(req.postData() || '') || refused) return route.fallback();
       refused += 1;
       return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: '23514', message: 'refused for the test', details: null, hint: null }) });
     });
@@ -997,15 +1055,16 @@ if (run('refresh')) {
     await s5;
     await page.reload();
     await page.unroute('**/rest/v1/weekly_debriefs*');
-    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    await page.waitForSelector('.ds-guide-question, .ds-tool-q', { timeout: 30000 });
     pass('refresh: the debrief comes back with the answer', Boolean(await until(async () => (await body(page).locator('textarea').first().inputValue()) === A, 8000)));
     await until(async () => (await debriefs())[0]?.adjust === A, 20000);
     pass('refresh: ... saved, on one debrief', (await debriefs()).length === 1 && (await debriefs())[0].adjust === A);
     await nextUntil(page, DEBRIEF_Q.next);
     await next(page);
+    await monday(page);
     await hold('**/rest/v1/weekly_debriefs*', ['PATCH']);
     const s6 = sent('/rest/v1/weekly_debriefs', ['PATCH']);
-    await page.locator('.ds-guide-next').click();
+    await page.locator(NEXT).first().click();
     await s6;
     await page.reload();
     await page.unroute('**/rest/v1/weekly_debriefs*');
@@ -1109,14 +1168,14 @@ if (run('window')) {
     const { context, page } = await signedIn({ width: 390, timezoneId: c.tz, clock: c.time });
     try {
       await page.goto(`${APP}/performance-sprint/debrief`);
-      await page.waitForSelector('.ds-guide-question, .plan-page', { timeout: 30000 });
+      await page.waitForSelector('.ds-guide-question, .ds-tool-q, .plan-page', { timeout: 30000 });
       await page.waitForTimeout(800);
       const h = await heading(page);
       const words = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
       if (c.open) pass(`window: ${c.what}: week 3's debrief is open`, h === DEBRIEF_Q.numbers, h);
       else pass(`window: ${c.what}: closed, and says so`, h !== DEBRIEF_Q.numbers && /No debrief is open today\.|closed on/.test(words), words.slice(0, 160));
       await page.goto(`${APP}/performance-sprint/debrief/${sprint.id}/${DEBRIEF_WEEK}`);
-      await page.waitForSelector('.ds-guide-question, .plan-page', { timeout: 30000 });
+      await page.waitForSelector('.ds-guide-question, .ds-tool-q, .plan-page', { timeout: 30000 });
       await page.waitForTimeout(800);
       const own = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
       if (!c.open) pass(`window: ${c.what}: week 3's own page says it closed on Wed 21 Oct`, own.includes('The debrief for week 3 closed on Wed 21 Oct.'), own.slice(0, 200));
@@ -1141,6 +1200,7 @@ if (run('window')) {
     pass('window: a debrief carried past the window\'s last midnight stays open on its step', (await heading(page)) === DEBRIEF_Q.adjust, await heading(page));
     await nextUntil(page, DEBRIEF_Q.next);
     await next(page);
+    await monday(page);
     await finishWith(page, 'Finish my debrief');
     await until(async () => (await debriefs())[0]?.status === 'finished', 15000);
     const d = await debriefs();
@@ -1231,12 +1291,13 @@ if (run('dayoff')) {
     await pick.click();
     await until(async () => (await pick.getAttribute('aria-pressed')) === 'true', 5000);
     await nextUntil(page, PLAN_Q.risk);
+    await commit(page);
     await next(page);
     const planScore = (await page.locator('.ds-stat', { hasText: 'Performance score' }).locator('.ds-stat-value').textContent().catch(() => '')).trim();
-    await finishWith(page, 'Set my day');
+    await finishWith(page, 'Finish'); // Polish 1: the Daily plan's last button is Finish (it was Set my day)
     pass('dayoff: Daily plan on a day off is set', (await dayPlans())[0]?.status === 'finished');
     await open(page, '/daily-review');
-    await page.getByRole('checkbox', { name: DRAFT, exact: true }).first().click();
+    await page.getByRole('checkbox', { name: todoName(DRAFT) }).first().click();
     await until(async () => (await myTodos(DRAFT))[0]?.done_on === today, 10000);
     await nextUntil(page, REVIEW_Q.numbers);
     const steps = page.getByRole('textbox', { name: 'Steps today' });
@@ -1246,6 +1307,7 @@ if (run('dayoff')) {
       await steps.blur();
     }
     await nextUntil(page, REVIEW_Q.tomorrow);
+    await firstTomorrow(page);
     await next(page);
     await settled(page);
     const v = sprintPageView(await rowsNow(), { today });
@@ -1266,6 +1328,7 @@ if (run('dayoff')) {
     pass('dayoff: the debrief opens on week 3 with a day off in it', (await heading(page)) === DEBRIEF_Q.numbers, await heading(page));
     await nextUntil(page, DEBRIEF_Q.next);
     await next(page);
+    await monday(page);
     const v3 = sprintPageView(await rowsNow(), { today });
     const raw = v3.weeks[DEBRIEF_WEEK - 1]?.raw;
     const dShown = (await page.locator('.ds-stat', { hasText: 'performance score' }).locator('.ds-stat-value').textContent().catch(() => '')).trim();

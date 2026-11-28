@@ -438,20 +438,22 @@ try {
 
       // Goal
       await page.locator('.ds-guide-body .ds-text').first().fill(M9.goal);
-      await page.locator('.ds-guide-question').click();
+      // The question is clicked at its first letter, only to leave the box: its middle is now the eye (rule 29d,
+      // M9's eye beside the question), which opens "Who can see this?" over the tool.
+      await page.locator('.ds-guide-question').click({ position: { x: 2, y: 2 } });
       await one('goal');
       // Stage D, Draft 11 (Tim's answer 8): what's working comes first, over M9's order.
       await pressNext(page); await onQuestion(page, 'What’s already working');
       await typeRows(page, M9.opps, 'opportunity');
-      await page.locator('.ds-guide-question').click();
+      await page.locator('.ds-guide-question').click({ position: { x: 2, y: 2 } });
       await one('opps');
       await pressNext(page); await onQuestion(page, 'What’s in the way');
       await typeRows(page, M9.cons, 'constraint');
-      await page.locator('.ds-guide-question').click();
+      await page.locator('.ds-guide-question').click({ position: { x: 2, y: 2 } });
       await one('cons');
       await pressNext(page); await onQuestion(page, 'What could you do');
       await typeRows(page, M9.opts, 'option');
-      await page.locator('.ds-guide-question').click();
+      await page.locator('.ds-guide-question').click({ position: { x: 2, y: 2 } });
       await page.evaluate(() => document.querySelector('.ds-guide-scroll').scrollTo(0, 0));
       await one('opts');
       if (want('len')) {
@@ -464,7 +466,7 @@ try {
       await pressNext(page); await onQuestion(page, 'Which options');
       await page.locator('.ds-answer').nth(0).click();
       await page.locator('.ds-answer').nth(1).click();
-      await page.locator('.ds-guide-question').click();
+      await page.locator('.ds-guide-question').click({ position: { x: 2, y: 2 } });
       await one('will');
       await pressNext(page); await onQuestion(page, 'What will you do, and when');
       await page.locator('.ds-nextstep .ds-text').nth(0).fill(M9.acts[0]);
@@ -474,7 +476,7 @@ try {
       await addPanel(page, 'This week');
       await until(async () => (await page.locator('.ds-nextstep-good').count()) === 1, 10000);
       await sleep(5600); // the toast goes
-      await page.locator('.ds-guide-question').click();
+      await page.locator('.ds-guide-question').click({ position: { x: 2, y: 2 } });
       await one('steps');
       if (want('add')) {
         await page.getByRole('button', { name: 'Add next step 2 to this week' }).click();

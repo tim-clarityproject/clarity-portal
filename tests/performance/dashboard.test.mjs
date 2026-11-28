@@ -175,11 +175,14 @@ test('what’s improving and what’s holding you back come from M10, in its ord
   assert.equal(v.current.holdingBack[0].line, null);
   assert.ok(v.current.holdingBack[0].strip?.length, 'the grey week bars stay');
   assert.ok(v.current.holdingBack.length <= 3, 'never more than 3');
-  assert.deepEqual(v.current.holdingBack[0].fix, { label: 'Plan it into this week', to: '/performance-sprint', state: { addTodoFor: 'b' } });
+  // Its action is named for its Strategy after the words people see (Stage D: three Strategies below the standard are
+  // three different actions, never one offered three times).
+  assert.deepEqual(v.current.holdingBack[0].fix, { label: 'Plan it into this week', name: 'Plan it into this week, for “Sustain my energy”', to: '/performance-sprint', state: { addTodoFor: 'b' } });
   const notMoving = v.current.holdingBack.find((x) => x.kind === 'objective_not_moving');
   // Each figure once (Polish 1, walk item 16): the rating itself shows on its row under Objectives and Strategies.
   assert.equal(notMoving.line, 'Your rating hasn’t moved this sprint, while the work behind it is on track.');
   assert.equal(notMoving.fix.label, 'Review its Strategies');
+  assert.equal(notMoving.fix.name, `Review its Strategies, for “${notMoving.title}”`);
   assert.equal(v.current.lead, 'This is week 5 of 8 of Sprint 2.');
   assert.equal(v.current.closedLine, `3 things are improving and ${v.current.holdingBack.length} are holding you back.`);
   // The same lists as M10 itself gives, from the finished weeks.

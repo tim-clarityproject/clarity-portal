@@ -260,6 +260,9 @@ function hiddenBeside() {
     const line = chev.closest('.ds-chevron-line, .chev-line');
     const control = chev.closest('button, a, summary, label, [role=button], [role=combobox]') || line.parentElement;
     if (!control || !shown(control) || !control.contains(line)) continue;
+    // A tool's foot on a phone: Back is the word alone, its chevron hidden on purpose (rule 29t's Polish 1 note,
+    // blocks.css .ds-tool-foot .ds-chevron).
+    if (control.closest('.ds-tool-foot') && window.innerWidth < 1024) continue;
     const lb = line.getBoundingClientRect();
     if (!(lb.width > 0) || getComputedStyle(line).display === 'none') continue;
     // Everything from the control down to the line can be seen; the chevron, or its line, cannot.

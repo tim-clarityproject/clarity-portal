@@ -589,11 +589,17 @@ export function CalendarBar({ title, onPrev, onNext, onToday, view, onView, filt
  * from Home."). `onNext`, `nextLabel` (Next; Finish on the last step),
  * `onBack`, `onSkip`, `nextDisabled`.
  */
+const TOOL_TAP_GUARD_MS = 400; // as GuidedTool's NEXT_GUARD_MS
+
 export function ToolFrame({ step, steps, name, sub, question, eye, hint, onClose, closeLabel = 'Close and save my place', onNext, nextLabel, onBack, onSkip, skipLabel = 'Skip this step', last = false, stepWords, children, className = '' }) {
   useFocusMode(true);
   const pct = last ? 100 : Math.min(100, ((step - 1) / Math.max(1, steps)) * 100 + Math.max(8, 100 / Math.max(1, steps) / 3));
   const headingRef = useRef(null);
-  useEffect(() => { headingRef.current?.focus({ preventScroll: true }); window.scrollTo?.(0, 0); }, [step]);
+  // A second tap this soon after a move is ignored (GuidedTool's NEXT_GUARD_MS), so a double or triple tap on Next
+  // moves one step only and never skips the next question (the break-it tester; Stage D final checks).
+  const movedAt = useRef(0);
+  useEffect(() => { movedAt.current = Date.now(); headingRef.current?.focus({ preventScroll: true }); window.scrollTo?.(0, 0); }, [step]);
+  const guarded = (fn) => (fn ? (e) => { if (Date.now() - movedAt.current < TOOL_TAP_GUARD_MS) return; fn(e); } : fn);
   return (
     <div className={`ds-tool ${className}`.trim()}>
       <div className="ds-tool-bar">
@@ -613,9 +619,9 @@ export function ToolFrame({ step, steps, name, sub, question, eye, hint, onClose
       </div>
       {(onNext || onBack || onSkip) && (
         <div className="ds-tool-foot">
-          {onNext && <button type="button" className="ds-btn ds-btn--primary" onClick={onNext}>{nextLabel || (last ? 'Finish' : 'Next')}</button>}
-          {onBack && <MoreLink back onClick={onBack} className="ds-tool-back">Back</MoreLink>}
-          {onSkip && !last && <button type="button" className="ds-more ds-more--bare ds-tool-skip" onClick={onSkip}>{skipLabel}</button>}
+          {onNext && <button type="button" className="ds-btn ds-btn--primary" onClick={guarded(onNext)}>{nextLabel || (last ? 'Finish' : 'Next')}</button>}
+          {onBack && <MoreLink back onClick={guarded(onBack)} className="ds-tool-back">Back</MoreLink>}
+          {onSkip && !last && <button type="button" className="ds-more ds-more--bare ds-tool-skip" onClick={guarded(onSkip)}>{skipLabel}</button>}
         </div>
       )}
     </div>
