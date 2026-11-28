@@ -3,6 +3,7 @@ import { Loading, PageOpening } from '../../../components/design';
 import { ClausesCard, PointsCard } from '../../coaching/AgreementParts';
 import { readerView } from '../../../lib/coach/agreementBuilder';
 import { mainPoints, resolveChoice } from '../../../lib/agreements/clauses';
+import { agreementNow, isSigned } from '../../../lib/agreements/duringAgreement';
 import '../../coaching/clientAgreement.css';
 import { Back } from '../parts';
 import { useAgreementDraft } from './builderParts';
@@ -21,7 +22,7 @@ export default function Preview() {
   if (!version) return <div className="cc-page"><div className="cc-col">{back}{d.loading ? <Loading label="Loading the agreement" /> : <PageOpening title="The agreement" line="That agreement isn’t here." />}</div></div>;
   const view = d.draft
     ? readerView(version.terms || {}, { standards: d.standards, overrides: version.overrides || {} })
-    : sentView(version);
+    : sentView(version, d.agreement);
   return (
     <div className="cc-page">
       <div className="cc-col ab-page">
@@ -40,10 +41,17 @@ export default function Preview() {
 }
 
 
-/** A version as it was sent: its stored clauses (the choice made, once signed), never worked out again. */
-function sentView(version) {
+/**
+ * A version as it was sent: its stored clauses (the choice made, once signed), never worked out again. Once signed, its
+ * Main points show the end it has now, a pause and an early end, as the client reads them (agreementNow; agreements
+ * rule 25: the Stage D break-it tester saw the end as signed after a pause).
+ */
+function sentView(version, agreement) {
   // Before the client has chosen how to settle, both ways, as they read it (Q1).
   const choice = version.settle_choice || 'either';
   const clauses = resolveChoice(version.clauses || [], choice);
-  return { clauses, points: mainPoints(version.terms || {}, { choice, clauses }) };
+  const t = version.terms || {};
+  const now = agreement && isSigned(version) ? agreementNow(agreement, t) : null;
+  const shown = now?.end && now.end !== t.endsOn ? { ...t, endsOn: now.end } : t;
+  return { clauses, points: mainPoints(shown, { choice, clauses, paused: now?.paused || null, endingOn: now?.endingOn || null }) };
 }

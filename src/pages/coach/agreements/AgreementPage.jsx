@@ -6,13 +6,13 @@ import { calendarLink } from '../../../components/agreements/SessionCheckRow';
 import { AGREEMENT_LINES, agreementLine, insideNote } from '../../../content/pageLines/coach';
 import { hoursPoints, mainPoints, teamPoints } from '../../../lib/agreements/clauses';
 import { offered } from '../../../lib/agreements/coolingOff';
-import { pauseMove, sessionsInPause } from '../../../lib/agreements/endDate';
+import { pausePeople, sessionsInPause } from '../../../lib/agreements/endDate';
 import { balanceLine } from '../../../lib/agreements/hours';
 import { hoursWords } from '../../../lib/agreements/currency';
 import { outcomeLabel, rowAction, usedLine } from '../../../lib/agreements/sessionOutcome';
 import { kindOf } from '../../../lib/agreements/terms';
 import {
-  agreementSessions, agreementTitle, currentEnd, earlyEnd, endEarlyLine, endEarlyOptions, firstSignedVersion, hoursState, isSigned, pauseFromOptions, sessionsIn, settledInvoices, signedDay, statusLine,
+  agreementNow, agreementSessions, agreementTitle, earlyEnd, endEarlyLine, endEarlyOptions, firstSignedVersion, hoursState, isSigned, pauseFromOptions, sessionsIn, settledInvoices, signedDay, statusLine,
   versionInForce,
 } from '../../../lib/agreements/duringAgreement';
 import { coachZoneOf } from '../../../lib/coach/calendar';
@@ -68,11 +68,9 @@ export default function AgreementPage() {
   const k = kindOf(t);
   const signed = isSigned(v);
   const live = signed && !ENDED.includes(a.status);
-  const paused = a.paused_from && a.paused_to ? { from: a.paused_from, to: a.paused_to } : null;
   // The end date now: as extended or paused (the server's own: ends_on, else ending_on with no ending_by), else moved on
-  // by a pause, else as signed (duringAgreement.currentEnd).
-  const moved = currentEnd(a, null);
-  const end = moved || (paused && t.endsOn ? pauseMove(t.endsOn, paused.from, paused.to).end : t.endsOn) || null;
+  // by a pause, else as signed (duringAgreement.agreementNow, as the client reads it).
+  const { end, paused } = agreementNow(a, t);
   const shownTerms = end && end !== t.endsOn ? { ...t, endsOn: end } : t;
   const points = k === 'team' ? teamPoints(shownTerms) : k === 'hours' ? hoursPoints(shownTerms)
     : mainPoints(shownTerms, { choice: v?.settle_choice || t.choice, seesMoney: true, clauses: v?.clauses, paused, endingOn: earlyEnd(a) });
@@ -87,7 +85,7 @@ export default function AgreementPage() {
   // pop-up to move it (its day and times) or cancel it (Delete), as the calendar does: nothing moves by itself, and the
   // client hears only about those the coach changes (the calendar's own session emails).
   const pZone = pauseZone(p, a);
-  const inside = paused && live ? sessionsInPause(p.sessions, { from: paused.from, to: paused.to, profileId: a.profile_id, zone: pZone, now: p.now }) : [];
+  const inside = paused && live ? sessionsInPause(p.sessions, { from: paused.from, to: paused.to, people: pausePeople(a, t), zone: pZone, now: p.now }) : [];
   const hours = k === 'hours' ? hoursState({ agreement: a, terms: t, entries: rowsOf(p.state, 'time_entries'), invoices: p.invoices }) : null;
   const back = client ? () => navigate(`/coach/clients/${client.id}`) : org ? () => navigate(`/coach/organisations/${org.id}`) : () => navigate('/coach/clients');
   // This year's dates without their year (writing rule 28); the Main points are the agreement's terms and keep theirs.
@@ -99,8 +97,9 @@ export default function AgreementPage() {
 
   const actions = [
     live && end && k !== 'hours' && k !== 'oneoff' && { key: 'extend', title: 'Extend the end date', line: 'Move it on, with no change to the price' },
-    // Pause only where the server would take it (F6): one pause per agreement, a day to start it before the end.
-    live && t.pausing !== false && k !== 'hours' && k !== 'oneoff' && end && !a.paused_from && pauseFromOptions(today, end).length > 0 && { key: 'pause', title: 'Pause coaching', line: k === 'retainer' ? 'Dates and invoices move on by the pause' : 'Dates move on by the pause' },
+    // Pause only where the server would take it (F6, pauseProblem): one pause per agreement, a day to start it before the
+    // end, and never once it is ending early (the Stage D break-it tester: the early end would still stop it).
+    live && t.pausing !== false && k !== 'hours' && k !== 'oneoff' && end && !a.paused_from && !earlyEnd(a) && pauseFromOptions(today, end).length > 0 && { key: 'pause', title: 'Pause coaching', line: k === 'retainer' ? 'Dates and invoices move on by the pause' : 'Dates move on by the pause' },
     a.status !== 'cancelled' && { key: 'change', title: 'Make a change', line: 'A new version you both sign' },
     live && !earlyEnd(a) && (!end || endEarlyOptions(today, end).length > 0) && { key: 'end', title: 'End early', line: endEarlyLine(t) },
     canRefund && { key: 'refund', title: 'Give money back', line: 'A refund or credit, with a credit note' },

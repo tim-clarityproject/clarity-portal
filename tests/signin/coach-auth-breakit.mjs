@@ -44,7 +44,7 @@ import { APP, TEST_REF, makeChecks, sleep } from './shared.mjs';
 import { claimsOf, makeWorld, M26_CODES, M26_KEY, MAYA_PASSWORD } from './coachWorld.mjs';
 import { totp } from './totp.mjs';
 import {
-  CODE_DIDNT_WORK, CODES_REPLACED, COACH_AUTH_WORDS, RECOVERY_DIDNT_WORK, SIGNED_OUT_BY_RESET, TYPE_RECOVERY_CODE, usedCodeLine, waitWords, plainKey, keyInGroups, codesLeftSummary,
+  CODE_DIDNT_WORK, CODES_REPLACED, COACH_AUTH_WORDS, RECOVERY_DIDNT_WORK, SIGN_IN_AGAIN, SIGNED_OUT_BY_RESET, TYPE_RECOVERY_CODE, usedCodeLine, waitWords, plainKey, keyInGroups, codesLeftSummary,
 } from '../../src/lib/signIn/coachAuth.js';
 import { CODE_SIX_DIGITS } from '../../src/lib/signIn/words.js';
 import { RESET_WORDS } from '../../api/_routes/coach-auth-reset.js';
@@ -86,10 +86,11 @@ async function device(world, { width = 1440, mode = 'dark', signedIn = false, aa
   const ctx = await browser.newContext({ viewport: { width, height: phone ? 844 : 1000 }, colorScheme: mode, locale: 'en-GB', timezoneId: 'Europe/London', hasTouch: phone, isMobile: phone, serviceWorkers: sw ? 'allow' : 'block', acceptDownloads: true });
   await ctx.addInitScript((m) => { try { localStorage.setItem('clarity-colour-mode', m); } catch { /* the device's mode */ } }, mode);
   if (scale !== 1) await ctx.addInitScript((px) => { document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = `html{font-size:${px}px !important}`; document.head.appendChild(st); }); }, 16 * scale);
-  // Anything of the coach portal itself ever drawn (its frame's classes start cc-).
+  // Anything of the coach portal itself ever drawn (its frame's classes start cc-), but App.jsx's loading cover
+  // (.cc-client-wait: the page colour and the turning crosshair while the role is asked), which shows nothing of it.
   await ctx.addInitScript(() => {
     window.__coachShown = 0;
-    const look = () => { if (document.querySelector('[class^="cc-"], [class*=" cc-"]')) window.__coachShown += 1; };
+    const look = () => { if (document.querySelector('[class^="cc-"]:not(.cc-client-wait), [class*=" cc-"]:not(.cc-client-wait)')) window.__coachShown += 1; };
     new MutationObserver(look).observe(document, { childList: true, subtree: true });
   });
   await world.attach(ctx, { signedOut: !signedIn, aal });
@@ -204,8 +205,10 @@ if (PARTS.includes('sixtabs')) {
   const t2 = await newTab(d.ctx);
   await t2.page.goto(`${APP}/coach/sign-in/code`);
   const code = totp(M26_KEY);
-  for (const p of [d.page, t2.page]) { await codeBox(p).waitFor({ timeout: 15000 }); await codeBox(p).fill(code); }
-  await Promise.all([d.page.locator('.si-btn').first().dispatchEvent('click'), t2.page.locator('.si-btn').first().dispatchEvent('click')]);
+  // Polish 1 (sign-in rule 24's note): Enter your code has no Sign in button; the sixth digit sends it, so both tabs
+  // are given the code at the same instant.
+  for (const p of [d.page, t2.page]) await codeBox(p).waitFor({ timeout: 15000 });
+  await Promise.all([codeBox(d.page).fill(code), codeBox(t2.page).fill(code)]);
   await sleep(3000);
   const ends = [path(d.page), path(t2.page)];
   // The tab that came to the code page by its own address has no place to go back to, so it goes Home.
@@ -226,8 +229,7 @@ if (PARTS.includes('wait')) {
   const wrong = totp('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ'); // another key's code: never this account's
   const said = [];
   for (let i = 1; i <= 5; i += 1) {
-    await codeBox(d.page).fill(wrong);
-    await press(d.page, 'Sign in');
+    await codeBox(d.page).fill(wrong); // the sixth digit sends it (Polish 1: no Sign in button on Enter your code)
     await sleep(400);
     said.push(await waitMessage(d.page));
   }
@@ -251,7 +253,6 @@ if (PARTS.includes('wait')) {
   // The 30 seconds pass (the wait's end moved back, as a clock would).
   await d.page.evaluate(() => { const k = 'clarity-sign-in-code-tries'; const s = JSON.parse(localStorage.getItem(k) || '{}'); s.waitUntil = Date.now() - 1000; localStorage.setItem(k, JSON.stringify(s)); });
   await codeBox(d.page).fill(wrong);
-  await press(d.page, 'Sign in');
   pass(`${tag}: after the wait, a wrong code starts the count again`, (await waitMessage(d.page)) === flat(CODE_DIDNT_WORK));
   await giveCode(d.page, M26_KEY);
   pass(`${tag}: then the right code gets in`, (await waitPath(d.page, /^\/coach$/)) === '/coach', path(d.page));
@@ -677,8 +678,9 @@ if (PARTS.includes('stale')) {
     await sleep(4000);
     const at = path(d.page);
     pass(`${tag}: a refresh the reset refused never opens the coach portal`, !/^\/coach(\/(?!sign-in)|$)/.test(at) && (await d.page.evaluate(() => window.__coachShown)) === 0, at);
-    // Sign-in rule 24: Coach sign in, with the reason (run 6, item 13; it was the clients' Sign in, with none).
-    pass(`${tag}: it lands on Coach sign in and is told why`, at === '/coach/sign-in' && (await waitMessage(d.page)) === signedOutLine, `${at} "${(await message(d.page)).slice(0, 80)}"`);
+    // Sign-in rule 24: Coach sign in (run 6, item 13; it was the clients' Sign in). A refused refresh can't tell a
+    // reset from a sign-in that ran out, so it says only "Please sign in again." (follow-up 5, item 13; ProtectedLayout).
+    pass(`${tag}: it lands on Coach sign in and is asked to sign in again`, at === '/coach/sign-in' && (await waitMessage(d.page)) === flat(SIGN_IN_AGAIN), `${at} "${(await message(d.page)).slice(0, 80)}"`);
     pass(`${tag}: no page errors`, d.errors.length === 0, d.errors.slice(0, 2).join(' | '));
     await d.ctx.close();
   }
@@ -737,14 +739,14 @@ if (PARTS.includes('sixletters')) {
   await waitPath(d.page, /\/code$/);
   for (const [label, typed] of [['letters only', 'abcdef'], ['a letter among digits', '12a456'], ['an O for a zero', '1O3456'], ['nothing', '']]) {
     await codeBox(d.page).fill(typed);
-    await press(d.page, 'Sign in');
+    // Polish 1: no Sign in button on Enter your code; Enter sends fewer than six, which says what's missing.
+    await codeBox(d.page).press('Enter');
     const said = await waitMessage(d.page);
     const shown = await codeBox(d.page).inputValue();
     pass(`6-digit (${label}): only the digits stay in the box, and it says "${CODE_SIX_DIGITS}", nothing sent, nothing counted`, said === flat(CODE_SIX_DIGITS) && /^\d*$/.test(shown) && verifies(world) === 0 && (await d.page.evaluate(() => localStorage.getItem('clarity-sign-in-code-tries'))) === null, `"${said}"`);
   }
   // Pasted with letters round the digits: the 6 digits are read.
-  await codeBox(d.page).fill(`code: ${totp(M26_KEY).slice(0, 3)} ${totp(M26_KEY).slice(3)}`);
-  await press(d.page, 'Sign in');
+  await codeBox(d.page).fill(`code: ${totp(M26_KEY).slice(0, 3)} ${totp(M26_KEY).slice(3)}`); // six digits: sent by themselves
   pass('6-digit: "code: 123 456" is read as its six digits and gets in', (await waitPath(d.page, /^\/coach$/)) === '/coach', path(d.page));
   pass('6-digit: no page errors', d.errors.length === 0, d.errors.slice(0, 2).join(' | '));
   await d.ctx.close();

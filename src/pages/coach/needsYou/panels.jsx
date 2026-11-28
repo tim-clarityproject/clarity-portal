@@ -241,7 +241,7 @@ function OverdueBody({ item, close }) {
   const toast = useToast();
   const inv = (p.invoices || []).find((i) => i.id === item.data.invoiceId);
   // The reminder drafted and waiting, or the one owed and not drafted yet (Stage D, item 15: Send drafts it then sends).
-  const r = inv ? reminderToOffer(inv, p.invoiceReminders, p.todayKey) : null;
+  const r = inv ? reminderToOffer(inv, p.invoiceReminders, p.todayKey, p.now) : null;
   const org = inv?.settles_to === 'organisation' ? p.organisations.find((o) => o.id === inv.organisation_id) : null;
   const client = p.clients.find((c) => c.id === inv?.profile_id);
   const first = firstOf(org ? (inv?.payer_name || org.name) : client?.name || inv?.payer_name);

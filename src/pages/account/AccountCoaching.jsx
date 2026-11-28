@@ -22,7 +22,7 @@ export default function AccountCoaching({ userId, coachName, startChat }) {
   const plan = useCachedLoad({ userId: GATING_ON ? userId : null, name: PLAN_CACHE, load: () => loadSubscriptions(userId) });
   const today = getLocalDateKey();
   const version = currentAgreement(data.agreements);
-  const card = coachingCard(version);
+  const card = coachingCard(version, new Date().getFullYear(), today);
   const seesInvoices = showsBilling(data);
   const invoices = seesInvoices ? invoiceList(data.invoices, today) : [];
   const more = accountRows({

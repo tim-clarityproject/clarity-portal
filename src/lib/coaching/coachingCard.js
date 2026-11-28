@@ -1,5 +1,6 @@
 import { dayKeyWords } from '../time/index.js';
 import { CURRENCY_LIST, moneyText } from '../agreements/currency.js';
+import { agreementNow } from '../agreements/duringAgreement.js';
 
 // My Account's Coaching tab (Polish 1, example-pages-25nov.html "My Account", Coaching): the Your
 // coaching card, from the client's current agreement as my_agreements() gives it (a funded client's
@@ -28,7 +29,7 @@ export function sessionsWords(blocks) {
  * The card's parts, or null with no agreement. version: a tidied version (agreementRules.tidyVersion).
  * Returns { title, figure: { value, unit } | null, rows: [{ key, name, value }], to }.
  */
-export function coachingCard(version, thisYear = new Date().getFullYear()) {
+export function coachingCard(version, thisYear = new Date().getFullYear(), today = null) {
   if (!version) return null;
   const t = version.terms || {};
   const title = text(t.coaching) || 'Your coaching agreement';
@@ -39,11 +40,18 @@ export function coachingCard(version, thisYear = new Date().getFullYear()) {
     else if (Number(version.totalMinor ?? t.totalMinor) > 0) figure = { value: moneyText(Number(version.totalMinor ?? t.totalMinor), currency), unit: 'in total' };
   }
   const rows = [];
-  if (DAY.test(t.startsOn || '') && DAY.test(t.endsOn || '')) {
-    // A date this year never shows its year (writing rule 28): "Tue 24 Nov to Sat 1 May 2027" (requests-fx1 item 5).
-    const other = (key) => Number(key.slice(0, 4)) !== Number(thisYear);
-    rows.push({ key: 'dates', name: `${dayKeyWords(t.startsOn, { year: other(t.startsOn) })} to ${dayKeyWords(t.endsOn, { year: other(t.endsOn) })}`, value: Number(t.months) > 0 ? plural(Number(t.months), 'month', 'months') : null });
+  // A date this year never shows its year (writing rule 28): "Tue 24 Nov to Sat 1 May 2027" (requests-fx1 item 5).
+  const other = (key) => Number(key.slice(0, 4)) !== Number(thisYear);
+  const words = (key) => dayKeyWords(key, { year: other(key) });
+  // The end it has now (agreements rule 25): moved by Extend or Pause, or an early end, once signed (agreementNow).
+  const now = version.signedAt ? agreementNow(version.now || {}, t) : { end: t.endsOn || null, paused: null, endingOn: null };
+  const end = now.endingOn || now.end;
+  if (DAY.test(t.startsOn || '') && DAY.test(end || '')) {
+    const moved = end !== t.endsOn;
+    rows.push({ key: 'dates', name: `${words(t.startsOn)} to ${words(end)}`, value: !moved && Number(t.months) > 0 ? plural(Number(t.months), 'month', 'months') : null });
   }
+  // While paused (or the pause is still to come): its dates, as the coach's page and the email say them.
+  if (now.paused && (!today || now.paused.to >= today)) rows.push({ key: 'paused', name: `Paused from ${words(now.paused.from)} to ${words(now.paused.to)}`, value: null });
   const sessions = sessionsWords(t.blocks);
   if (sessions) rows.push({ key: 'sessions', name: sessions, value: text(t.rhythm) || null });
   if (text(t.level)) rows.push({ key: 'portal', name: `The Clarity Portal, ${text(t.level)} level`, value: 'Included' });

@@ -164,21 +164,32 @@ export function pauseMove(end, from, to, today = null) {
   };
 }
 
+/** A second pause arriving while one is being set (two tabs, a double press): nothing more is written (the server, the stand-in). */
+export const PAUSED_ALREADY = 'This agreement has just been paused, so nothing more has changed. Open it again to see its new dates.';
+
+/** The latest Until a pause from `from` may run to: the longest the screens offer (pauseToOptions' last, 9 weeks on). */
+export const longestPauseTo = (from) => (from ? fridayOnOrAfter(addDays(from, 60)) : null);
+
 /**
  * Why a pause can't be made, in calm words, or null (the break-it tester's F6; agreements rules 12 and 25). An
  * agreement keeps one pause (`paused_from` to `paused_to`, which moves its invoices on by its length), so a second is
  * refused rather than written over the first, whether the first is still to come, running or over; a pause starts today
- * or later and ends after it starts, and starts before the agreement's end. `paused`: { from, to } already kept, or null.
- * The device (before Pause is offered) and the server (before anything is written) ask the same.
+ * or later, ends after it starts and no later than the longest the screens offer (longestPauseTo), and starts before the
+ * agreement's end. An agreement ending early (`earlyEnd`: ending_on with ending_by) isn't paused at all (Stage D
+ * break-it: a pause would move ends_on while the early end still stops it, so the pause would only lose time).
+ * `paused`: { from, to } already kept, or null. The device (before Pause is offered), the server and the stand-in
+ * (before anything is written) ask the same.
  */
-export function pauseProblem({ from, to, today, end = null, paused = null }) {
+export function pauseProblem({ from, to, today, end = null, paused = null, earlyEnd = null }) {
   if (paused?.from) {
     const when = paused.to ? `from ${dayKeyWords(paused.from, { year: true, today })} to ${dayKeyWords(paused.to, { year: true, today })}` : `from ${dayKeyWords(paused.from, { year: true, today })}`;
     return `This agreement was paused ${when}, and it can be paused once. To give more time, extend the end date instead.`;
   }
+  if (earlyEnd) return `This agreement ends early on ${dayKeyWords(earlyEnd, { year: true, today })}, so it can’t be paused now.`;
   if (!from || !to || to <= from) return 'Choose an Until date after From.';
   if (today && from < today) return 'A pause starts today or later. Choose a later From date.';
   if (end && from > end) return `A pause starts before the agreement ends on ${dayKeyWords(end, { year: true, today })}. Choose an earlier From date.`;
+  if (to > longestPauseTo(from)) return `A pause from ${dayKeyWords(from, { year: true, today })} runs to ${dayKeyWords(longestPauseTo(from), { year: true, today })} at the latest. Choose an earlier Until date.`;
   return null;
 }
 
@@ -195,18 +206,30 @@ export function endEarlyProblem({ on, today, end = null, earlyEnd = null }) {
 }
 
 /**
- * The coaching sessions already booked inside a pause (Stage D item 16, Tim, 27 Nov): the client's coaching sessions
- * still to come whose day (on `zone`'s clock) is from `from` to `to`, earliest first. A pause moves and cancels none of
- * them: the coach moves or cancels each one with the calendar's own Move and Delete, and the client hears only about
- * those (the calendar's own session emails). The device (the pause's check and the agreement's page) and the server
- * (the pause's answer) ask the same.
- * @param {object[]} sessions coach_sessions rows
- * @param {{ from: string, to: string, profileId?: string|null, zone?: string, now?: number }} pause
+ * The people an agreement coaches, as client_profiles ids: an individual's own profile, else a team programme's people
+ * who are clients (terms.team.people[].profileId). Nobody to match: none.
  */
-export function sessionsInPause(sessions, { from, to, profileId = null, zone = 'Europe/London', now = Date.now() } = {}) {
+export function pausePeople(agreement, terms = null) {
+  if (agreement?.profile_id) return [agreement.profile_id];
+  return [...new Set((terms?.team?.people || []).map((x) => x?.profileId).filter(Boolean))];
+}
+
+/**
+ * The coaching sessions already booked inside a pause (Stage D item 16, Tim, 27 Nov): the coaching sessions still to
+ * come, of the people the agreement coaches (`people`, pausePeople; `profileId` for one), whose day (on `zone`'s clock)
+ * is from `from` to `to`, earliest first. Nobody to match: none (a team agreement lists only its own people's, never
+ * every client's: the Stage D break-it tester). A pause moves and cancels none of them: the coach moves or cancels each
+ * one with the calendar's own Move and Delete, and the client hears only about those (the calendar's own session
+ * emails). The device (the pause's check and the agreement's page) and the server (the pause's answer) ask the same.
+ * @param {object[]} sessions coach_sessions rows
+ * @param {{ from: string, to: string, people?: string[], profileId?: string|null, zone?: string, now?: number }} pause
+ */
+export function sessionsInPause(sessions, { from, to, people = null, profileId = null, zone = 'Europe/London', now = Date.now() } = {}) {
   if (!from || !to || to < from) return [];
+  const who = new Set((people || (profileId ? [profileId] : [])).filter(Boolean));
+  if (!who.size) return [];
   return (sessions || [])
-    .filter((s) => s && s.starts_at && (!profileId || s.profile_id === profileId) && (s.kind || 'coaching') === 'coaching' && !s.outcome)
+    .filter((s) => s && s.starts_at && who.has(s.profile_id) && (s.kind || 'coaching') === 'coaching' && !s.outcome)
     .filter((s) => Date.parse(s.starts_at) > now)
     .filter((s) => { const d = dayIn(zone, new Date(s.starts_at)); return d >= from && d <= to; })
     .sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at));

@@ -372,6 +372,13 @@ if (PARTS.includes('newcodes')) {
   pass(`${tag}: with the current code, a new set`, (await waitPath(page, /recovery-codes$/)) === '/coach/sign-in/recovery-codes', path(page));
   const fresh = await codesOnPage(page);
   pass(`${tag}: 10 new codes, none of the old ones`, fresh.length === 10 && world.madeSets === 1 && !fresh.some((c) => M26_CODES.includes(c.replace('-', ''))));
+  // The page's Back returns to Sign-in security, never to set-up (the Stage D break-it tester; sign-in rule 24's
+  // "Back returns to set-up" is for a first set-up). The codes wait in the tab, so the browser's back shows them again.
+  await page.getByRole('link', { name: 'Back' }).first().click();
+  pass(`${tag}: Back from the new codes returns to Sign-in security`, (await waitPath(page, /sign-in-security$/)) === '/coach/settings/sign-in-security' && world.factors.length === 1, path(page));
+  await page.goBack();
+  const again = (await waitPath(page, /recovery-codes$/)) === '/coach/sign-in/recovery-codes' ? await codesOnPage(page) : [];
+  pass(`${tag}: and the browser's back shows the same codes, none made again`, again.join() === fresh.join() && world.madeSets === 1, `${path(page)}, ${world.madeSets} sets`);
   await page.getByRole('checkbox', { name: 'I’ve saved them somewhere safe' }).click();
   await press(page, 'Open the coach portal');
   await waitPath(page, /sign-in-security$/);

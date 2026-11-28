@@ -440,7 +440,11 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
     const own = textNodesOf(el).map((n) => n.textContent.trim()).join(' ');
     if (!own || el.closest(`${TITLE}, svg, input, .ds-code, [class*="code-sq"]`) || !vis(el)) continue;
     const fs = parseFloat(getComputedStyle(el).fontSize);
-    if (fs < 23.5 || fs > 25.5 * scale) continue;
+    // At a larger device text, a 24px figure grows by at most a quarter (--u-big) while 13px and 16px words grow with
+    // the text (26px and 32px at twice it), so the window follows the figure, never the words (the Stage D break-it
+    // round: Sign-in security's 13px state lines read as figures at twice the text).
+    const big = 24 * Math.min(scale, 1.25);
+    if (scale === 1 ? (fs < 23.5 || fs > 25.5) : (fs < big - 1.5 || fs > big + 1.5)) continue;
     // A price set beside other prices (a plan's "£0" among "£16/month" and "£40/month", as M28 draws s-levels) is a
     // price, not a count that says nothing yet: marked data-price (DG, Stage D item 4).
     if ((/^[£$€]?\s*0+(?:[.,]0+)?\s*%?$/.test(own) || /^0+\s+[a-z]+$/i.test(own)) && !el.closest('[data-price]')) say('bare-zero', `a bare "${own}" as a headline figure (say it in words: Figure's \`empty\`)`);

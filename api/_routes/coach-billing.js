@@ -36,7 +36,7 @@ import { moneyWords } from '../../src/lib/billing/money.js';
 import { stripeApi, keyAllowed } from '../../src/lib/billing/stripe.js';
 import { dueToDraft, invoicesFor } from '../../src/lib/billing/invoicePlan.js';
 import { addDays, dayIn, isZone } from '../../src/lib/time/index.js';
-import { daysOverdue, reminderDue, settleBy } from '../../src/lib/billing/money.js';
+import { currentReminders, daysOverdue, reminderDue, settleBy } from '../../src/lib/billing/money.js';
 import { currencyOf } from '../../src/lib/billing/stripeWebhook.js';
 import { cleanName } from '../../src/lib/coaching/agreementRules.js';
 // Phase 6b run 3 (065)
@@ -173,6 +173,14 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
     const { data } = await server.from(table).select('*').eq('id', id).maybeSingle();
     if (!data || data.coach_id !== coach.id) { const e = new Error('That isn’t yours.'); e.status = 403; throw e; }
     return data;
+  };
+  /**
+   * Drafting a later reminder retires every earlier one not sent and not being sent (the Stage D break-it tester: two
+   * drafts on one invoice, or the 7-day one offered after the 14-day one went). 061 keeps no retired mark, so the
+   * draft is removed, as a paid invoice's unsent drafts are; currentReminders ignores any left by a race.
+   */
+  const retireEarlier = async (invoiceId, stage) => {
+    await server.from('invoice_reminders').delete().eq('invoice_id', invoiceId).lt('stage', stage).is('sent_at', null).is('sending_at', null);
   };
 
   /** The payer of an agreement's invoices: the client, or the organisation's finance contact for a funded client. */
@@ -891,14 +899,16 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
       const inv = await mine('invoices', invoiceId);
       if (inv.status !== 'sent') return { settled: true };
       const read = async () => (await server.from('invoice_reminders').select('id, stage, sent_at, sending_at').eq('invoice_id', inv.id)).data || [];
-      const done = await read();
+      const all = await read();
+      // A draft below a later stage drafted or sent is retired, never sent (currentReminders; the Stage D break-it tester).
+      const done = currentReminders(all);
       const waiting = done.filter((r) => !r.sent_at && !r.sending_at).sort((a, b) => b.stage - a.stage)[0];
       if (waiting) return { reminderId: waiting.id };
       if (done.some((r) => !r.sent_at && r.sending_at)) return { none: true }; // one may have gone: Send again, after a check
-      const stage = reminderDue({ dueKey: inv.due_on, now: now(), zone: inv.payer_zone, drafted: done.map((d) => d.stage) });
+      const stage = reminderDue({ dueKey: inv.due_on, now: now(), zone: inv.payer_zone, drafted: all.map((d) => d.stage) });
       if (!stage) return { none: true };
       const { data } = await server.from('invoice_reminders').insert({ invoice_id: inv.id, coach_id: coach.id, stage }).select('id');
-      if (data?.[0]?.id) return { reminderId: data[0].id };
+      if (data?.[0]?.id) { await retireEarlier(inv.id, stage); return { reminderId: data[0].id }; }
       // Another tab or the nightly round drafted it a moment ago (one per stage: 061's unique key).
       const again = (await read()).find((r) => r.stage === stage && !r.sent_at && !r.sending_at);
       return again ? { reminderId: again.id } : { none: true };
@@ -915,7 +925,7 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
         const stage = reminderDue({ dueKey: inv.due_on, now: now(), zone: inv.payer_zone, drafted: (done || []).map((d) => d.stage), paused });
         if (!stage) continue;
         const { error } = await server.from('invoice_reminders').insert({ invoice_id: inv.id, coach_id: coach.id, stage });
-        if (!error) drafted += 1;
+        if (!error) { drafted += 1; await retireEarlier(inv.id, stage); }
       }
       return { drafted };
     },

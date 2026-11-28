@@ -311,6 +311,10 @@
   display: flex;
   gap: var(--si-code-gap);
   justify-content: center;
+  /* Never wider than what holds it: at 360px and twice the text, inside Settings' card, the squares narrow rather than
+     run out of it (the Stage D break-it tester; sign-in.md). */
+  max-width: 100%;
+  min-width: 0;
 }
 
 .ui-root .si-code-sq {
@@ -318,6 +322,8 @@
   display: grid;
   place-items: center;
   width: var(--si-code-w);
+  flex: 0 1 var(--si-code-w);
+  min-width: 0;
   height: var(--field-h);
   border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-control);
@@ -873,6 +879,9 @@
     gap: 0;
     padding: var(--space-px10) 0;
   }
+  /* Stacked, the link has the row's whole width: at twice the text it wraps there rather than running out of the card
+     (the Stage D break-it tester: "Set up on a new phone" at 360px). */
+  .ui-root .si-srow .si-link { white-space: normal; max-width: 100%; }
 }
 
 /* A reader's own larger text: the column never forces a sideways scroll. */

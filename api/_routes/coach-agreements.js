@@ -24,7 +24,7 @@ import { addDays, dayIn, dayKeyWords, isZone } from '../../src/lib/time/index.js
 import { applies as coolingApplies, futureSessionRows, inWindow, ownSessions, refund14, sessionRanges } from '../../src/lib/agreements/coolingOff.js';
 import { forStorage } from '../../src/lib/agreements/clauses.js';
 import { moneyText } from '../../src/lib/agreements/currency.js';
-import { endEarlyProblem, pauseMove, pauseProblem, sessionsInPause } from '../../src/lib/agreements/endDate.js';
+import { endEarlyProblem, PAUSED_ALREADY, pauseMove, pausePeople, pauseProblem, sessionsInPause } from '../../src/lib/agreements/endDate.js';
 import { quoteNumber, validUntil, VALID_DAYS } from '../../src/lib/agreements/quote.js';
 import { counts, isOver } from '../../src/lib/agreements/sessionOutcome.js';
 import { firstPayment, firstSigning } from '../../src/lib/agreements/settling.js';
@@ -566,11 +566,15 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
       // One pause per agreement, from today on, before its end (F6): a second would write over the first's dates and
       // move the invoices twice.
       const paused = a.paused_from ? { from: a.paused_from, to: a.paused_to || null } : null;
-      const stop = pauseProblem({ from: asked.from, to: asked.to, today: today(), end, paused });
+      // An agreement ending early isn't paused (Stage D break-it), and a pause runs no longer than the screens offer.
+      const stop = pauseProblem({ from: asked.from, to: asked.to, today: today(), end, paused, earlyEnd: a.ending_by ? a.ending_on : null });
       if (stop) throw calm(409, stop);
       const moved = pauseMove(end, asked.from, asked.to);
       if (!moved.ok) throw calm(400, moved.line);
-      await must(db.from('agreements').update({ paused_from: asked.from, paused_to: asked.to }).eq('id', a.id));
+      // Claimed once: only while no pause is kept, so a second pause arriving while this one is set (two tabs, a
+      // double press) writes nothing and moves the end and the invoices only once (the Stage D break-it tester).
+      const claimed = await must(db.from('agreements').update({ paused_from: asked.from, paused_to: asked.to }).eq('id', a.id).is('paused_from', null).select('id'));
+      if (!claimed?.length) throw calm(409, PAUSED_ALREADY);
       await moveEnd(a.id, moved.end);
       const outcome = profile?.email ? await mail(profile.email, pausedEmail({ firstName: firstName(profile.name), coachFirst: c.display_first_name,
         fromWords: dayKeyWords(asked.from, { year: true }), toWords: dayKeyWords(asked.to, { year: true }), endWords: dayKeyWords(moved.end, { year: true }) }),
@@ -579,8 +583,10 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
       // to move or cancel one by one with the calendar's own Move and Delete. Nothing here moves or cancels any of them,
       // and the email above says nothing about them: the client hears only about those the coach changes.
       const zone = isZone(profile?.time_zone) ? profile.time_zone : LONDON;
-      const { data: sess } = a.profile_id ? await db.from('coach_sessions').select('*').eq('profile_id', a.profile_id) : { data: [] };
-      const inside = sessionsInPause(sess || [], { from: asked.from, to: asked.to, profileId: a.profile_id, zone, now: now().getTime() });
+      // A team programme's are its own people's only (pausePeople), never every client's.
+      const people = pausePeople(a, v.terms);
+      const { data: sess } = people.length ? await db.from('coach_sessions').select('*').in('profile_id', people) : { data: [] };
+      const inside = sessionsInPause(sess || [], { from: asked.from, to: asked.to, people, zone, now: now().getTime() });
       return { endsOn: moved.end, emailed: outcome === 'sent', inside: inside.map((x) => x.id) };
     },
 

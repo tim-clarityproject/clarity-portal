@@ -57,7 +57,8 @@ test('an instalment missed: reminders drafted at 3, 7 and 14 days, once each; th
   await b.draftReminders();
   now.value = new Date('2026-12-29T09:00:00Z');
   await b.draftReminders();
-  assert.deepEqual(db.tables.invoice_reminders.map((r) => r.stage), [3, 7, 14]);
+  // Each later stage retires the earlier draft not sent (the Stage D break-it tester: never two drafts on one invoice).
+  assert.deepEqual(db.tables.invoice_reminders.map((r) => r.stage), [14]);
   const fourteen = db.tables.invoice_reminders.find((r) => r.stage === 14);
   const r = await b.reminderToSend(fourteen.id);
   assert.equal(r.settleBy.words, 'Tue 5 Jan');

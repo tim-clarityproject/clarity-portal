@@ -98,7 +98,7 @@ export default function Today() {
     sessions, people: sessionPeople, older: sessionsOlder, now, todayKey,
     // Overdue invoices (Phase 6b run 1; 061): the coach's own, and for the owner every associate's, on the payer's clock.
     // Not those Needs you lists (an overdue invoice whose reminder waits for Send; Phase 6b run 3, risk 11).
-    invoices: attentionInvoices(invoices, { reminders: invoiceReminders || [], pauses: reminderPauses || [], coachId: coach.id, today: todayKey }),
+    invoices: attentionInvoices(invoices, { reminders: invoiceReminders || [], pauses: reminderPauses || [], coachId: coach.id, today: todayKey, now }),
     coachId: coach.id, isOwner, admin, organisations, coaches, coachZone: coachZoneOf(settings, deviceZone()),
     reminders: invoiceReminders || [],
   }), [clients, state, coach.id, sessions, sessionPeople, sessionsOlder, now, todayKey, invoices, isOwner, admin, organisations, coaches, settings, invoiceReminders, reminderPauses]);

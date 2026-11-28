@@ -21,12 +21,12 @@ before(async () => {
 });
 after(async () => { await browser?.close(); });
 
-async function check(body, { phone = false, theme = 'light', extra = '', width, route = null } = {}) {
+async function check(body, { phone = false, theme = 'light', extra = '', width, route = null, scale = 1 } = {}) {
   await tab.setViewportSize(width ? { width, height: 800 } : phone ? { width: 390, height: 844 } : { width: 1280, height: 800 });
   await tab.setContent(`<!doctype html><html data-theme="${theme}"><head><style>${FONTS} body{margin:0}</style></head><body><div class="ui-root" style="padding:20px">${body}</div></body></html>`);
   for (const path of STYLES) await tab.addStyleTag({ path });
   await tab.addStyleTag({ content: `.ui-root * { transition: none !important; animation: none !important; } ${extra}` });
-  return tab.evaluate(designProblems, { phone, scale: 1, route });
+  return tab.evaluate(designProblems, { phone, scale, route });
 }
 const rules = (r) => r.problems.map((p) => p.split(':')[0]);
 
@@ -191,6 +191,13 @@ test('figures (item 13): two 24px figures in one card fail; one passes', async (
   assert.ok(!rules(r).includes('figures'), r.problems.join('; '));
   r = await check(card('<div class="ds-fig">72<span class="ds-fig-unit">%</span></div><div class="ds-li"><span class="ds-li-name">Revenue</span><span class="ds-fig">+£32k</span></div>'));
   assert.match(r.problems.join('; '), /figures: 2 24px figures in one card \("72", "\+£32k"\)/);
+  // At twice the text, 13px state lines (26px) aren't figures; two figures grown by their quarter (30px) still are
+  // (the Stage D break-it round: Sign-in security at 360px).
+  const rows = (px) => card(`<div class="ds-li"><span class="ds-li-name">Authenticator app</span><span style="font-size:${px}px">On since Tue 27 Oct</span></div><div class="ds-li"><span class="ds-li-name">Recovery codes</span><span style="font-size:${px}px">10 of 10 left</span></div>`);
+  r = await check(rows(26), { scale: 2 });
+  assert.ok(!rules(r).includes('figures'), r.problems.join('; '));
+  r = await check(rows(30), { scale: 2 });
+  assert.ok(rules(r).includes('figures'), r.problems.join('; '));
 });
 
 const FOLD = (id, title, body, open = true) => `<div class="ds-collapse${open ? ' ds-collapse--open' : ''}"><button type="button" class="ds-collapse-head" aria-expanded="${open}" aria-controls="${id}"><h2 class="ds-label">${title}</h2></button><div id="${id}" class="ds-collapse-body"${open ? '' : ' inert'}><div class="ds-collapse-inner">${body}</div></div></div>`;

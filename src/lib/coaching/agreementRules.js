@@ -78,6 +78,17 @@ export function tidyVersion(raw) {
     // Whether the agreement still runs (065: cancelled within 14 days, run out, ended), for Settle and Welcome.
     agreementStatus: text(raw.agreement_status) || null,
     settleChoice: raw.settle_choice === 'upfront' || raw.settle_choice === 'plan' ? raw.settle_choice : null,
+    // Where the running agreement stands now (agreements rule 25: the end Extend or Pause moved it to, the pause, an
+    // early end), in the agreements row's own names for duringAgreement.agreementNow. my_agreements() doesn't carry
+    // these yet (they need a line in 065's _agreement_client_view: the Stage D break-it tester's finding, for Tim), so
+    // until it does they are empty and the end shows as signed.
+    now: {
+      ends_on: DAY.test(raw.ends_on || '') ? raw.ends_on : null,
+      ending_on: DAY.test(raw.ending_on || '') ? raw.ending_on : null,
+      ending_by: raw.ending_by === 'client' || raw.ending_by === 'coach' ? raw.ending_by : null,
+      paused_from: DAY.test(raw.paused_from || '') ? raw.paused_from : null,
+      paused_to: DAY.test(raw.paused_to || '') ? raw.paused_to : null,
+    },
   };
 }
 

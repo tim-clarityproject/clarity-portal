@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { InlineChoice, TextField, ToolFrame, useToast } from '../../../components/design';
+import { InlineChoice, TextField, ToolFrame, useNeedsServer, useToast } from '../../../components/design';
 import { Card, Row, Rows } from '../../../components/design/Blocks';
 import { AGREEMENT_LINES, insideLine, insideSay, insideToast } from '../../../content/pageLines/coach';
 import { ask } from '../../../lib/agreements/askClient';
 import { moneyText } from '../../../lib/agreements/currency';
-import { endEarlyProblem, extendOptions, pauseMove, pauseProblem, sessionsInPause } from '../../../lib/agreements/endDate';
+import { endEarlyProblem, extendOptions, pauseMove, pausePeople, pauseProblem, sessionsInPause } from '../../../lib/agreements/endDate';
 import { ownSessions, refund14, sessionRanges, windowEnds } from '../../../lib/agreements/coolingOff';
 import { usedCount } from '../../../lib/agreements/sessionOutcome';
 import {
-  endEarlyOptions, endEarlySentence, hoursState, paidOn, pauseFromOptions, pauseToOptions, penceFrom, perSessionMinor, settledInvoices,
+  earlyEnd, endEarlyOptions, endEarlySentence, hoursState, whoOf, paidOn, pauseFromOptions, pauseToOptions, penceFrom, perSessionMinor, settledInvoices,
 } from '../../../lib/agreements/duringAgreement';
 import { dayIn, dayKeyWords } from '../../../lib/time/index.js';
 import { futureSessionsPlan } from '../../../lib/coach/calendar';
@@ -32,7 +32,6 @@ import './builder.css';
 //   kind: 'extend' | 'pause' | 'end' | 'refund' | 'cancel14'
 //   a, v, t: the agreement, the version in force and its terms; name: the client's; end: the end date now; sessions: its own.
 
-const firstOf = (name) => String(name || '').trim().split(/\s+/)[0] || '';
 const ONE_TAP_MS = 150;
 /** What the toast says about the client's email: only that it went when the server says it did (Q13). */
 const mailedWords = (ans, first) => (ans?.emailed ? `${first} has an email.` : `No email went, so let ${first} know.`);
@@ -79,7 +78,7 @@ function useExtend({ a, name, end, today, done }) {
   const [problem, setProblem] = useState(null);
   const run = useAsk(done);
   const label = options.find((o) => o.value === to)?.label || '';
-  const first = firstOf(name);
+  const first = whoOf(a, name);
   return {
     name: 'Extend the end date',
     problem,
@@ -108,9 +107,9 @@ function usePause({ a, t, name, end, today, done }) {
   const words = (d) => (d ? dayKeyWords(d, { year: true, today }) : '');
   // Stage D item 16: the coaching sessions already booked inside it, on the client's clock as the server reads them.
   // None moves or cancels by itself: the coach does each one next, from the agreement's page.
-  const first = firstOf(name);
+  const first = whoOf(a, name);
   const zone = pauseZone(p, a);
-  const inside = from && to && to > from ? sessionsInPause(p.sessions, { from, to, profileId: a.profile_id, zone, now: p.now }) : [];
+  const inside = from && to && to > from ? sessionsInPause(p.sessions, { from, to, people: pausePeople(a, t), zone, now: p.now }) : [];
   return {
     name: 'Pause coaching',
     facts: inside.length ? [insideLine(inside.map((s) => words(dayIn(zone, new Date(s.starts_at)))))] : null,
@@ -123,7 +122,7 @@ function usePause({ a, t, name, end, today, done }) {
     finish: 'Pause coaching',
     go: () => {
       // The server's own refusals, asked here first (F6).
-      const stop = pauseProblem({ from, to, today, end, paused: a.paused_from ? { from: a.paused_from, to: a.paused_to || null } : null });
+      const stop = pauseProblem({ from, to, today, end, paused: a.paused_from ? { from: a.paused_from, to: a.paused_to || null } : null, earlyEnd: earlyEnd(a) });
       if (stop || !moved.ok) { setProblem(stop || 'Choose an Until date after From.'); return; }
       run(() => ask('agreements', 'pause', { agreementId: a.id, from, to }), (ans) => {
         // The server's own count of those inside (its answer's ids); a stand-in answers none, so the device's.
@@ -137,7 +136,7 @@ function usePause({ a, t, name, end, today, done }) {
 
 function useEndEarly({ a, t, name, end, today, done }) {
   const options = endEarlyOptions(today, end);
-  const first = firstOf(name);
+  const first = whoOf(a, name);
   const [who, setWho] = useState('client');
   const [on, setOn] = useState(options[0]?.value);
   const [problem, setProblem] = useState(null);
@@ -154,7 +153,7 @@ function useEndEarly({ a, t, name, end, today, done }) {
     say: `${endEarlySentence(t)} ${first} gets an email.`,
     finish: `End on ${label}`,
     go: () => {
-      const stop = endEarlyProblem({ on, today, end });
+      const stop = endEarlyProblem({ on, today, end, earlyEnd: earlyEnd(a) });
       if (stop) { setProblem(stop); return; }
       run(() => ask('agreements', 'end_early', { agreementId: a.id, endsOn: on, by: who }), (ans) => `It ends on ${label}. ${mailedWords(ans, first)}`, setProblem);
     },
@@ -174,7 +173,7 @@ function useRefund({ a, name, done }) {
   const c = inv?.currency || 'GBP';
   const pence = penceFrom(amount);
   const money = pence > 0 ? moneyText(pence, c) : '';
-  const first = firstOf(name);
+  const first = whoOf(a, name);
   const invWords = (i) => `CLARITY-${i.number}, ${moneyText(Number(i.paid_minor) || Number(i.total_minor) || 0, i.currency || 'GBP')}`;
   const steps = [
     list.length > 1 && {
@@ -248,7 +247,7 @@ function useCancel14({ a, v, t, name, signed, sessions, firstV, today, zone = 'E
   const typed = k === 'oneoff' ? penceFrom(delivered) : null;
   const deliveredMinor = k === 'oneoff' ? (Number.isFinite(typed) ? typed : 0) : hoursMinor;
   const back = startNow ? Math.max(0, refund14({ paidMinor: paid, sessionsHad: had, perSessionMinor: per, startNow }) - deliveredMinor) : paid;
-  const first = firstOf(name);
+  const first = whoOf(a, name);
   const ownData = (data) => ({ ...data, sessions: ownSessions(data?.sessions, ranges, zone) });
   const ahead = futureSessionsPlan(a.profile_id, { data: ownData(cal.data), now: p.now });
   const asksDelivered = k === 'oneoff' && startNow;
@@ -308,6 +307,8 @@ export function AgreementChange({ kind, onClose, ...facts }) {
 
 function Flow({ useFlow, facts, onClose }) {
   const toast = useToast();
+  // Each change is the server's alone (nothing waits on the device): offline, the notice says it needs a connection.
+  useNeedsServer('Changing an agreement');
   const flow = useFlow({ ...facts, done: onClose });
   const [at, setAt] = useState(0);
   const [need, setNeed] = useState(null);

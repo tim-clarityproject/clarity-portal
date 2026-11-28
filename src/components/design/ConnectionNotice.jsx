@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { useOnline } from '../../lib/connection';
 import { dismissFailed, useQueueState } from '../../lib/syncQueue';
@@ -13,9 +13,30 @@ import './design.css';
 // puts back typing from before a refresh.
 export const OFFLINE_WORDS = 'You’re offline. What you do is kept on this device and sent when you’re back online.';
 
+// A flow that only the server can carry out (a change to a running agreement: nothing of it waits on the device) says
+// so instead, never promising that it is kept and sent later (the Stage D break-it tester: an offline pause). A part
+// marks itself with useNeedsServer(what) while it shows; the newest one's words are used.
+let serverFlows = [];
+const serverListeners = new Set();
+const tellServerFlows = () => serverListeners.forEach((fn) => fn());
+const subscribeServerFlows = (fn) => { serverListeners.add(fn); return () => serverListeners.delete(fn); };
+const serverFlowWords = () => serverFlows.at(-1)?.words || null;
+/** The offline notice's words while a server-only flow shows: "You’re offline. Changing an agreement needs a connection, …". */
+export const offlineServerWords = (what) => `You’re offline. ${what} needs a connection, so try again when you’re back online.`;
+/** Marks a part as needing the server while it shows; `what` names it ("Changing an agreement"). */
+export function useNeedsServer(what) {
+  useEffect(() => {
+    const entry = { words: offlineServerWords(what) };
+    serverFlows = [...serverFlows, entry];
+    tellServerFlows();
+    return () => { serverFlows = serverFlows.filter((x) => x !== entry); tellServerFlows(); };
+  }, [what]);
+}
+
 export default function ConnectionNotice() {
   const online = useOnline();
   const { waiting, failed, quiet } = useQueueState();
+  const serverOnly = useSyncExternalStore(subscribeServerFlows, serverFlowWords, serverFlowWords);
   const toast = useToast();
   const hadWaiting = useRef(false);
   const shownFailed = useRef(0);
@@ -62,7 +83,7 @@ export default function ConnectionNotice() {
     <div className="ui-root ds-portal">
       <div className="ds-connection" role="status" aria-live="polite">
         <span className="ds-dot ds-dot--hollow" aria-hidden="true" />
-        <span>{online ? 'Sending your changes' : OFFLINE_WORDS}</span>
+        <span>{online ? 'Sending your changes' : serverOnly || OFFLINE_WORDS}</span>
       </div>
     </div>,
     document.body,

@@ -20,8 +20,12 @@ const CLOSED_WILL_SYNC = 'Kept on this device. It saves when you’re back onlin
 const AUTOSAVE_MS = 1500;
 import DiscardDialog from '../components/ui/DiscardDialog';
 import {
-  Crosshair, Loading, WhoSees, SaveStatus, TextBox, useToast,
+  Crosshair, ErrorMessage, Loading, WhoSees, SaveStatus, TextBox, useToast,
 } from '../components/design';
+
+// Past the limit nothing saves: said at once under the writing, in the words Done says (the Stage D break-it tester:
+// "Saved" vanished with no word why).
+const JOURNAL_TOO_LONG = `Keep your writing under ${MAX_CHARS.toLocaleString('en-GB')} characters.`;
 
 // The Journal runs in focus mode like every other tool (Polish 1, Tim's walk of Stage B, items 1 to 4): FormTool's
 // ToolFrame gives × ("Close and save my place"), the day as the small grey label (no year for a day this year,
@@ -178,6 +182,7 @@ export default function DailyJournal() {
   }, [blocks]);
 
   const words = wordCount(blocks);
+  const tooLong = textOf(blocks).length > MAX_CHARS;
 
   const changeBlock = (index, value) => {
     const updated = [...blocks];
@@ -203,10 +208,8 @@ export default function DailyJournal() {
       toast.error('Write something first.');
       return null;
     }
-    if (text.length > MAX_CHARS) {
-      toast.error(`Keep your writing under ${MAX_CHARS.toLocaleString()} characters.`);
-      return null;
-    }
+    // Past the limit the line under the writing already says so (never a second time in a toast).
+    if (text.length > MAX_CHARS) return null;
     const status = draft ? 'draft' : 'final';
     if (!serverKnown) {
       toast.error('This day hasn’t loaded, so saving now could replace what’s already there. Your writing is kept on this device; save it when you’re back online.');
@@ -394,6 +397,7 @@ export default function DailyJournal() {
                 )
               ))}
             </div>
+            {tooLong && <ErrorMessage className="jrn-too-long">{JOURNAL_TOO_LONG}</ErrorMessage>}
 
             <div className="jrn-meta">
               <span>{words} word{words === 1 ? '' : 's'}</span>

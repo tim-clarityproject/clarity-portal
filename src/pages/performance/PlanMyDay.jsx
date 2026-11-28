@@ -57,6 +57,7 @@ import {
   dayPlanView,
   dayStrategyOps,
   dayTodoOps,
+  finishTodoOps,
   hoursWords,
   ifItHappens,
   localToday,
@@ -923,7 +924,21 @@ function PlanFlow({ userId, date, today, loaded }) {
   const backTo = location.state?.from || '/performance-sprint';
   const [anyway, setAnyway] = useState(false);
 
+  // Finish: newest choice wins for the day's to-dos as for its answers (syncQueue's newestWins): what the database
+  // holds now is read, and every to-do another device chose and this one didn't goes, so the device finishing last
+  // keeps its to-dos everywhere (the Stage D break-it tester). Offline, the read can't happen and the to-dos go as
+  // chosen, change by change, as before.
+  const finishTodos = async () => {
+    if (!planId.current) return null;
+    let held;
+    try { held = await readDayPlanTodos(planId.current); } catch { return null; }
+    const there = { todos: held.map((t) => t.todo_id), top: held.find((t) => t.is_top)?.todo_id || null };
+    const ops = finishTodoOps(userId, planId.current, there, dbTodos.current);
+    return ops.length ? sendInOrder(ops) : null;
+  };
+
   const finish = async () => {
+    if (planId.current && !(await sent(() => finishTodos()))) return false;
     const ok = await sendAnswers({ status: 'finished', finished_at: new Date().toISOString() });
     if (!ok) return false; // the tool lets Finish be tapped again
     setData((d) => ({ ...d, dayPlan: { ...(d.dayPlan || {}), status: 'finished' } }));

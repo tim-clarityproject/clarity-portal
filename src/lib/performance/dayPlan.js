@@ -168,6 +168,23 @@ export function dayTodoOps(userId, planId, before, after) {
   return ops;
 }
 
+/**
+ * Finish: newest choice wins for the day's to-dos too (Tim, 17 Nov; the Stage D break-it tester: a second device's
+ * picks stayed after the first finished last). `there`: the rows the database holds now ({ todos, top }); `want`: this
+ * device's choice. Every row not chosen here goes, and every chosen one is written with its Most important, so the
+ * device finishing last keeps its to-dos everywhere. Removals first.
+ */
+export function finishTodoOps(userId, planId, there, want) {
+  const keep = new Set(want.todos);
+  return [
+    ...there.todos.filter((id) => !keep.has(id)).map((id) => ({ table: 'day_plan_todos', kind: 'delete', match: { day_plan_id: planId, todo_id: id, user_id: userId } })),
+    ...want.todos.filter((id) => !there.todos.includes(id) || (id === want.top) !== (id === there.top)).map((id) => ({
+      table: 'day_plan_todos', kind: 'upsert', onConflict: 'day_plan_id,todo_id',
+      values: { day_plan_id: planId, todo_id: id, user_id: userId, is_top: id === want.top },
+    })),
+  ];
+}
+
 /** The saves for the Strategies of the day: removals first (two at most). */
 export function dayStrategyOps(userId, planId, before, after) {
   const ops = [];

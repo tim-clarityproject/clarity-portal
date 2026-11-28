@@ -479,7 +479,7 @@ export function InvoicePanels({ panel, onClose }) {
     );
   }
   // An overdue invoice: its reminders, Pause reminders, and Send a reminder now.
-  const rem = reminderLines({ invoice: inv, reminders: invoiceReminders, today: todayKey });
+  const rem = reminderLines({ invoice: inv, reminders: invoiceReminders, today: todayKey, now: Date.now() });
   const pause = (reminderPauses || []).find((p) => (inv.organisation_id ? p.organisation_id === inv.organisation_id : p.profile_id === inv.profile_id)) || null;
   const firstWord = String(who).split(/\s+/)[0] || who;
   const togglePause = async (on) => {

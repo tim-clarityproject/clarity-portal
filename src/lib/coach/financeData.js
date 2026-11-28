@@ -1,4 +1,4 @@
-import { moneyWords, rateWords, invoiceNumber, REMINDER_DAYS, stageOwed } from '../billing/money.js';
+import { currentReminders, moneyWords, payerToday, rateWords, invoiceNumber, REMINDER_DAYS, stageOwed } from '../billing/money.js';
 import { associateMonth, minutesFromFunction, payReminderDue } from '../finance/associates.js';
 import { monthName } from '../finance/year.js';
 import { addDays, daysBetween, dayKeyWords } from '../time/index.js';
@@ -214,8 +214,9 @@ export function invoiceGroups({ invoices = [], today, names = {}, q = '', who = 
  * An overdue invoice's reminders (M11: "Sent Fri 13 Nov and Mon 16 Nov", "The last one goes on Tue 24 Nov", "2 of 3"),
  * and the newest one drafted and not yet sent (Send a reminder now sends it).
  */
-export function reminderLines({ invoice, reminders = [], today }) {
-  const mine = (reminders || []).filter((r) => r.invoice_id === invoice.id);
+export function reminderLines({ invoice, reminders = [], today, now = null }) {
+  // A draft below a later stage drafted or sent is retired, never offered (currentReminders; the Stage D break-it tester).
+  const mine = currentReminders((reminders || []).filter((r) => r.invoice_id === invoice.id));
   const sent = mine.filter((r) => r.sent_at).sort((a, b) => String(a.sent_at).localeCompare(String(b.sent_at)));
   // One marked as sending (064) may have gone (follow-up 5): it is never offered as waiting, it counts towards the
   // reminders that may have gone, and Send again (after a check) sends it, never a new one.
@@ -232,7 +233,8 @@ export function reminderLines({ invoice, reminders = [], today }) {
   if (last && gone < REMINDER_DAYS.length) lines.push(`${last >= today ? 'The last one goes on' : 'The last one was due on'} ${dayWordsFrom(last, today)}`);
   // Owed and not drafted yet (the nightly round drafts once a night): Send a reminder now drafts it and sends it, so
   // this panel, Needs you and Finances' own list agree (Stage D, item 15).
-  const owed = waiting || unsure.length || !invoice.due_on || !today ? null : stageOwed(Math.max(0, daysBetween(invoice.due_on, today)), mine.map((r) => r.stage));
+  // The days overdue on the payer's own clock, as the nightly round counts them (`now` given: payerToday).
+  const owed = waiting || unsure.length || !invoice.due_on || !today ? null : stageOwed(Math.max(0, daysBetween(invoice.due_on, payerToday(invoice, today, now))), mine.map((r) => r.stage));
   if (owed) lines.push(`The ${owed}-day reminder is ready to send`);
   return { lines, count: `${sent.length} of ${REMINDER_DAYS.length}`, waiting, unsure: unsure[0] || null, owed };
 }
@@ -256,7 +258,7 @@ export const OVERDUE_LINES = 3;
  * the next 2 weeks, and the year's targets to check after a new year copied them.
  * @returns {{ key: string, title: string, small?: string, link: string, to: string|null, invoiceId?: string }[]}
  */
-export function needsYouRows({ cash = null, invoices = [], deadlines = [], today, names = {}, targetsToCheck = false, associatesToPay = [], reminders = [], nowMs = Date.now(), coachId = null }) {
+export function needsYouRows({ cash = null, invoices = [], deadlines = [], today, names = {}, targetsToCheck = false, associatesToPay = [], reminders = [], nowMs = Date.now(), coachId = null, now = null }) {
   const rows = [];
   if (cash?.needsYou) rows.push({ key: 'cash', title: cash.needsYou, link: 'View the forecast', to: '/coach/finances/cash-flow' });
   // A reminder that may have gone: never sent again by itself; the coach checks, then presses Send again.
@@ -267,11 +269,12 @@ export function needsYouRows({ cash = null, invoices = [], deadlines = [], today
     rows.push({ key: `rem:${r.id}`, title: REMINDER_UNSURE_TITLE, small: invoiceWho(inv, names) ? `Check before sending again. It was for ${invoiceWho(inv, names)}.` : 'Check before sending again.', link: 'Send again', to: null, reminderId: r.id });
   }
   // Each overdue invoice on its own line, the longest overdue first; past OVERDUE_LINES of them, one line for them all.
-  const overdue = (invoices || []).filter((inv) => inv.status === 'sent' && !inv.waived_at && inv.due_on && inv.due_on < today && left(inv) > 0)
+  // Overdue on the payer's own clock (`now` given: payerToday), as Needs you and the nightly round count it.
+  const overdue = (invoices || []).filter((inv) => inv.status === 'sent' && !inv.waived_at && inv.due_on && inv.due_on < payerToday(inv, today, now) && left(inv) > 0)
     .sort((a, b) => String(a.due_on).localeCompare(String(b.due_on)));
   if (overdue.length > OVERDUE_LINES) rows.push({ key: 'od', title: `${countFigure(overdue.length)} invoices are overdue.`, link: 'View them', to: '/coach/finances/invoices' });
   else for (const inv of overdue) {
-    const d = Math.max(1, daysBetween(inv.due_on, today));
+    const d = Math.max(1, daysBetween(inv.due_on, payerToday(inv, today, now)));
     rows.push({ key: `od:${inv.id}`, title: `An invoice for ${moneyWords(left(inv), inv.currency || 'GBP')} is ${d === 1 ? '1 day' : `${d} days`} overdue.`, small: invoiceWho(inv, names), link: 'View the invoice', to: null, invoiceId: inv.id });
   }
   const drafts = (invoices || []).filter((i) => i.status === 'draft' && !i.waived_at).length;

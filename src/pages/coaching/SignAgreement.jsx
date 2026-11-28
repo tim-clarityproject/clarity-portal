@@ -9,6 +9,7 @@ import { isNewClause, signingWords } from '../../lib/billing/agreementText';
 import { mainPoints, resolveChoice } from '../../lib/agreements/clauses';
 import { applies as coolingApplies, START_NOW_LINE } from '../../lib/agreements/coolingOff';
 import { selfFunded } from '../../lib/agreements/terms';
+import { agreementNow } from '../../lib/agreements/duringAgreement';
 import {
   ALREADY_SIGNED, agreementSections, askForChange, glanceRows, loadSigning, markOpened, canSignVersion, signAgreementV2, signedLabel, tidyAgreements,
 } from '../../lib/coaching/agreements';
@@ -54,7 +55,11 @@ function readerClauses(version, choice) {
 function readerPoints(version, choice, clauses) {
   const t = version?.terms || {};
   if ((version?.clauses || []).some(isNewClause) && t.kind) {
-    try { return mainPoints(t, { choice, seesMoney: !version.fundedBy, clauses }); } catch { /* the older rows below */ }
+    // Once signed, the end it has now, a pause and an early end (agreements rule 25; duringAgreement.agreementNow), as
+    // the coach's page and See it as [name] sees it show them. The clauses keep the wording as signed.
+    const now = version.signedAt ? agreementNow(version.now || {}, t) : null;
+    const shown = now?.end && now.end !== t.endsOn ? { ...t, endsOn: now.end } : t;
+    try { return mainPoints(shown, { choice, seesMoney: !version.fundedBy, clauses, paused: now?.paused || null, endingOn: now?.endingOn || null }); } catch { /* the older rows below */ }
   }
   return glanceRows(version);
 }

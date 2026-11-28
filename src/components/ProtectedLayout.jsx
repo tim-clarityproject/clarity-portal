@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { justSignedOut, rememberNext, sessionEndedJustNow, SIGN_IN_PATHS } from '../lib/signIn/addresses';
 import { goToStop, hasAuthenticator, signInStop } from '../lib/signIn/flow';
-import { isCoachPlace, SIGN_IN_AGAIN } from '../lib/signIn/coachAuth';
+import { COACH_AUTH_PATHS, isCoachPlace, SIGN_IN_AGAIN } from '../lib/signIn/coachAuth';
 import { needsBeforeYouStart } from '../lib/signIn/terms';
 import { knownNotCoach, refreshCoachRole } from '../lib/coach/role';
 import { diag } from '../utils/diag';
@@ -110,6 +110,11 @@ export default function ProtectedLayout() {
     };
   }, [coachPlace, userId]);
   const askAgain = coachPlace ? `${location.pathname}|${nudge}` : '';
+  // Back from new recovery codes made in Sign-in security returns there (the Stage D break-it tester): the codes still
+  // owed don't send that one step straight back to the codes, which wait in the tab. Any other address, typed or
+  // moved to, still asks for them (sign-in rule 24).
+  const codesBack = useRef(false);
+  codesBack.current = location.pathname === COACH_AUTH_PATHS.security && location.state?.from === 'codes';
   useEffect(() => {
     if (!mayOwe) return undefined;
     const held = checkedNow.current;
@@ -117,8 +122,11 @@ export default function ProtectedLayout() {
     if (coachPlace && clearedHere && Date.now() - lastAsked.current < RECHECK_MS) return undefined;
     lastAsked.current = Date.now();
     let live = true;
-    signInStop(supabase, user, { coach: coachPlace }).then(async (owed) => {
+    signInStop(supabase, user, { coach: coachPlace }).then(async (found) => {
       if (!live) return;
+      const owed = found === 'codes' && codesBack.current ? null : found;
+      // Let through on that one step only: the next move in the coach portal asks again at once.
+      if (owed !== found) lastAsked.current = 0;
       if (owed) {
         if (owed !== 'signedOut') rememberNext(asked);
         await goToStop(supabase, navigate, owed);

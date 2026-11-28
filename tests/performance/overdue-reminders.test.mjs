@@ -51,7 +51,8 @@ test('the drafting job, first seeing an invoice inserted already 9 days overdue:
   assert.deepEqual(await b.draftReminders(), { drafted: 0 }, 'the next night: no 3-day one after the 7-day one');
   now.value = new Date('2026-12-02T03:15:00Z');
   assert.deepEqual(await b.draftReminders(), { drafted: 1 });
-  assert.deepEqual(db.tables.invoice_reminders.map((r) => r.stage), [7, 14]);
+  // The 7-day draft, never sent, is retired by the 14-day one (the Stage D break-it tester: never two drafts).
+  assert.deepEqual(db.tables.invoice_reminders.map((r) => r.stage), [14]);
 });
 
 test('the nightly round drafts reminders without Stripe too, for every active coach', async () => {

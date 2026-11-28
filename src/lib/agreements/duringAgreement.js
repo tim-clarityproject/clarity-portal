@@ -2,7 +2,7 @@ import { addDays, dayIn, daysBetween, dayKeyWords, weekdayOf } from '../time/ind
 import { parseDbTimestamp, getLocalDateKey } from '../dateFormatter.js';
 import { at80, blockMinutes, used as usedMinutes } from './hours.js';
 import { deliveredToInvoice, perSession } from './delivered.js';
-import { fridayOnOrAfter } from './endDate.js';
+import { fridayOnOrAfter, pauseMove } from './endDate.js';
 import { movedDown, fallSince, perUnit } from './fx.js';
 import {
   approvalItem, changeItem, deliveredItem, firstPaymentItem, fxItem, hoursItem, overdueItem, poItem, portalItem, priceItem, renewItem, signReminderItem,
@@ -13,7 +13,7 @@ import { priceReviewDue, priceReviewShows, renewalShows, termEnds, TERM_MONTHS }
 import { addMonths, signedVersionsOf } from './settling.js';
 import { kindOf, selfFunded } from './terms.js';
 import { termMonths } from './standardWording.js';
-import { stageOwed } from '../billing/money.js';
+import { currentReminders, payerToday, stageOwed } from '../billing/money.js';
 
 // During an agreement (Phase 6b run 3, Group D; M28 s-today, the Needs you panels, s-agr, s-cal-session, s-h-log,
 // s-org-billing, s-inv-new, s-inv-sent): which facts the coach's rows hold, worked out once, so no page counts sessions,
@@ -62,11 +62,30 @@ export function statusLine(agreement, version) {
 export const currentEnd = (agreement, terms) => agreement?.ends_on || (agreement?.ending_on && !agreement?.ending_by ? agreement.ending_on : null) || terms?.endsOn || null;
 /** The day an agreement ends early (End early: ending_on with who ended it), or null. */
 export const earlyEnd = (agreement) => (agreement?.ending_on && agreement?.ending_by ? agreement.ending_on : null);
+/**
+ * Where a running agreement stands now (agreements rule 25): `end`, the end it has now (ends_on as Extend or Pause moved
+ * it, else as signed moved on by a pause), `paused` { from, to } and `endingOn`, an early end. The coach's page, See it
+ * as [name] sees it, and the client's Coaching card and Read all show the same (the Stage D break-it tester: the client
+ * saw the end as signed after a pause). `agreement`: the agreements row's ends_on, ending_on, ending_by, paused_from
+ * and paused_to (the client's copy carries the same names).
+ */
+export function agreementNow(agreement, terms) {
+  const paused = agreement?.paused_from && agreement?.paused_to ? { from: agreement.paused_from, to: agreement.paused_to } : null;
+  const moved = currentEnd(agreement, null);
+  const signedEnd = terms?.endsOn || null;
+  const end = moved || (paused && signedEnd ? pauseMove(signedEnd, paused.from, paused.to).end : signedEnd) || null;
+  return { end, paused, endingOn: earlyEnd(agreement) };
+}
 
 /**
  * "Sam's agreement" (the page's title), with the right apostrophe. A person goes by their first name; an organisation
  * by its whole name (`whole`: "Harbour Rowing’s agreement", never "Harbour’s"; Stage D, DG item 8).
  */
+/**
+ * Who a change to an agreement names: a client by their first name, an organisation (a team programme, no client) by
+ * its whole name, as the agreement's page does ("Harbour Rowing", never "Harbour": the Stage D break-it tester).
+ */
+export const whoOf = (agreement, name) => (agreement?.profile_id ? String(name || '').trim().split(/\s+/)[0] || '' : String(name || '').trim());
 export const agreementTitle = (name, { whole = false } = {}) => (name ? `${whole ? String(name).trim() : firstWord(name)}’s agreement` : 'The agreement');
 
 /**
@@ -167,7 +186,8 @@ export const paidOn = (invoices, agreementId) => (invoices || []).filter((i) => 
 
 /** An overdue invoice's reminder waiting to send (061: drafted, not sent, not being sent), unless one may have gone. */
 export function waitingReminder(invoice, reminders = []) {
-  const mine = (reminders || []).filter((r) => r.invoice_id === invoice.id);
+  // A draft below a later stage drafted or sent is retired (currentReminders), never offered.
+  const mine = currentReminders((reminders || []).filter((r) => r.invoice_id === invoice.id));
   if (mine.some((r) => !r.sent_at && r.sending_at)) return null; // one may have gone: Who needs attention's Send again
   return mine.filter((r) => !r.sent_at && !r.sending_at).sort((a, b) => b.stage - a.stage)[0] || null;
 }
@@ -177,15 +197,16 @@ export function waitingReminder(invoice, reminders = []) {
  * or none is due. Stage D, item 15: Needs you and Finances agree from the moment the invoice is 3 days overdue, and
  * one first seen 9 days overdue owes the 7-day reminder only. Send drafts it on the server (send_reminder's invoiceId).
  */
-export function owedReminder(invoice, reminders = [], today) {
+export function owedReminder(invoice, reminders = [], today, now = null) {
   if (!invoice?.due_on || !today) return null;
-  const mine = (reminders || []).filter((r) => r.invoice_id === invoice.id);
+  const mine = currentReminders((reminders || []).filter((r) => r.invoice_id === invoice.id));
   if (mine.some((r) => !r.sent_at)) return null; // one waits to send, or one may have gone
-  const stage = stageOwed(Math.max(0, daysBetween(invoice.due_on, today)), mine.map((r) => r.stage));
+  // The days overdue on the payer's own clock, as the nightly round counts them (`now` given: payerToday).
+  const stage = stageOwed(Math.max(0, daysBetween(invoice.due_on, payerToday(invoice, today, now))), mine.map((r) => r.stage));
   return stage ? { id: null, invoice_id: invoice.id, stage, owed: true, drafted_at: null, settle_by: null } : null;
 }
 /** The reminder Needs you offers for an invoice: the one drafted and waiting, else the one owed and not yet drafted. */
-export const reminderToOffer = (invoice, reminders = [], today) => waitingReminder(invoice, reminders) || owedReminder(invoice, reminders, today);
+export const reminderToOffer = (invoice, reminders = [], today, now = null) => waitingReminder(invoice, reminders) || owedReminder(invoice, reminders, today, now);
 
 /** Whether a reminder for this payer is paused (061's invoice_reminder_pauses). */
 export const remindersPaused = (invoice, pauses = []) => (pauses || []).some((p) => (invoice.organisation_id && invoice.settles_to === 'organisation'
@@ -197,10 +218,10 @@ const left = (inv) => Math.max(0, (Number(inv.total_minor) || 0) - (Number(inv.p
  * Stage D, item 15): Who needs attention leaves
  * these out, so one invoice is never listed twice on Today (risk 11). The coach's own invoices only.
  */
-export function overdueInNeedsYou(invoice, { reminders = [], pauses = [], coachId, today }) {
+export function overdueInNeedsYou(invoice, { reminders = [], pauses = [], coachId, today, now = null }) {
   if (!invoice || invoice.coach_id !== coachId || invoice.status !== 'sent' || invoice.number == null || invoice.voided_at || invoice.waived_at) return false;
-  if (!invoice.due_on || !today || invoice.due_on >= today || left(invoice) === 0) return false;
-  return Boolean(reminderToOffer(invoice, reminders, today)) && !remindersPaused(invoice, pauses);
+  if (!invoice.due_on || !today || invoice.due_on >= payerToday(invoice, today, now) || left(invoice) === 0) return false;
+  return Boolean(reminderToOffer(invoice, reminders, today, now)) && !remindersPaused(invoice, pauses);
 }
 
 /**
@@ -321,11 +342,11 @@ export function needsYouItems(f) {
 
   // Overdue invoices with a reminder drafted, or owed and not drafted yet (the coach's own; an associate's are theirs to send).
   for (const inv of f.invoices || []) {
-    if (!overdueInNeedsYou(inv, { reminders: f.invoiceReminders, pauses: f.pauses, coachId, today })) continue;
+    if (!overdueInNeedsYou(inv, { reminders: f.invoiceReminders, pauses: f.pauses, coachId, today, now: f.now ?? null })) continue;
     const name = payerName(inv, { clients, organisations });
     if (!name) continue;
-    const r = reminderToOffer(inv, f.invoiceReminders, today);
-    const it = overdueItem({ invoiceId: inv.id, name, number: inv.number, amountMinor: left(inv), currency: inv.currency || 'GBP', daysOverdue: daysBetween(inv.due_on, today), day: dayOfStamp(r.drafted_at) || today, today });
+    const r = reminderToOffer(inv, f.invoiceReminders, today, f.now ?? null);
+    const it = overdueItem({ invoiceId: inv.id, name, number: inv.number, amountMinor: left(inv), currency: inv.currency || 'GBP', daysOverdue: daysBetween(inv.due_on, payerToday(inv, today, f.now ?? null)), day: dayOfStamp(r.drafted_at) || today, today });
     out.push({ ...it, key: `${it.key}:${r.stage}`, data: { ...it.data, reminderId: r.id, stage: r.stage } });
   }
 

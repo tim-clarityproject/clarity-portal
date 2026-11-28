@@ -32,7 +32,10 @@ async function localWrite(route, kind, body, token) {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(plan[1]),
     });
     const answer = await res.json().catch(() => null);
-    return answer?.ok === true ? answer : null;
+    if (answer?.ok === true) return answer;
+    // The stand-in refused, as the server would (a second pause, one past the longest, one while ending early: the
+    // Stage D break-it tester): its calm words, never a "done" that changed nothing.
+    return answer?.ok === false && answer.calm && typeof answer.message === 'string' ? { ok: false, message: answer.message } : null;
   } catch {
     return null;
   }
@@ -52,6 +55,7 @@ export async function ask(route, kind, body = {}) {
   const answer = await askWith({ route, kind, body, token, send: apiFetch, live: LIVE });
   if (LIVE || !answer?.standIn) return answer;
   const more = await localWrite(route, kind, body, token);
+  if (more?.ok === false) return more;
   return more ? { ...answer, ...more, ok: true, standIn: true, written: true } : answer;
 }
 

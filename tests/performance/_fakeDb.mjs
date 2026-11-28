@@ -32,7 +32,7 @@ export function fakeDb(seed = {}) {
       if (op === 'lt') return r[k] != null && String(r[k]) < v;
       return String(r[k]) === v;
     };
-    const match = (r) => where.every(([k, v, how]) => (how === 'or' ? v.split(',').some((p) => orPart(r, p)) : how === 'is' ? (r[k] ?? null) === v : r[k] === v));
+    const match = (r) => where.every(([k, v, how]) => (how === 'or' ? v.split(',').some((p) => orPart(r, p)) : how === 'is' ? (r[k] ?? null) === v : how === 'lt' ? r[k] != null && r[k] < v : r[k] === v));
     const run = () => {
       let out;
       if (op === 'insert' || op === 'upsert') {
@@ -67,6 +67,7 @@ export function fakeDb(seed = {}) {
       select() { if (op !== 'select') wantRows = true; return b; },
       eq(k, v) { where.push([k, v]); return b; },
       is(k, v) { where.push([k, v, 'is']); return b; },
+      lt(k, v) { where.push([k, v, 'lt']); return b; },
       or(expr) { where.push([null, expr, 'or']); return b; },
       order(k) { order = k; return b; },
       limit(n) { lim = n; return b; },

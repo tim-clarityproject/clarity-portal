@@ -385,7 +385,9 @@ export function CoachCodes() {
   };
 
   return (
-    <SignInPage title={W.title} onSubmit={open} back={{ to: COACH_AUTH_PATHS.setUp, state: { mode: 'again', ...(fromSecurity ? { from: 'security' } : {}) }, children: W.back }}>
+    // Back returns to set-up during a first set-up (sign-in rule 24), and to Sign-in security after Make new codes there
+    // (the Stage D break-it tester: it went to set-up, which offered a new phone instead).
+    <SignInPage title={W.title} onSubmit={open} back={fromSecurity ? { to: COACH_AUTH_PATHS.security, state: { from: 'codes' }, children: W.back } : { to: COACH_AUTH_PATHS.setUp, state: { mode: 'again' }, children: W.back }}>
       {W.lines.map((line) => <Line key={line}>{keepSixDigit(line)}</Line>)}
       {set ? (
         <>

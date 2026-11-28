@@ -203,12 +203,15 @@ async function standIn(req, res, path) {
     const vs = await rest('GET', `/agreement_versions?agreement_id=eq.${id}&version=eq.${a.current_version}&select=terms`, undefined, tok);
     const end = a.ends_on || (a.ending_on && !a.ending_by ? a.ending_on : null) || vs.json?.[0]?.terms?.endsOn || null;
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date());
-    const { pauseMove, pauseProblem, endEarlyProblem } = await import('../../src/lib/agreements/endDate.js');
+    const { pauseMove, pauseProblem, endEarlyProblem, PAUSED_ALREADY } = await import('../../src/lib/agreements/endDate.js');
     let patch;
     let answer;
     if (path === '/pause') {
       if (!end) return send(res, 409, { ok: false, message: 'This agreement has no end date to move.', calm: true });
-      const stop = pauseProblem({ from: body.from, to: body.to, today, end, paused: a.paused_from ? { from: a.paused_from, to: a.paused_to || null } : null });
+      // As the server's pause: an agreement that doesn't allow pausing, one ending early, a pause longer than the
+      // screens offer and a second pause are refused (pauseProblem; the claim below takes one only while none is kept).
+      if (vs.json?.[0]?.terms?.pausing === false) return send(res, 409, { ok: false, message: 'This agreement doesn’t allow pausing.', calm: true });
+      const stop = pauseProblem({ from: body.from, to: body.to, today, end, paused: a.paused_from ? { from: a.paused_from, to: a.paused_to || null } : null, earlyEnd: a.ending_by ? a.ending_on : null });
       if (stop) return send(res, 409, { ok: false, message: stop, calm: true });
       const moved = pauseMove(end, body.from, body.to);
       patch = { paused_from: body.from, paused_to: body.to, ends_on: moved.end };
@@ -223,8 +226,11 @@ async function standIn(req, res, path) {
       patch = { ending_on: body.endsOn, ending_by: body.by === 'coach' ? 'coach' : 'client' };
       answer = { endingOn: body.endsOn, emailed: false };
     }
-    const up = await rest('PATCH', `/agreements?id=eq.${id}`, patch, SERVICE);
+    const up = await rest('PATCH', `/agreements?id=eq.${id}${path === '/pause' ? '&paused_from=is.null' : ''}`, patch, SERVICE);
     if (up.status >= 300) return send(res, 409, { ok: false, message: 'That change wasn’t kept on the stand-in.' });
+    if (path === '/pause' && !(Array.isArray(up.json) && up.json.length)) {
+      return send(res, 409, { ok: false, message: PAUSED_ALREADY, calm: true });
+    }
     return send(res, 200, { ok: true, ...answer });
   }
   if (path === '/quote-sent') {

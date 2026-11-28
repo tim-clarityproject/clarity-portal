@@ -6,6 +6,7 @@ import { newId, noteRows, rowNow, rowsOf, saveRow } from '../../../lib/coach/sto
 import { supabase } from '../../../lib/supabase';
 import { firstOf, newDraft, orgFold, startFor, startPackages, untouchedDraft } from '../../../lib/coach/agreementBuilder';
 import { openPo } from '../../../lib/agreements/duringAgreement';
+import { possessive } from '../../../lib/possessive';
 import { Back, TextLink, useCoachPortal } from '../parts';
 import { useLeadActions } from '../leadParts';
 import { SAVE_PROBLEM } from './builderParts';

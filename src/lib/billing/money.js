@@ -155,6 +155,26 @@ export function daysOverdue(dueKey, now, zone) {
   return Math.max(0, daysBetween(dueKey, today));
 }
 /**
+ * Today on an invoice's payer's own clock, as the server reads it (daysOverdue: its payer_zone, else London), so Needs
+ * you and Finances count the days overdue and the reminder owed exactly as the nightly round does (Stage D break-it:
+ * the device counted on the coach's clock). Without `now` (a caller that only knows a day), `today` as given.
+ */
+export function payerToday(invoice, today, now = null) {
+  if (now == null || Number.isNaN(new Date(now).getTime())) return today;
+  return dayIn(isZone(invoice?.payer_zone) ? invoice.payer_zone : 'Europe/London', new Date(now));
+}
+/**
+ * The reminders that count for one invoice: every one sent or being sent (one that may have gone keeps its Send again,
+ * after a check), and drafts at no lower a stage than the highest drafted or sent. A draft below a later one is retired (the server deletes it when it drafts the later one; this
+ * ignores any left), so an invoice never offers two drafts, nor the 7-day one after the 14-day one went (the Stage D
+ * break-it tester). The server's Send and drafting, Needs you and Finances read the same.
+ */
+export function currentReminders(reminders = []) {
+  const list = (reminders || []).filter(Boolean);
+  const top = Math.max(0, ...list.map((r) => Number(r.stage)).filter(Number.isFinite));
+  return list.filter((r) => r.sent_at || r.sending_at || Number(r.stage) >= top);
+}
+/**
  * The reminder owed `late` days overdue, given the stages already drafted: the latest stage reached that is later than
  * every one drafted, or null. An invoice first seen 9 days overdue owes the 7-day one only (never the 3-day one as
  * well, nor the 3-day one a day later), and the 14-day one on its day (Stage D, item 15).
