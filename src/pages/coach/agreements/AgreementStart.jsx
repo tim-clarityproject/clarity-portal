@@ -165,13 +165,26 @@ export function AgreementButtons({ kind, id, name }) {
   if (!id) return null;
   const first = kind === 'lead' ? firstOf(name) || name : name;
   const forWho = kind === 'organisation' ? `org:${id}` : `lead:${id}`;
+  const v = fold?.version;
+  const ended = ['cancelled', 'ended', 'withdrawn'].includes(fold?.agreement?.status);
+  const waiting = fold?.agreement && !ended && !v?.sponsor_signed_at ? (v?.status === 'sent' ? 'sent' : v?.status === 'draft' || !v ? 'draft' : null) : null;
   return (
     <section className="ds-section cc-part ab-buttons" aria-label="Agreement">
       {kind === 'organisation' && <div className="ds-section-head"><h2 className="ds-section-title">Agreement</h2></div>}
       {fold?.line && <p className="ab-say">{fold.line}</p>}
       <div className="ab-acts">
-        <Button variant={kind === 'organisation' ? 'primary' : 'outline'} onClick={() => navigate(`/coach/agreements/new?for=${forWho}`)}>New agreement</Button>
-        {fold?.agreement && <Button variant="outline" onClick={() => navigate(`/coach/agreements/${fold.agreement.id}`)}>{`${name}’s agreement`}</Button>}
+        {/* While a version waits (a draft, or sent to the sponsor), it is the one main button and nothing new starts, as
+            on a client's page (the Stage D UI tester's polish 1); once signed, New agreement leads again. */}
+        {waiting ? (
+          <Button variant="primary" onClick={() => navigate(waiting === 'draft' ? `/coach/agreements/${fold.agreement.id}/edit` : `/coach/agreements/${fold.agreement.id}/sent`)}>
+            {waiting === 'draft' ? 'Carry on the draft agreement' : 'Open the agreement sent'}
+          </Button>
+        ) : (
+          <>
+            <Button variant={kind === 'organisation' ? 'primary' : 'outline'} onClick={() => navigate(`/coach/agreements/new?for=${forWho}`)}>New agreement</Button>
+            {fold?.agreement && <Button variant="outline" onClick={() => navigate(`/coach/agreements/${fold.agreement.id}`)}>{`${possessive(name)} agreement`}</Button>}
+          </>
+        )}
       </div>
       <TextLink onClick={() => navigate(`/coach/agreements/new?for=${forWho}&as=quote`)}>Send {first} a quote</TextLink>
     </section>

@@ -36,6 +36,7 @@ import {
   firstUnanswered,
   headline,
   isComplete,
+  skipRating,
   options,
   question,
   COMMIT_MAX,
@@ -78,6 +79,9 @@ import './teamCheck.css';
 // bottom bar. "Add to-do" is the results' one coral button; it opens the
 // shared add panel ("Where should it go?", rule 31).
 
+// Every rating question skipped: nothing to draw yet.
+const NOBODY_RATED = 'Your team shows here once you’ve rated someone on all three questions.';
+
 const TABLE_COLUMNS = [
   { key: 'person', label: 'Person' },
   { key: 'alignment', label: 'Alignment' },
@@ -98,12 +102,13 @@ function Results({ check, tool, onResults, onEditList }) {
       }
       return;
     }
-    const at = missing ? tool.steps.findIndex((s) => s.key === missing) : 0;
-    tool.go(Math.max(0, at));
+    // Everything skipped: the results say so rather than going round again.
+    if (!missing) return;
+    tool.go(Math.max(0, tool.steps.findIndex((s) => s.key === missing)));
     // Only when what's missing changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [complete, missing]);
-  if (!complete) return null;
+  if (!complete) return missing ? null : <ResultsSection first><p className="ds-hint">{NOBODY_RATED}</p></ResultsSection>;
   const rows = tableRows(check);
   return (
     <>
@@ -133,8 +138,9 @@ function Results({ check, tool, onResults, onEditList }) {
           <Button variant="text" onClick={onEditList}>Edit who’s on the list</Button>
         </div>
       </ResultsSection>
-      <StartQuestions title={QUESTIONS_TITLE} questions={startQuestions(check).map((q) => q.text)} />
+      {/* Before the questions, which always come last in a summary (rule 29ar; the Stage D UI tester's polish 3). */}
       {startQuestions(check).some((q) => q.kind === 'autonomy') && <DecideColours />}
+      <StartQuestions title={QUESTIONS_TITLE} questions={startQuestions(check).map((q) => q.text)} />
     </>
   );
 }
@@ -247,6 +253,8 @@ export default function TeamCheckTool({
       question: question('people'),
       eye,
       percent: 0,
+      // The list itself: the questions are about the people on it, so there is nothing to skip to.
+      required: true,
       check: () => requiredMessage(check),
       // Someone added from the results is asked about before the results show again.
       onward: () => firstUnanswered(check) || 'results',
@@ -287,9 +295,9 @@ export default function TeamCheckTool({
       label: countLine(s.n, s.of),
       question: question(s.kind, s.person),
       percent: Math.round(((j + 1) / (4 * people.length + 1)) * 100),
-      // One answer moves straight on (rule 21): no Next, and nothing to skip.
+      // One answer moves straight on (rule 21): no Next; Skip this step in the foot (Stage D question rules: only the
+      // commit can't be skipped; the UI tester's fault 5). A skipped person stays off the results.
       oneTap: true,
-      required: true,
       render: (tool) => (
         <Choice
           form="rows"
@@ -345,9 +353,10 @@ export default function TeamCheckTool({
         steps={steps}
         progress="percent"
         finishLabel="Add to-do"
-        skipLabel="Finish later"
-        skipMoves={false}
-        onSkip={onClose}
+        onSkip={(key) => {
+          const [kind, id] = String(key || '').split(':');
+          if (id && ['t', 'a', 'u'].includes(kind)) onCheck((c) => skipRating(c, id, kind));
+        }}
         draftKey={draftKey}
         initialStep={initialStep}
         onClose={onClose}

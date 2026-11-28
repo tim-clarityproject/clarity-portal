@@ -1,6 +1,7 @@
 import { daysBetween, dayKeyWords } from '../time/index.js';
 import { hoursWords, moneyText, rateText } from './currency.js';
 import { renewalLine } from './renewals.js';
+import { possessive } from '../possessive.js';
 
 // Needs you on Today (brief items 4, 10, 23, 24, 28, 40, 41, 43; M28's needs(); risk 11): every drafted next step, each
 // sending nothing by itself, with Undo. Each item is built from facts the page already holds; its key names it in
@@ -29,7 +30,7 @@ export const signReminderItem = ({ versionId, name, version, sentDay, day, today
 export const firstPaymentItem = ({ versionId, firstName, day, today }) =>
   item('first_payment', versionId, `${firstName} signed, and the first payment isn’t settled yet.`, 'A reminder is drafted for you to send', day, today, 'first_payment', { versionId });
 export const hoursItem = ({ agreementId, firstName, usedMinutes, blockMinutes, day, today }) =>
-  item('hours', agreementId, `${firstName}’s block is ${Math.round((usedMinutes / blockMinutes) * 100)}% used`, `${hoursWords(usedMinutes)} of ${hoursWords(blockMinutes)}`, day, today, 'hours', { agreementId });
+  item('hours', agreementId, `${possessive(firstName)} block is ${Math.round((usedMinutes / blockMinutes) * 100)}% used`, `${hoursWords(usedMinutes)} of ${hoursWords(blockMinutes)}`, day, today, 'hours', { agreementId });
 export const approvalItem = ({ agreementId, coachName, clientName, coaching, day, today }) =>
   item('approval', agreementId, `${coachName} made an agreement for you to approve`, `${clientName}, ${coaching}`, day, today, 'approval', { agreementId });
 export const overdueItem = ({ invoiceId, name, number, amountMinor, currency = 'GBP', daysOverdue, day, today }) =>
@@ -37,15 +38,15 @@ export const overdueItem = ({ invoiceId, name, number, amountMinor, currency = '
 export const poItem = ({ organisationId, orgName, number, day, today }) =>
   item('po', organisationId, `${orgName} needs a purchase order`, `Invoice CLARITY-${number} is waiting`, day, today, 'po', { organisationId });
 export const portalItem = ({ invoiceId, number, orgName, day, today }) =>
-  item('portal', invoiceId, `Upload CLARITY-${number} to ${orgName}’s supplier portal`, 'Sent by email today; they also want it on their portal', day, today, 'portal', { invoiceId });
+  item('portal', invoiceId, `Upload CLARITY-${number} to ${possessive(orgName)} supplier portal`, 'Sent by email today; they also want it on their portal', day, today, 'portal', { invoiceId });
 export const priceItem = ({ agreementId, name, feeMinor, currency = 'GBP', sinceDay, dueDay, day, today }) =>
   item('price', agreementId, `Yearly price review for ${name}`, `Retainer, ${rateText(feeMinor, 'month', currency)} since ${dayKeyWords(sinceDay, { year: true }).replace(/^[A-Z][a-z]{2} \d{1,2} /, '')}, review due ${dayKeyWords(dueDay)}`, day, today, 'price', { agreementId });
-export const renewItem = ({ agreementId, name, endDay, day, today }) =>
-  item('renew', agreementId, `Offer ${name} the next 6 months`, renewalLine(endDay), day, today, 'renew', { agreementId });
+export const renewItem = ({ agreementId, name, endDay, day, today, months = 6 }) =>
+  item('renew', agreementId, `Offer ${name} the next ${months} months`, renewalLine(endDay, today, months), day, today, 'renew', { agreementId, months });
 export const changeItem = ({ requestId, name, clauseTitle, day, today }) =>
   item('change', requestId, `${name} asked for a change to their agreement`, clauseTitle, day, today, 'change', { requestId });
 export const fxItem = ({ agreementId, name, currency, fallPercent, day, today }) =>
-  item('fx', agreementId, `The pound value of ${name}’s next invoice is down ${fallPercent}%`, `${currency} has moved since signing, so check the next term’s price`, day, today, 'fx', { agreementId });
+  item('fx', agreementId, `The pound value of ${possessive(name)} next invoice is down ${fallPercent}%`, `${currency} has moved since signing, so check the next term’s price`, day, today, 'fx', { agreementId });
 
 /**
  * The items still to show: not Done, and not put off until a day still to come (needs_you_done rows), in M28's order,

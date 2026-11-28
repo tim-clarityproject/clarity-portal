@@ -20,6 +20,7 @@
 /* A change in focus mode: a step's own words and boxes. */
 .ui-root .ap-flow-say { margin: 0 0 var(--space-3); font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text-2); }
 .ui-root .ap-flow-say:last-child { margin-bottom: 0; }
+.ui-root .ap-flow-say .ap-flow-line { display: block; }
 .ui-root .ap-flow .ds-card { margin-bottom: var(--space-3); }
 /* A question's answers span the question's 560px column (M28 v6 .qblock .choices.stack, as the builder's): the UI tester's
    P14 ("Which invoice?" stopped at the shared rows' 440px). */

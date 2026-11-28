@@ -685,7 +685,8 @@ export function birthdaysOn(abouts, profiles, todayKey) {
 
 export const firstName = (name) => clean(name).split(' ')[0] || '';
 /** "Sam’s", "Marcus’s". */
-export const possessive = (name) => `${name}’s`;
+import { possessive } from '../possessive.js';
+export { possessive };
 
 /** The drafted birthday note. */
 export function birthdayNote(profile, coachFirstName) {

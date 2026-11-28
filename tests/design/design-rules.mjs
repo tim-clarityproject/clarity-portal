@@ -197,7 +197,9 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
   if (scale === 1) {
     for (const el of controls) {
       // Breathe's answer boxes (.ds-bt-ans) hold the name and its grey line, one under the other on a phone, each on one line.
-      if (el.matches('textarea, input, select, .ds-answer:not(.ds-answer--box), [role=radio].ds-answer, [role=radio].ds-bt-ans') || el.closest(`.ds-rows, .ds-row, ${ROWS}, ${CAL_TILES}`)) continue; // a saved-items row (ListRow, .ds-row) is a row: its type line may wrap
+      // A Strategy's tile (.ds-stile-btn) is a card that opens, its name a Strategy's own words, which wrap as a row's
+      // name does (DG's leftover: "Maintain my availability to do good work" at 1024).
+      if (el.matches('textarea, input, select, .ds-answer:not(.ds-answer--box), [role=radio].ds-answer, [role=radio].ds-bt-ans, .ds-stile-btn') || el.closest(`.ds-rows, .ds-row, ${ROWS}, ${CAL_TILES}`)) continue; // a saved-items row (ListRow, .ds-row) is a row: its type line may wrap
       const w = words(el);
       if (!w || w.length > 60) continue;
       const fs = parseFloat(getComputedStyle(el).fontSize);

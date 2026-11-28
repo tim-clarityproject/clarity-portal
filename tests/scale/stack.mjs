@@ -190,8 +190,43 @@ async function standIn(req, res, path) {
   const c = claimsOf(req);
   if (!c?.sub || c.role !== 'authenticated') return send(res, 401, { ok: false, message: 'Sign in again to carry on.' });
   const body = JSON.parse(String(await readBody(req)) || '{}');
-  const id = String(body.quoteId || body.invoiceId || '');
+  const id = String(body.quoteId || body.invoiceId || body.agreementId || '');
   if (!/^[0-9a-f-]{36}$/.test(id)) return send(res, 400, { ok: false, message: 'That isn’t here.' });
+  if (path === '/pause' || path === '/extend' || path === '/end-early') {
+    // The changes to a running agreement, written as api/_routes/coach-agreements.js writes them (its pause, extend and
+    // endEarly), so a pause can be followed on the dev server (the Stage D UI tester's fault 2): the same refusals, the
+    // same columns, no email and no session touched.
+    const mine = await rest('GET', `/agreements?id=eq.${id}&select=id,status,current_version,ends_on,ending_on,ending_by,paused_from,paused_to`, undefined, tok);
+    const a = mine.json?.[0];
+    if (!a) return send(res, 403, { ok: false, message: 'That agreement isn’t yours.' });
+    if (a.status !== 'signed') return send(res, 409, { ok: false, message: 'Only a signed agreement can be changed this way.', calm: true });
+    const vs = await rest('GET', `/agreement_versions?agreement_id=eq.${id}&version=eq.${a.current_version}&select=terms`, undefined, tok);
+    const end = a.ends_on || (a.ending_on && !a.ending_by ? a.ending_on : null) || vs.json?.[0]?.terms?.endsOn || null;
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date());
+    const { pauseMove, pauseProblem, endEarlyProblem } = await import('../../src/lib/agreements/endDate.js');
+    let patch;
+    let answer;
+    if (path === '/pause') {
+      if (!end) return send(res, 409, { ok: false, message: 'This agreement has no end date to move.', calm: true });
+      const stop = pauseProblem({ from: body.from, to: body.to, today, end, paused: a.paused_from ? { from: a.paused_from, to: a.paused_to || null } : null });
+      if (stop) return send(res, 409, { ok: false, message: stop, calm: true });
+      const moved = pauseMove(end, body.from, body.to);
+      patch = { paused_from: body.from, paused_to: body.to, ends_on: moved.end };
+      answer = { endsOn: moved.end, emailed: false };
+    } else if (path === '/extend') {
+      if (end && !(body.endsOn > end)) return send(res, 409, { ok: false, message: 'Choose an end date after the current one.', calm: true });
+      patch = { ends_on: body.endsOn };
+      answer = { endsOn: body.endsOn, emailed: false };
+    } else {
+      const stop = endEarlyProblem({ on: body.endsOn, today, end, earlyEnd: a.ending_by ? a.ending_on : null });
+      if (stop) return send(res, 409, { ok: false, message: stop, calm: true });
+      patch = { ending_on: body.endsOn, ending_by: body.by === 'coach' ? 'coach' : 'client' };
+      answer = { endingOn: body.endsOn, emailed: false };
+    }
+    const up = await rest('PATCH', `/agreements?id=eq.${id}`, patch, SERVICE);
+    if (up.status >= 300) return send(res, 409, { ok: false, message: 'That change wasn’t kept on the stand-in.' });
+    return send(res, 200, { ok: true, ...answer });
+  }
   if (path === '/quote-sent') {
     const mine = await rest('GET', `/agreement_quotes?id=eq.${id}&select=id,status,valid_days`, undefined, tok);
     const q = mine.json?.[0];

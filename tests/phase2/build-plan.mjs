@@ -237,7 +237,16 @@ try {
 
   // Strategies, one screen per objective.
   pass('build: Strategies for the first objective', (await heading(page)) === 'How will you achieve “Coaching clients”?', await heading(page)); // Stage D, Draft 11
-  pass('build: the help panel uses rule 40’s words', (await page.locator('.ds-help-panel').textContent()).startsWith('Strategies are medium to long-term approaches to achieving your objectives.'));
+  // Stage D question rules (the UI tester's question 5): nothing under the question but "See an example", which shows three
+  // different examples together; rule 40's words sit behind the ⓘ, Strategies being a term a client may not know.
+  const shows = async (re) => { for (let i = 0; i < 20; i += 1) { if (re.test(await page.locator('body').innerText())) return true; await page.waitForTimeout(250); } return false; };
+  pass('build: no help panel under the question', (await page.locator('.ds-help-panel').count()) === 0);
+  await page.getByRole('button', { name: 'Why we ask' }).first().click();
+  pass('build: the ⓘ uses rule 40’s words', await shows(/Strategies are medium to long-term approaches to achieving your objectives\./));
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'See an example' }).click();
+  pass('build: See an example shows three different examples', await shows(/Build a leadership team I can trust[\s\S]*Develop players through daily habits[\s\S]*Protect time for deep work/));
+  await page.getByRole('button', { name: 'Hide the example' }).click().catch(() => null);
   await page.getByRole('button', { name: 'Add a Strategy' }).click(); // walk item 4: the card's add is named "Add a Strategy"
   await page.waitForTimeout(150);
   await page.getByLabel('Strategy 1').fill('Maintain my availability to do good work');
@@ -333,7 +342,7 @@ try {
     pass('build: Ready, a screen reader hears "Edit the start date" (12 Nov)', editLabels.includes('Edit the start date') && !editLabels.some((l) => /^edit starts$/i.test(l || '')), editLabels.join(' | '));
   }
   pass('build: Ready title', (await heading(page)) === 'Your plan and first sprint');
-  pass('build: Ready lists the plan', ready.includes('Coaching clients') && ready.includes('31 now, target 40, by 15 Dec 2026')
+  pass('build: Ready lists the plan', ready.includes('Coaching clients') && ready.includes(`31 now, target 40, by 15 Dec${new Date().getFullYear() === 2026 ? '' : ' 2026'}`) /* this year's date has no year (Stage D UI tester, fault 4) */
     && ready.includes('Milestone, by 20 Jan 2027') && ready.includes('Good now, target Very good, by 26 Feb 2027')
     && ready.includes('4 habits across 2 Strategies') && ready.includes('Monday to Friday') && ready.includes('8 weeks') && ready.includes('80%'), ready.slice(0, 200));
   pass('build: Ready says nothing when the plan lines up (10 Nov: only a gap is named)', !ready.includes('Every objective has a Strategy') && !ready.includes('has no Strategy working on it'));

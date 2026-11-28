@@ -336,7 +336,7 @@ test('who needs attention: coaching facts only', () => {
   assert.deepEqual(rows.map((r) => [r.name, r.line, r.action]), [
     ['Hannah Wells', 'Yesterday’s session is ready to write up.', 'Write it up'],
     ['Hannah Wells', 'Hannah has 2 sessions left.', 'Offer a renewal'],
-    ['Marcus Bell', '2 hours 10 minutes of time credit are left.', 'Open Marcus’s page'],
+    ['Marcus Bell', '2 hours 10 minutes of time credit are left.', 'Open Marcus’ page'],
   ]);
   assert.equal(rows[1].short, '2 sessions left');
   assert.ok(rows.every((r) => !/portal|logged|signed in/i.test(r.line)), 'never a flag from portal use');

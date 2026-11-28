@@ -110,15 +110,16 @@ export function teamCheckPdf({ check, person = '', createdAt = null }) {
         title: 'What’s working well',
         blocks: (check.people || []).filter((p) => String(p.w || '').trim()).map((p) => ({ type: 'field', label: p.name, text: String(p.w).trim() })),
       },
-      {
-        title: 'Questions to start with',
-        blocks: [{ type: 'list', items: startQuestions(check).map((q) => q.text) }],
-      },
-      // Decide who decides (Stage D, item 4): what the autonomy question's colours mean, in words only.
+      // Decide who decides (Stage D, item 4): what the autonomy question's colours mean, in words only, before the questions,
+      // which come last as on screen (rule 29ar; the Stage D UI tester's polish 3).
       {
         title: DECIDE_TITLE,
         blocks: startQuestions(check).some((q) => q.kind === 'autonomy')
           ? DECIDE_COLOURS.map((c) => ({ type: 'field', label: c.name, text: c.meaning })) : [],
+      },
+      {
+        title: 'Questions to start with',
+        blocks: [{ type: 'list', items: startQuestions(check).map((q) => q.text) }],
       },
       // The commit answer, last: the page's own next step (summary order, rule 29ar).
       {

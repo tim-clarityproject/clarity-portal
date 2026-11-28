@@ -60,7 +60,7 @@ test('a block of hours at 80%: the top-up drafted, counted again after each top-
   const agreements = [{ id: 'a3', coach_id: coachId, profile_id: 'p3', engagement_id: 'e1', status: 'signed' }];
   const entries = [90, 240, 190, 120].map((m, i) => ({ id: `t${i}`, engagement_id: 'e1', started_at: `2026-11-1${i}T09:00:00Z`, ended_at: new Date(Date.parse(`2026-11-1${i}T09:00:00Z`) + m * 60000).toISOString() }));
   const [it] = d.needsYouItems({ coachId, today, now, agreements, versions: [v('v3', 'a3', t)], entries, clients });
-  assert.equal(it.title, 'Rhys’s block is 80% used');
+  assert.equal(it.title, 'Rhys’ block is 80% used');
   assert.equal(it.line, '10 hours 40 minutes of 13 hours 20 minutes');
   assert.equal(it.key, 'hours:a3:0');
   const after = d.needsYouItems({ coachId, today, now, agreements, versions: [v('v3', 'a3', t)], entries, clients, invoices: [{ agreement_id: 'a3', kind: 'top_up', status: 'sent' }] });
@@ -74,7 +74,7 @@ test('renewal a month before the 6 months end; price review 6 weeks before it is
   const items = d.needsYouItems({ coachId, today: '2027-01-12', now, agreements, versions: [v('v4', 'a4', sessionsT), v('v5', 'a5', retainerT)], clients });
   const renew = items.find((i) => i.kind === 'renew' && i.data.agreementId === 'a4');
   assert.equal(renew.title, 'Offer Alex Morgan the next 6 months');
-  assert.equal(renew.line, 'These 6 months end Fri 12 Feb, a month from now');
+  assert.equal(renew.line, 'These 6 months end Fri 12 Feb, 31 days to go'); // a true countdown (Stage D UI tester, fault 6)
   const price = d.needsYouItems({ coachId, today, now, agreements, versions: [v('v5', 'a5', retainerT)], clients }).find((i) => i.kind === 'price');
   assert.equal(price.title, 'Yearly price review for Jo Patel');
   assert.match(price.line, /^Retainer, £3,000\/month since Jan 2026, review due Mon 4 Jan$/);
@@ -106,7 +106,7 @@ test('a purchase order held, a supplier portal to upload to, a change asked for,
   ];
   const profiles = [{ coach_id: coachId, organisation_id: 'o1', needs_po: true, supplier_portal: true }];
   const items = d.needsYouItems({ coachId, today, now, invoices, profiles, organisations, clients });
-  assert.deepEqual(items.map((i) => i.title).sort(), ['Northfield Logistics needs a purchase order', 'Upload CLARITY-1251 to Northfield Logistics’s supplier portal'].sort());
+  assert.deepEqual(items.map((i) => i.title).sort(), ['Northfield Logistics needs a purchase order', 'Upload CLARITY-1251 to Northfield Logistics’ supplier portal'].sort());
   assert.equal(items.find((i) => i.kind === 'po').line, 'An invoice for £6,000 is waiting');
   const agreements = [{ id: 'a7', coach_id: coachId, profile_id: 'p1', status: 'signed' }];
   const versions = [{ id: 'v7', agreement_id: 'a7', coach_id: coachId, version: 1, status: 'sent', clauses: [{ key: 'ending', number: 8, title: 'Ending and changes' }], terms: {} }];

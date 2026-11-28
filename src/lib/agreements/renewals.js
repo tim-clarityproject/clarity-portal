@@ -35,8 +35,18 @@ export function priceLine(oldMinor, newMinor, today, from) {
 /** "January": the month a new price starts, said aloud in the talking points. */
 export const monthName = (day) => ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][Number(String(day).slice(5, 7)) - 1];
 
-/** "These 6 months end Fri 12 Feb, a month from now" (Needs you's line). */
-export const renewalLine = (end) => `These 6 months end ${dayKeyWords(end)}, a month from now`;
+/**
+ * Needs you's line: "These 6 months end Fri 12 Feb, 30 days to go", the term's own length and a true countdown (rule
+ * 29an; the Stage D UI tester's fault 6: "a month from now" showed 6 and 13 days before the end, and "6 months" on a
+ * 12-month agreement). `today` gives the countdown; without it the line ends at the date.
+ */
+export function renewalLine(end, today = null, months = TERM_MONTHS) {
+  const head = `These ${months} months end ${dayKeyWords(end)}`;
+  if (!today) return head;
+  const d = daysBetween(today, end);
+  if (d <= 0) return `These ${months} months end today`;
+  return `${head}, ${d} ${d === 1 ? 'day' : 'days'} to go`;
+}
 
 /**
  * The next 6 months' terms, drafted from the current ones with up front chosen (Tim: "I always want to do the bulk

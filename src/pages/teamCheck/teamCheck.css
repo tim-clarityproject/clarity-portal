@@ -163,17 +163,19 @@
 .ui-root .tpc-light {
   flex: none;
   display: grid;
-  gap: var(--space-px2);
+  gap: var(--space-px3);
 }
+/* 12px lights; an unlit one a 1.5px ring in the edges colour, which reaches 3 to 1 against the page in both modes
+   (rule 8a; the Stage D UI tester's polish 3: 10px with a 1px ring read faint in dark). */
 .ui-root .tpc-light-dot {
-  width: var(--space-px10);
-  height: var(--space-px10);
+  width: var(--space-px12);
+  height: var(--space-px12);
   box-sizing: border-box;
   border-radius: 50%;
-  border: var(--line-w) solid var(--field-line);
+  border: var(--line-w-strong) solid var(--field-line);
 }
 .ui-root .tpc-light-dot--green { background: var(--good); border-color: var(--good); }
-.ui-root .tpc-light-dot--amber { border: var(--space-px2) solid var(--good); }
+.ui-root .tpc-light-dot--amber { border: var(--space-px3) solid var(--good); }
 .ui-root .tpc-light-dot--red { background: var(--text-2); border-color: var(--text-2); }
 
 @media (forced-colors: active) {

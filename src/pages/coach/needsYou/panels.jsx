@@ -34,7 +34,7 @@ import './needsyou.css';
 // coral button on the right (M28 draws the button first and Not now as an outlined button).
 
 const firstOf = (name) => String(name || '').trim().split(/\s+/)[0] || '';
-const possessive = (name) => `${name}’s`;
+import { possessive } from '../../../lib/possessive.js';
 
 // ---------------------------------------------------------------- shared small parts
 
@@ -407,17 +407,18 @@ function RenewBody({ item, close }) {
   const a = p.agreements.find((x) => x.id === item.data.agreementId);
   const name = p.clients.find((c) => c.id === a?.profile_id)?.name || '';
   const points = fill('renew', { focus: a ? versionInForce(p.agreementVersions, a.id)?.terms?.focus : null }, rowsOf(p.state, 'talking_points').filter((r) => r.coach_id === p.coach.id));
+  const months = Number(item.data?.months) || 6;
   const draft = () => {
-    mark(item, { message: 'The next 6 months are ready to check and send' });
+    mark(item, { message: `The next ${months} months are ready to check and send` });
     close();
     navigate(`/coach/agreements/${a.id}/edit?renew=${a.id}`);
   };
   return {
     title: `${possessive(name)} renewal`,
-    footer: <Foot left={<TextLink onClick={() => mark(item, { state: 'not_now', until: notNow(item, p.todayKey), message: 'Moved to next week' }).then((ok) => ok && close())}>Not now</TextLink>}><Button variant="primary" onClick={draft}>Draft the next 6 months</Button></Foot>,
+    footer: <Foot left={<TextLink onClick={() => mark(item, { state: 'not_now', until: notNow(item, p.todayKey), message: 'Moved to next week' }).then((ok) => ok && close())}>Not now</TextLink>}><Button variant="primary" onClick={draft}>{`Draft the next ${months} months`}</Button></Foot>,
     body: (
       <>
-        <p className="ny-meta">{item.line.replace(/, a month from now$/, '')}</p>
+        <p className="ny-meta">{item.line.replace(/, \d+ days? to go$/, '')}</p>
         <TalkPanel points={points} />
       </>
     ),

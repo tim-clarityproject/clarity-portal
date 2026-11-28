@@ -409,7 +409,10 @@ if (part(2)) {
       pass('morning: a wind-down thought became a to-do from Sleep wind down', ['sleep_wind_down', 'other_tool'].includes(by(CARRIED[3][0])?.source) && by(CARRIED[3][0])?.source_id === null, JSON.stringify(made));
       pass('morning: each made once', made.length === 3, String(made.length));
       const after = await groupRows(page, 0);
-      pass('morning: chosen things stay carried over, with their source', JSON.stringify(after.map((r) => source(r.line))) === JSON.stringify(CARRIED.map((c) => c[1])), after.map((r) => `${r.name}: ${r.line}`).join(' | '));
+      // The chosen lead, in the order chosen (0, 2, 3), then the one left (Draft 11: the most important is the first in the list;
+      // the Stage D UI tester's polish 2), each still with its source.
+      const chosenOrder = [0, 2, 3, 1].map((n) => CARRIED[n]);
+      pass('morning: chosen things stay carried over, with their source', JSON.stringify(after.map((r) => [r.name, source(r.line)])) === JSON.stringify(chosenOrder.map((c) => [c[0], c[1]])), after.map((r) => `${r.name}: ${r.line}`).join(' | '));
       // Unchosen the same morning: the to-do goes again.
       await row(CARRIED[3][0]).click();
       const gone = await until(async () => {

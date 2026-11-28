@@ -459,7 +459,7 @@ function GoalBar({ bar }) {
     return (
       <span className="dash-goal dash-goal--time" aria-hidden="true">
         <span className="dash-goal-labels"><span>{bar.dueText ? `Due ${bar.dueText}` : 'Due'}</span></span>
-        <span className="dash-goal-track"><span className="dash-goal-fill dash-goal-fill--time" style={{ width: pct(bar.gone * 100) }} /><span className="dash-goal-now" style={{ left: pct(bar.gone * 100) }} /></span>
+        <span className="dash-goal-track"><span className="dash-goal-fill dash-goal-fill--time" style={{ width: pct(bar.gone * 100) }} /><span className="dash-goal-now dash-goal-dot" style={{ left: pct(bar.gone * 100) }} /></span>
       </span>
     );
   }

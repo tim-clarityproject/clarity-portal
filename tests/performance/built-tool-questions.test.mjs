@@ -70,8 +70,8 @@ test('Team performance check: what’s working, one commit question naming one p
   let c = emptyCheck();
   c = addPerson(c, { id: 'a', name: 'Priya Shah', role: '' });
   c = addPerson(c, { id: 'b', name: 'Tom Ellis', role: '' });
-  assert.equal(question('w', c.people[0]), 'What’s working well with “Priya Shah” right now?');
-  assert.equal(question('c', c.people[1]), 'What will you do first with “Tom Ellis”, and when?');
+  assert.equal(question('w', c.people[0]), 'What’s working well with Priya Shah right now?');
+  assert.equal(question('c', c.people[1]), 'What will you do first with Tom Ellis, and when?');
   c = setWorking(c, 'a', 'She runs the Monday numbers');
   assert.equal(c.people[0].w, 'She runs the Monday numbers');
   // Rated: Priya in Chaotic (autonomy only) is named first by the questions to start with.

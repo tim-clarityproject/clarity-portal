@@ -125,7 +125,8 @@ export function MoreLink({ children, href, onClick, small = false, bare = false,
   const Tag = href ? 'a' : 'button';
   const inner = (
     <>
-      {back && !bare && <Chevron direction="left" className="ds-more-back" />}
+      {/* Centred on the word as the forward one is (rule 29ao; DG leftover: the Daily review's Back read 1px high). */}
+      {back && !bare && <Chevron direction="left" beside="words" className="ds-more-back" />}
       <span>{children}</span>
       {/* Centred on the words' x-height (5e rule 29ao), not on the line box. */}
       {!back && !bare && <Chevron direction="right" beside="words" />}

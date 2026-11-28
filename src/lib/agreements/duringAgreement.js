@@ -274,7 +274,10 @@ export function needsYouItems(f) {
         end = termEnds(t.startsOn, TERM_MONTHS);
         for (let k = 0; end < today && k < 40; k += 1) end = termEnds(addMonths(t.startsOn, TERM_MONTHS * (k + 1)), TERM_MONTHS);
       }
-      if (end && renewalShows(end, today)) out.push({ ...renewItem({ agreementId: a.id, name, endDay: end, day: addMonths(end, -1), today }), key: `renew:${a.id}:${end}` });
+      // The next term is drafted from this one (nextTermDraft), so it is offered at this one's length: a retainer's term,
+      // or the sessions' own months (a 12-month Leadership Partnership offers the next 12; the UI tester's fault 6).
+      const months = kindOf(t) === 'retainer' ? TERM_MONTHS : termMonths(t);
+      if (end && renewalShows(end, today)) out.push({ ...renewItem({ agreementId: a.id, name, endDay: end, day: addMonths(end, -1), today, months }), key: `renew:${a.id}:${end}` });
     }
     // The pound value of the next invoice down more than 5% since signing (another currency only).
     const c = t.currency || v.currency || 'GBP';

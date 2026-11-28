@@ -1942,7 +1942,8 @@
   line-height: var(--lh-text);
   letter-spacing: normal;
   text-align: left;
-  color: var(--text-2);
+  /* The text colour at rest, as the 25 Nov reference's .choices buttons inherit it (the Stage D UI tester's polish 8). */
+  color: var(--text);
   overflow-wrap: break-word;
   transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
   -webkit-tap-highlight-color: transparent;
@@ -11379,10 +11380,19 @@
 }
 .ui-root .ds-pick-act:hover { color: var(--text); }
 @media (max-width: 600px) {
-  .ui-root .ds-answer--pick:has(.ds-pick-side) { flex-wrap: wrap; row-gap: var(--space-px2); }
+  /* The mark keeps its own column and "Most important" sits under the words, where "Move to top" is drawn on the
+     other rows (the Stage D UI tester's fault 3: wrapping put the words under the mark at 390 and at twice the text). */
+  .ui-root .ds-answer--pick:has(.ds-pick-side) {
+    display: grid;
+    grid-template-columns: var(--checkbox-box) minmax(0, 1fr);
+    column-gap: var(--space-px14);
+    row-gap: var(--space-px2);
+    align-items: center;
+  }
   .ui-root .ds-pick-side {
-    margin-left: calc(var(--checkbox-box) + var(--space-px14));
-    width: 100%;
+    grid-column: 2;
+    margin-left: 0;
+    white-space: normal;
   }
   .ui-root .ds-answer.ds-answer--pick-act {
     padding-right: var(--row-pad-x) !important;

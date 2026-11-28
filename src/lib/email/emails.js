@@ -27,7 +27,7 @@ import { EMAIL_SIGN_OFF, oneLine } from './template.js';
 import { shownCallName } from '../callNames.js';
 import { sessionWhenWords, timeWords, relativeDayWords, dayWords } from '../time/index.js';
 
-const possessive = (name) => `${name}’s`;
+import { possessive } from '../possessive.js';
 /** "Hi Sam," from a name, or "Hello," when there is none. */
 export const greeting = (name) => { const first = oneLine(name).split(' ')[0]; return first ? `Hi ${first},` : 'Hello,'; };
 /** A coach's sign-off: their first name, alone on the last line (draft-2: "Tim"). */

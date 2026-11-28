@@ -82,7 +82,9 @@
   /* ====== Form Elements ====== */
 
   /* Ensure buttons meet minimum touch target size (44px) - exclude fixed action buttons */
-  button:not(.breathe-button):not([class*="ds-"]):not([class*="cc-"]):not([class*="hdr-"]) {
+  /* Never Back or Discard (components.css's .ui-back-link, .ui-discard-link): their padding is 0 so the chevron sits on
+     the content's edge (rule 29t; the Stage D UI tester's polish 9: Back started 13px in on every phone page). */
+  button:not(.breathe-button):not([class*="ds-"]):not([class*="cc-"]):not([class*="hdr-"]):not(.ui-back-link):not(.ui-discard-link) {
     min-height: 44px;
     padding: 12px 16px !important;
     font-size: calc(16 * var(--u, 1px)) !important;

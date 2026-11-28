@@ -1,3 +1,4 @@
+import { possessive as ownWord } from '../possessive.js';
 import { addDays, dayKeyWords, weekdayOf } from '../time/index.js';
 import { andList, hoursWords, isCurrency, lowerFirst, moneyText, rateText } from '../agreements/currency.js';
 import { buildClauses, forStorage, mainPoints, resolveChoice } from '../agreements/clauses.js';
@@ -79,7 +80,7 @@ export function partyOf({ agreement, clients = [], organisations = [] }) {
 }
 export const firstOf = (name) => text(name).split(/\s+/)[0] || '';
 /** "Sam's", "James'": a possessive for a first name. */
-export const possessive = (first) => (first ? (/s$/i.test(first) ? `${first}’` : `${first}’s`) : 'Their');
+export const possessive = (first) => (first ? ownWord(first) : 'Their');
 
 // ---------------------------------------------------------------- packages
 

@@ -69,14 +69,14 @@ test('the questions name the person in curly quotes, word for word', () => {
   const p = { name: 'Priya Shah' };
   assert.equal(question('people'), 'Who reports to you?');
   assert.equal(nudge('people'), 'Add each person you lead directly.');
-  assert.equal(question('t', p), 'How much does “Priya Shah” trust you as their leader?');
+  assert.equal(question('t', p), 'How much does Priya Shah trust you as their leader?');
   assert.equal(nudge('t'), 'Choose the one that fits best.');
-  assert.equal(question('a', p), 'How well does “Priya Shah” understand what you’re trying to achieve?');
+  assert.equal(question('a', p), 'How well does Priya Shah understand what you’re trying to achieve?');
   assert.equal(nudge('a'), 'Think about why it matters and what they’re accountable for.');
-  assert.equal(question('u', p), 'How much autonomy does “Priya Shah” have to decide how to deliver?');
+  assert.equal(question('u', p), 'How much autonomy does Priya Shah have to decide how to deliver?');
   assert.equal(nudge('u'), 'Think about the boundaries you’ve agreed.');
   assert.equal(countLine(1, 5), 'Person 1 of 5');
-  assert.equal(QUESTIONS_TITLE, 'Questions to start with:');
+  assert.equal(QUESTIONS_TITLE, 'Questions to start with'); // no colon on a label (Stage D UI tester, polish 3)
 });
 
 test('the screens: three questions for each person, in the list’s order, and M10’s % bar', () => {
@@ -290,9 +290,9 @@ test('Questions to start with: Chaotic first, then trust, then autonomy, each na
   const qs = startQuestions(m10());
   assert.deepEqual(qs.map((q) => q.kind), ['chaotic', 'trust', 'autonomy']);
   assert.deepEqual(qs.map((q) => q.text), [
-    'What would help “Daniel Reyes” explain the organisation’s intent in their own words?',
-    'What has changed for “Tom Ellis”, and what would rebuild their trust?',
-    'Which decisions can “Grace Okafor” own, and at which colour?', // Stage D, Draft 11 (Tim's answer 10)
+    'What would help Daniel Reyes explain the organisation’s intent in their own words?',
+    'What has changed for Tom Ellis, and what would rebuild their trust?',
+    'Which decisions can Grace Okafor own, and at which colour?', // Stage D, Draft 11 (Tim's answer 10)
   ]);
   for (const q of qs) assert.ok(words(q.text) <= 15, `${words(q.text)} words: ${q.text}`);
 });
@@ -305,8 +305,8 @@ test('Questions to start with: about 15 words or fewer whatever the name, and on
   const qs = startQuestions(c);
   assert.deepEqual(qs.map((q) => q.kind), ['chaotic', 'trust', 'autonomy']);
   for (const q of qs) assert.ok(words(q.text) <= 15, `${words(q.text)} words: ${q.text}`);
-  assert.ok(qs[0].text.includes(`“${firstName(long)}”`), 'a very long name is said as its first word');
-  assert.ok(qs[2].text.includes('“Xi”'));
+  assert.ok(qs[0].text.includes(firstName(long)), 'a very long name is said as its first word');
+  assert.ok(qs[2].text.includes('Xi'));
   // No last check: no trust question (nothing has fallen). No one in Chaotic or seeking permission: none at all.
   assert.deepEqual(startQuestions(team([['A B', 1, 3, 3]])), []);
   assert.deepEqual(startQuestions(team([['A B', 1, 5, 5]])), []);
@@ -448,4 +448,31 @@ test('The team chart: names never run through another dot or name, nor off the d
       });
     }
   }
+});
+
+// Stage D question rules (the UI tester's fault 5): a rating question can be skipped; the person stays off the results,
+// the check can still finish, and the skip is kept and read back.
+test('a skipped rating: off the results, the check still finishes, kept round trip', async () => {
+  const m = await import('../../src/lib/teamCheck/model.js');
+  let c = m.addPerson(m.addPerson(m.emptyCheck(), { id: 'p1', name: 'Priya Shah' }), { id: 'p2', name: 'Tom Ellis' });
+  for (const k of ['t', 'a', 'u']) c = m.setRating(c, 'p1', k, 4);
+  c = m.setRating(m.setRating(c, 'p2', 't', 3), 'p2', 'a', 5);
+  assert.equal(m.firstUnanswered(c), 'u:p2');
+  assert.equal(m.isComplete(c), false);
+  c = m.skipRating(c, 'p2', 'u');
+  assert.equal(m.firstUnanswered(c), null);
+  assert.equal(m.isComplete(c), true);
+  assert.deepEqual(m.ratedPeople(c).map((p) => p.id), ['p1']);
+  const back = m.checkFrom(m.savedAnswers(c));
+  assert.deepEqual(back.people.find((p) => p.id === 'p2').s, ['u']);
+  assert.deepEqual(m.tidyCheck(c).people.find((p) => p.id === 'p2').s, ['u']);
+  // Answered later, the skip goes.
+  const later = m.setRating(c, 'p2', 'u', 2);
+  assert.equal(later.people.find((p) => p.id === 'p2').s, undefined);
+  assert.deepEqual(m.ratedPeople(later).map((p) => p.id), ['p1', 'p2']);
+  // Everything skipped: nobody rated, so not finished.
+  let none = m.addPerson(m.emptyCheck(), { id: 'x', name: 'Xi' });
+  for (const k of ['t', 'a', 'u']) none = m.skipRating(none, 'x', k);
+  assert.equal(m.firstUnanswered(none), null);
+  assert.equal(m.isComplete(none), false);
 });

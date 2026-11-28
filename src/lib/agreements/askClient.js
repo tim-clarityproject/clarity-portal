@@ -10,13 +10,17 @@ import { askWith } from './asks';
 const LIVE = typeof __CLARITY_LIVE__ !== 'undefined' && __CLARITY_LIVE__ === true;
 
 /**
- * Two stand-in answers the local stand-in (tests/scale/stack.mjs, /standin/v1) can also write, so the flow can be followed
+ * Stand-in answers the local stand-in (tests/scale/stack.mjs, /standin/v1) can also write, so the flow can be followed
  * on the dev server (P14, P15): a quote sent gets its Q- number and status, a refund or credit its credit note. Anywhere
  * else (a stand-in that isn't the local one) the plain stand-in answer stands. Never on the live site.
  */
 const LOCAL_WRITES = {
   'agreements.send': (b) => (b.sendAs === 'quote' && b.quoteId ? ['quote-sent', { quoteId: b.quoteId, validDays: b.validDays }] : null),
-  'billing.refund': (b) => ['credit-note', { invoiceId: b.invoiceId, amount: b.amount, reason: b.reason, kind: 'refund' }],
+  // A running agreement's changes (the Stage D UI tester's fault 2): kept on the local stand-in as the server keeps them.
+  'agreements.pause': (b) => (b.agreementId ? ['pause', { agreementId: b.agreementId, from: b.from, to: b.to }] : null),
+  'agreements.extend': (b) => (b.agreementId ? ['extend', { agreementId: b.agreementId, endsOn: b.endsOn }] : null),
+  'agreements.end_early': (b) => (b.agreementId ? ['end-early', { agreementId: b.agreementId, endsOn: b.endsOn, by: b.by }] : null),
+  'billing.refund':(b) => ['credit-note', { invoiceId: b.invoiceId, amount: b.amount, reason: b.reason, kind: 'refund' }],
   'billing.credit': (b) => ['credit-note', { invoiceId: b.invoiceId, amount: b.amount, reason: b.reason, kind: 'credit' }],
 };
 async function localWrite(route, kind, body, token) {

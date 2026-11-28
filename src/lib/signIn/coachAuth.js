@@ -428,7 +428,8 @@ export function lostCodesLine({ ownerFirstName, isOwner = false } = {}) {
 }
 
 /** "Maya’s" (always ’s, as UK style has it for a name ending in s too: "James’s"). */
-export const possessive = (name) => `${String(name ?? '').trim()}’s`;
+import { possessive } from '../possessive.js';
+export { possessive };
 
 /** The owner's reset panel: its title and M26's two lines (they and them). */
 export function resetWords(firstName) {

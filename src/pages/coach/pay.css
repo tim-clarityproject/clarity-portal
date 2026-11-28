@@ -37,3 +37,6 @@
   .ui-root .cc-rep-bar { grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); }
   .ui-root .cc-rep-bar .ds-bar { grid-column: 1 / -1; order: 3; }
 }
+/* A figure that shows its sentence instead of a bare 0 takes the row's whole width, so the sentence keeps one line where
+   it fits (the Stage D UI tester's polish 7: "No coaching hours yet this month." wrapped in a third of the card). */
+.ui-root .cc-pay-figures > :has(> .ds-fig-empty) { grid-column: 1 / -1; }

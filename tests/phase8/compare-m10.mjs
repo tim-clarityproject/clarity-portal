@@ -99,7 +99,7 @@ const SCREENS = {
     ['an empty step', '.trow .lv i', '.ds-steprow-bars i', 9, ['fill']],
     ['the last trust row', '.trow', '.ds-steprow', 4, ['box']],
     ['Edit who’s on the list', '.sec:nth-of-type(3) .change .text', '.ds-results-link .ds-link', 0, ['pos', 'text']],
-    ['Questions to start with:', '.sech', '.ds-results-head', 2, ['box', 'text']],
+    ['Questions to start with', '.sech', '.ds-results-head', 2, ['box']], // its words differ by the colon M10 drew (Stage D UI tester, polish 3: no colon on a label)
     ['the first question', '.qi p', '.ds-startq', 0, ['pos', 'text']],
     ['the last question', '.qi p', '.ds-startq', 2, ['pos']],
     ['Add to-do', '.gft .btn', '.ds-guide-next', 0, ['foot', 'text']],

@@ -18,7 +18,7 @@ import { EMAIL_SIGN_OFF, oneLine, safeHref } from './template.js';
 import { greeting } from './emails.js';
 import { dayWords, timeWords } from '../time/index.js';
 
-const possessive = (name) => `${name}’s`;
+import { possessive } from '../possessive.js';
 const firstOf = (name) => oneLine(name).split(' ')[0];
 
 /** The coach's first name, alone on the last line (draft-2: "Tim"). A coach's email always has one. */

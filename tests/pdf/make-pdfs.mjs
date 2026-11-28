@@ -1117,11 +1117,12 @@ for (const [name, spec] of Object.entries(DOCS)) {
   const problems = [];
   const titles = (spec) => spec.sections.filter((x) => x.blocks.some((b) => (b.items ? b.items.length : true))).map((x) => x.title).join(' > ');
   const normal = TC['Team check, normal'];
-  if (titles(normal) !== 'Alignment and autonomy > Trust > Questions to start with') problems.push(`the sections are in the wrong order: ${titles(normal)}`);
+  // Stage D: Decide who decides before the questions, which come last (rule 29ar; the UI tester's polish 3).
+  if (titles(normal) !== 'Alignment and autonomy > Trust > Decide who decides > Questions to start with') problems.push(`the sections are in the wrong order: ${titles(normal)}`);
   if (normal.sections[0].blocks[0].type !== 'dots') problems.push('the chart is not first (rule 29ar)');
   if (normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ') !== ': 1 of your 5 people is in the high-performance area right now.') problems.push(`At a glance reads "${normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ')}"`);
-  const questions = (spec) => spec.sections[2].blocks[0].items;
-  if (questions(normal).join(' | ') !== 'What would help “Daniel Reyes” explain the organisation’s intent in their own words? | What has changed for “Tom Ellis”, and what would rebuild their trust? | Which decisions could “Grace Okafor” own, within clear boundaries, to ease your load?') problems.push('the questions are not Chaotic, then trust, then autonomy');
+  const questions = (spec) => spec.sections.find((x) => x.title === 'Questions to start with').blocks[0].items;
+  if (questions(normal).join(' | ') !== 'What would help Daniel Reyes explain the organisation’s intent in their own words? | What has changed for Tom Ellis, and what would rebuild their trust? | Which decisions can Grace Okafor own, and at which colour?') problems.push('the questions are not Chaotic, then trust, then autonomy');
   if (normal.sections[1].blocks[0].columns[2]?.label !== 'At your last check, in October') problems.push('trust doesn’t say "At your last check, in October"');
   if (TC['Team check, no last check'].sections[1].blocks[0].columns.length !== 2 || /last check/i.test(JSON.stringify(TC['Team check, no last check'].glance))) problems.push('a first check mentions a last check');
   if (titles(TC['Team check, no questions']) !== 'Alignment and autonomy > Trust') problems.push(`with no questions the section is not left out: ${titles(TC['Team check, no questions'])}`);

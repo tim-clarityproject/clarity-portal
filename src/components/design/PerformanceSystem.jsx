@@ -1,6 +1,7 @@
 import { useInRouterContext, useNavigate } from 'react-router-dom';
 import { Button } from './Button';
 import { Popup } from './Dialogs';
+import { useCoachName } from './coachContext';
 import HowItWorksBody from '../howItWorks/HowItWorks';
 import { HOW_IT_WORKS_BUTTONS, HOW_IT_WORKS_LINE, HOW_IT_WORKS_TITLE } from '../../content/howItWorks';
 import './design.css';
@@ -13,10 +14,12 @@ import './design.css';
 // (Until 27 Nov it held the Individual Performance System one-pager: the plan's four layers and the sprint.)
 
 export function PerformanceSystemBody() {
+  // Inside the portal: the client's own coach by first name (the Stage D UI tester's question 2).
+  const coach = useCoachName();
   return (
     <div className="ds-system">
       <p className="hiw-text hiw-intro">{HOW_IT_WORKS_LINE}</p>
-      <HowItWorksBody heading="h3" />
+      <HowItWorksBody heading="h3" coach={coach} />
     </div>
   );
 }

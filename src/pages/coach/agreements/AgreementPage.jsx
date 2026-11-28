@@ -162,7 +162,7 @@ export default function AgreementPage() {
                       <Row
                         key={s.id}
                         name={words(dayIn(zone, new Date(s.starts_at)))}
-                        sub={outcomeLabel(s, p.now)}
+                        sub={inside.some((x) => x.id === s.id) ? 'Coming up, inside the pause' : outcomeLabel(s, p.now)}
                         value={rowAction(s, p.now) || undefined}
                         label={`Open the coaching session on ${words(dayIn(zone, new Date(s.starts_at)))}`}
                         onClick={() => navigate(calendarLink(s.id))}

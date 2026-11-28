@@ -165,7 +165,8 @@ try {
       // The test database wherever it is (the local stand-in by default since 25 Nov).
       await context.route((u) => u.host === TEST_HOST && /\/rest\/v1\/day_reviews$/.test(u.pathname), async (route) => {
         const url = decodeURIComponent(route.request().url());
-        const day = /local_date=eq\.(\d{4}-\d{2}-\d{2})/.exec(url)?.[1];
+        // Home asks for the newest up to its day (local_date=lte., limit 2) since the last-review read; one day's page eq.
+        const day = /local_date=(?:eq|lte)\.(\d{4}-\d{2}-\d{2})/.exec(url)?.[1];
         // (Either side of midnight: a page opened at 23:59 asks for the day it opened on, a moment after the day has turned here.)
         if (!reviewedToday || route.request().method() !== 'GET' || !day || (day !== londonToday() && day !== reviewedToday) || !/select=[^&]*status/.test(url)) return route.fallback();
         const row = { id: '00000000-0000-4000-8000-00000000a003', local_date: day, status: 'finished', tomorrow: ['Call Evan about the proposal', 'Send the board paper', 'Book the venue'], updated_at: `${day}T18:05:00` };
@@ -247,10 +248,17 @@ try {
         // failed falsely on any run before 18:30).
         let early = new Date(`${londonToday()}T18:30:00Z`);
         if (early.getTime() > Date.now()) early = new Date(early.getTime() - 24 * 60 * 60 * 1000);
-        reviewedToday = early.toISOString().slice(0, 10);
-        await page.clock.setFixedTime(early);
-        await page.goto(`${APP}/welcome`);
-        await settle();
+        // On the sprint's debrief day Home's one suggestion is the debrief from 12:00, never the finished day's card
+        // (homeSuggestion), so that evening reads as the day before (DG's leftover: this failed every debrief day).
+        for (let back = 0; back < 3; back += 1) {
+          reviewedToday = early.toISOString().slice(0, 10);
+          await page.clock.setFixedTime(early);
+          await page.goto(`${APP}/welcome`);
+          await settle();
+          await sleep(1500);
+          if (!/Start my debrief/i.test(await page.locator('body').innerText())) break;
+          early = new Date(early.getTime() - 24 * 60 * 60 * 1000);
+        }
         const link = page.getByRole('link', { name: 'Edit my review' }).or(page.getByRole('button', { name: 'Edit my review' }));
         // The whole page: the first .ui-root is the frame's menu column since Polish 1.
         let text = '';
@@ -377,7 +385,8 @@ try {
             const canvas = getComputedStyle(probe).backgroundColor;
             probe.remove();
             const shown = (el) => { const b = el.getBoundingClientRect(); return b.width > 0 && b.height > 0; };
-            const read = (selector) => [...document.querySelectorAll(selector)].filter(shown).map((el) => ({ fill: getComputedStyle(el).backgroundColor, tick: el.querySelector('svg') ? getComputedStyle(el.querySelector('svg')).stroke : '' }));
+            // A chosen pick-several row's mark holds its order number since Stage D (Draft 11), not a drawn tick: its words' colour.
+            const read = (selector) => [...document.querySelectorAll(selector)].filter(shown).map((el) => ({ fill: getComputedStyle(el).backgroundColor, tick: el.querySelector('svg') ? getComputedStyle(el.querySelector('svg')).stroke : getComputedStyle(el).color }));
             return {
               text,
               canvas,

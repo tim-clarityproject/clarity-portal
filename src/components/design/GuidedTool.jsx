@@ -59,7 +59,7 @@ import './design.css';
 //              { label, explain } opens a longer explanation in the side
 //              panel instead (Explain.jsx; Tim, 16 Nov, 23:31)
 //   info may also be { explain }: "Why we ask" in the side panel,
-//   required, nextLabel, skippable (for the last step), bare,
+//   required, nextLabel, skippable (for the last step, or a titled step), bare,
 //   eye:       the screen's eye (WhoSees), shown beside the question.
 //   skipLabel: this step's own word for the quiet skip under one-tap
 //              answers ("Skip this one" on a person's own question; run 7),
@@ -570,7 +570,8 @@ export default function GuidedTool({
     ? `${percent}% complete`
     : `Step ${position + 1} of ${listed.length}: ${step.name}`;
 
-  const showSkip = !(step.required || (step.title && !last) || (last && !step.skippable));
+  // A titled step (a screen, not a question) has no Skip unless it says so (`skippable`: the Daily review's Log today).
+  const showSkip = !(step.required || (step.title && !last && !step.skippable) || (last && !step.skippable));
   const previous = steps[i - 1];
   const changing = returnTo != null && returnTo !== i;
   // Back shows on a change from a summary too, even on the first question:

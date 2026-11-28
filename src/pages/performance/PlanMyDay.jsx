@@ -548,6 +548,16 @@ function PlanFlow({ userId, date, today, loaded }) {
     if (option.value === pickOrder[0]) return { text: MOST_IMPORTANT };
     return { action: 'Move to top', ariaLabel: `Move “${option.label}” to the top`, onClick: () => chooseTop(option.value) };
   };
+  // The chosen rows lead, in their order, so the most important is the first in the list and "Move to top" moves the
+  // row there (Draft 11 and Tim's answer 5; the Stage D UI tester's polish 2). The group holding it comes first, so its
+  // name stays true ("This week" over "Carried over" when the most important is this week's).
+  const pickRank = (o) => { const i = pickOrder.indexOf(o.value); return i < 0 ? Infinity : i; };
+  const inPickOrder = (list) => list.map((o, i) => ({ o, i })).sort((a, b) => (pickRank(a.o) - pickRank(b.o)) || (a.i - b.i)).map((x) => x.o);
+  const dayGroups = () => {
+    const both = [{ key: 'carried', title: 'Carried over' }, { key: 'week', title: 'This week' }];
+    const topGroup = dayOptions.find((o) => o.value === pickOrder[0])?.group;
+    return topGroup === 'week' ? both.reverse() : both;
+  };
 
   const chooseStrategies = (ids) => {
     if (ids.length > MAX_DAY_STRATEGIES) return;
@@ -776,12 +786,12 @@ function PlanFlow({ userId, date, today, loaded }) {
             <MultiChoice
               variant="pick"
               ariaLabel="What will you do today?"
-              options={dayOptions}
+              options={inPickOrder(dayOptions)}
               values={pickOrder}
               onChange={choosePicks}
               side={pickSide}
               // The group names only when something is carried over (no stray "This week" under the label).
-              groups={dayOptions.some((o) => o.group === 'carried') ? [{ key: 'carried', title: 'Carried over' }, { key: 'week', title: 'This week' }] : undefined}
+              groups={dayOptions.some((o) => o.group === 'carried') ? dayGroups() : undefined}
             />
           ) : (
             <>
@@ -796,7 +806,7 @@ function PlanFlow({ userId, date, today, loaded }) {
                 <MultiChoice
                   variant="pick"
                   ariaLabel="From your Backlog"
-                  options={backlogOptions}
+                  options={inPickOrder(backlogOptions)}
                   values={pickOrder}
                   onChange={choosePicks}
                   side={pickSide}

@@ -23,12 +23,12 @@ test('M28’s rows and their lines', () => {
     ['Invoice ready for Jo Patel', '2 coaching sessions since the last one, £1,500', 'Today'],
     ['Reminder ready for Sam Reid', 'Hasn’t signed version 1, sent 3 days ago', 'Today'],
     ['Sam signed, and the first payment isn’t settled yet.', 'A reminder is drafted for you to send', 'Today'],
-    ['Rhys’s block is 80% used', '10 hours 40 minutes of 13 hours 20 minutes', 'Today'],
+    ['Rhys’ block is 80% used', '10 hours 40 minutes of 13 hours 20 minutes', 'Today'],
     ['Priya Shah made an agreement for you to approve', 'Kai Thompson, 6-month coaching', 'Today'],
     ['Reminder ready for Sam Reid', 'CLARITY-1243, £3,000, 14 days overdue', 'Today'],
     ['Northfield Logistics needs a purchase order', 'Invoice CLARITY-1250 is waiting', 'Yesterday'],
     ['Yearly price review for Jo Patel', 'Retainer, £3,000/month since Jan 2026, review due Mon 4 Jan', 'Today'],
-    ['Offer Alex Morgan the next 6 months', 'These 6 months end Fri 12 Feb, a month from now', 'Yesterday'],
+    ['Offer Alex Morgan the next 6 months', 'These 6 months end Fri 12 Feb, 79 days to go', 'Yesterday'],
     ['Sam Reid asked for a change to their agreement', '8. Ending and changes', 'Mon'],
   ]);
 });

@@ -1,7 +1,7 @@
 import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DesignHeader from '../../components/DesignHeader';
-import { Button, MoreLink, PageOpening } from '../../components/design';
+import { Button, MoreLink, PageOpening, useCoachName } from '../../components/design';
 import HowItWorksBody from '../../components/howItWorks/HowItWorks';
 import { AuthContext } from '../../context/AuthContext';
 import { HOW_IT_WORKS_BUTTONS, HOW_IT_WORKS_LINE, HOW_IT_WORKS_TITLE } from '../../content/howItWorks';
@@ -46,13 +46,14 @@ export function HowItWorksPublic() {
 /** Inside the portal, /about/how-it-works (from My Account's About): the same words, with "Open my plan". */
 export function HowItWorksInside() {
   const navigate = useNavigate();
+  const coach = useCoachName();
   return (
     <div className="ui-root">
       <DesignHeader />
       <div className="cp-page hiw-page">
         <div className="cp-back"><MoreLink back onClick={() => navigate('/about')}>Back to About</MoreLink></div>
         <Opening />
-        <HowItWorksBody />
+        <HowItWorksBody coach={coach} />
         <Foot which="inside" />
       </div>
     </div>

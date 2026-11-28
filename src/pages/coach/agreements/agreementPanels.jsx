@@ -292,6 +292,9 @@ function useCancel14({ a, v, t, name, signed, sessions, firstV, today, zone = 'E
  * The clock a pause's days are read on: the client's own time zone, as the server reads them (coach-agreements.js's
  * pause), else London.
  */
+/** A check screen's closing words, one sentence a line: "It moves. Sam hears." becomes two lines. */
+export const sayLines = (say) => String(say || '').split(/(?<=[.!?])\s+(?=[A-Z0-9£“‘(])/).map((x) => x.trim()).filter(Boolean);
+
 export const pauseZone = (p, a) => (p.clients || []).find((c) => c.id === a?.profile_id)?.time_zone || 'Europe/London';
 
 const FLOWS = { extend: useExtend, pause: usePause, end: useEndEarly, refund: useRefund, cancel14: useCancel14 };
@@ -369,7 +372,8 @@ function Flow({ useFlow, facts, onClose }) {
               </Rows>
             </Card>
           )}
-          {flow.say && <p className="ap-flow-say">{flow.say}</p>}
+          {/* One sentence per line (26 Oct rule 9; the Stage D UI tester's polish 5). */}
+          {flow.say && <p className="ap-flow-say">{sayLines(flow.say).map((x) => <span key={x} className="ap-flow-line">{x}</span>)}</p>}
         </>
       )}
       {(need || flow.problem) && <Problem>{need || flow.problem}</Problem>}

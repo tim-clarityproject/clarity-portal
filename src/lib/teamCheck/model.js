@@ -4,13 +4,13 @@
 //
 // The screens, in order (one question each):
 //   people            "Who reports to you?"                         at least one
-//   t:<id>            "How much does “Priya Shah” trust you as their leader?"
-//   a:<id>            "How well does “Priya Shah” understand what you’re trying to achieve?"
-//   u:<id>            "How much autonomy does “Priya Shah” have to decide how to deliver?"
+//   t:<id>            "How much does Priya Shah trust you as their leader?"
+//   a:<id>            "How well does Priya Shah understand what you’re trying to achieve?"
+//   u:<id>            "How much autonomy does Priya Shah have to decide how to deliver?"
 //                     (the three repeat for each person, in the list's order)
-//   w:<id>            "What’s working well with “Priya Shah” right now?" (Stage D,
+//   w:<id>            "What’s working well with Priya Shah right now?" (Stage D,
 //                     Draft 11: after each person's three ratings; it can be skipped)
-//   commit            "What will you do first with “Priya Shah”, and when?" the
+//   commit            "What will you do first with Priya Shah, and when?" the
 //                     commit question, once, last, naming the person the
 //                     questions to start with name first (else the first on the
 //                     list); it can't be skipped
@@ -64,7 +64,8 @@ export const AUTONOMY_SAID = [
 ];
 
 export const KINDS = ['t', 'a', 'u'];
-export const QUESTIONS_TITLE = 'Questions to start with:';
+// A section label, so no colon (the 25 Nov reference's labels; the Stage D UI tester's polish 3).
+export const QUESTIONS_TITLE = 'Questions to start with';
 export const REQUIRED = {
   people: 'Add at least one person to carry on.',
   name: 'Type their name to carry on.',
@@ -166,8 +167,24 @@ export function restorePerson(check, person, index) {
 /** One answer given: kind 't', 'a' or 'u', value 1 to 5. */
 export function setRating(check, id, kind, value) {
   if (!KINDS.includes(kind) || !level(value)) return check;
-  return { ...check, people: check.people.map((p) => (p.id === id ? { ...p, [kind]: value } : p)) };
+  return { ...check, people: check.people.map((p) => (p.id === id ? { ...p, [kind]: value, s: undefined, ...withSkips(skipsOf(p).filter((k) => k !== kind)) } : p)) };
 }
+
+/**
+ * One rating question skipped (Stage D, question rules: every question but the commit can be skipped; the UI tester's
+ * fault 5). The person stays off the results until all three are answered, and the check can still finish.
+ */
+export function skipRating(check, id, kind) {
+  if (!KINDS.includes(kind)) return check;
+  return { ...check, people: check.people.map((p) => (p.id === id && !level(p[kind]) ? { ...p, s: [...new Set([...skipsOf(p), kind])] } : p)) };
+}
+
+/** The rating questions skipped for someone ('t', 'a', 'u'). */
+const skipsOf = (p) => (Array.isArray(p?.s) ? p.s.filter((k) => KINDS.includes(k)) : []);
+/** The skips as a person's field, only when there are some (a check with none reads as it always has). */
+const withSkips = (list) => (list.length ? { s: list } : {});
+/** Answered or skipped. */
+const settled = (p, kind) => Boolean(level(p?.[kind])) || skipsOf(p).includes(kind);
 
 /** What's working well with someone, as typed (Draft 11). */
 export function setWorking(check, id, words) {
@@ -211,7 +228,7 @@ export function ratingSteps(check) {
 
 /** The first question with no answer yet (its key), or null when everyone is rated. */
 export function firstUnanswered(check) {
-  const step = ratingSteps(check).find((s) => !level(s.person[s.kind]));
+  const step = ratingSteps(check).find((s) => !settled(s.person, s.kind));
   return step ? step.key : null;
 }
 
@@ -220,9 +237,10 @@ export function countLine(n, of) {
   return `Person ${n} of ${of}`;
 }
 
-/** Each screen's question, naming the person in curly quotes. */
+/** Each screen's question, naming the person. */
 export function question(kind, person) {
-  const name = `“${clean(person?.name)}”`;
+  // The name as typed, with no quotes round it (Draft 11's [name]; the Stage D UI tester's polish 4).
+  const name = clean(person?.name);
   if (kind === 'people') return 'Who reports to you?';
   if (kind === 't') return `How much does ${name} trust you as their leader?`;
   if (kind === 'a') return `How well does ${name} understand what you’re trying to achieve?`;
@@ -591,11 +609,11 @@ export function tableRows(check) {
 
 const WORD_LIMIT = 15;
 const wordCount = (s) => s.trim().split(/\s+/).length;
-// A question names its person in full, in curly quotes; a name so long
+// A question names its person in full, with no quotes (Draft 11); a name so long
 // that the question would pass 15 words is said as the first name.
 function ask(make, person) {
-  const full = make(`“${clean(person.name)}”`);
-  return wordCount(full) <= WORD_LIMIT ? full : make(`“${firstName(person.name)}”`);
+  const full = make(clean(person.name));
+  return wordCount(full) <= WORD_LIMIT ? full : make(firstName(person.name));
 }
 
 /**
@@ -642,7 +660,7 @@ export function checkTitle(at = new Date()) {
 export function savedAnswers(check) {
   return {
     version: 1,
-    people: (check.people || []).map((p) => ({ id: text(p.id), name: clean(p.name), role: clean(p.role), trust: level(p.t), alignment: level(p.a), autonomy: level(p.u), working: text(p.w).trim() })),
+    people: (check.people || []).map((p) => ({ id: text(p.id), name: clean(p.name), role: clean(p.role), trust: level(p.t), alignment: level(p.a), autonomy: level(p.u), working: text(p.w).trim(), ...(skipsOf(p).length ? { skipped: skipsOf(p) } : {}) })),
     last: check.last?.at ? { at: check.last.at, people: check.last.people || {} } : null,
     // Stage D, Draft 11: the commit answer, with the person it was about.
     commit: check.commit?.id && text(check.commit.text).trim() ? { id: text(check.commit.id), text: text(check.commit.text).trim() } : null,
@@ -654,7 +672,7 @@ export function checkFrom(answers, shared = false) {
   const a = answers && typeof answers === 'object' ? answers : {};
   const people = (Array.isArray(a.people) ? a.people : [])
     .filter((p) => p && typeof p === 'object' && clean(p.name) && text(p.id))
-    .map((p) => ({ id: text(p.id), name: clean(p.name), role: clean(p.role), t: level(p.trust), a: level(p.alignment), u: level(p.autonomy), w: typeof p.working === 'string' ? p.working : '' }));
+    .map((p) => ({ id: text(p.id), name: clean(p.name), role: clean(p.role), t: level(p.trust), a: level(p.alignment), u: level(p.autonomy), w: typeof p.working === 'string' ? p.working : '', ...withSkips(skipsOf({ s: p.skipped })) }));
   let last = null;
   if (a.last && typeof a.last === 'object' && a.last.at && a.last.people && typeof a.last.people === 'object') {
     const kept = Object.entries(a.last.people)
@@ -681,7 +699,7 @@ export function tidyCheck(value) {
   const people = (Array.isArray(c.people) ? c.people : [])
     .filter((p) => p && typeof p === 'object' && !Array.isArray(p) && words(p.id) && clean(words(p.name)))
     .filter((p) => !ids.has(p.id) && ids.add(p.id))
-    .map((p) => ({ id: p.id, name: clean(words(p.name)), role: clean(words(p.role)), t: level(p.t), a: level(p.a), u: level(p.u), w: words(p.w) }));
+    .map((p) => ({ id: p.id, name: clean(words(p.name)), role: clean(words(p.role)), t: level(p.t), a: level(p.a), u: level(p.u), w: words(p.w), ...withSkips(skipsOf(p)) }));
   const commit = c.commit && typeof c.commit === 'object' && words(c.commit.id) ? { id: c.commit.id, text: words(c.commit.text) } : { id: null, text: '' };
   return { people, shared: c.shared === true, last: checkFrom({ last: c.last }).last, commit };
 }
@@ -691,9 +709,9 @@ export function hasAnswers(check) {
   return (check?.people || []).length > 0;
 }
 
-/** Finished: at least one person, and every question answered. */
+/** Finished: at least one person rated, and every rating question answered or skipped. */
 export function isComplete(check) {
-  return hasAnswers(check) && check.people.every(isRated);
+  return hasAnswers(check) && ratedPeople(check).length > 0 && check.people.every((p) => KINDS.every((k) => settled(p, k)));
 }
 
 /**

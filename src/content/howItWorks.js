@@ -14,7 +14,7 @@ export const HOW_IT_WORKS_SECTIONS = Object.freeze([
     key: 'direction',
     label: 'Set your direction',
     line: 'Get clear on what you’re going for.',
-    text: 'Your Individual Performance Plan captures your Mission, the Outcome Objectives that would tell you you’re on track, and the Strategies that will get you there. It takes about 20 minutes, and you can update it any time your priorities shift.',
+    text: 'Your Individual Performance Plan captures your Mission, the Outcome Objectives that would tell you you’re on track, and the Strategies that will get you there. It takes ~20 minutes, and you can update it any time your priorities shift.',
   },
   {
     key: 'sprints',
@@ -47,6 +47,17 @@ export const HOW_IT_WORKS_PRIVATE = {
   label: 'Private by default',
   text: 'Your plan, reviews and journal are yours. Your organisation can’t see them, and Tim only sees what you choose to share.',
 };
+
+/**
+ * "Private by default" for whoever reads it: in public Draft 9's words (Tim); inside the portal the client's own coach
+ * by first name, or "your coach" for someone without one (the Stage D UI tester's question 2: Alex's and Maya's
+ * clients read "Tim").
+ */
+export function privateText(coachFirst) {
+  if (coachFirst === undefined) return HOW_IT_WORKS_PRIVATE.text;
+  const who = String(coachFirst || '').trim();
+  return `Your plan, reviews and journal are yours. Your organisation can’t see them, and ${who || 'your coach'} only sees what you choose to share.`;
+}
 
 /** The cycle under section 2: Plan, Sprint, Review, back to Plan, with Reset beside the Sprint. */
 export const HOW_IT_WORKS_CYCLE = 'Plan, then Sprint, then Review, then back to Plan, with Reset beside the Sprint.';

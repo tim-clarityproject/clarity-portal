@@ -12,7 +12,6 @@ import {
   GuidedSummary,
   GuidedTool,
   HabitEditor,
-  HelpPanel,
   IconButton,
   Loading,
   MultiChoice,
@@ -439,16 +438,12 @@ function PlanTool({ userId, data, mode }) {
       // Stage D, Draft 11: their own objective quoted back.
       question: o ? `How will you achieve “${o.name.trim()}”?` : 'How will you achieve your objectives?',
       eye: <WhoSees {...progressWho} />,
+      // Nothing under the question but "See an example", with three different examples together (Stage D question
+      // rules; the UI tester's question 5); what a Strategy is sits behind the ⓘ on the first, a term a client may not know.
+      example: [STRATEGY_IDEAS.ceo[0], STRATEGY_IDEAS.coach[0], STRATEGY_IDEAS.leader[0]],
+      info: k === 0 ? 'Strategies are medium to long-term approaches to achieving your objectives.' : undefined,
       render: () => (
         <div>
-          {k === 0 && (
-            <div className="plan-strategy-help">
-              <HelpPanel
-                line="Strategies are medium to long-term approaches to achieving your objectives."
-                example={`For example: ${ideas[0]}.`}
-              />
-            </div>
-          )}
           <CardHead label={o ? 'Strategies for this objective' : 'Your Strategies'} as="h3" add={<AddLink label="Add a Strategy" onClick={() => addStrategy(o?.id || null)} />} />
           {strategyRows(mine, o?.id || null)}
           {others.length > 0 && (

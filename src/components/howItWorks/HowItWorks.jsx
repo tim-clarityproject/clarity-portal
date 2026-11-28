@@ -3,6 +3,7 @@ import {
   HOW_IT_WORKS_CYCLE,
   HOW_IT_WORKS_PRIVATE,
   HOW_IT_WORKS_SECTIONS,
+  privateText,
 } from '../../content/howItWorks';
 import './howItWorks.css';
 
@@ -10,6 +11,7 @@ import './howItWorks.css';
 // the page inside the portal and the pop-up behind "How the system fits together", so all three say the same words.
 // Each section is a 13px grey label, a 20px line and its two or three sentences (the 25 Nov reference's rhythm).
 // `heading`: the level of each section's label ('h2' on a page, 'h3' inside the pop-up, under its own title).
+// `coach`: inside the portal, the client's own coach's first name (null: "your coach"); left out in public ("Tim").
 
 /**
  * The cycle under section 2: Plan, then Sprint, then Review, and back to Plan, with Reset beside the Sprint. Drawn
@@ -37,7 +39,7 @@ export function HowItWorksCycle() {
   );
 }
 
-export default function HowItWorksBody({ heading: Heading = 'h2', className = '' }) {
+export default function HowItWorksBody({ heading: Heading = 'h2', className = '', coach }) {
   return (
     <div className={`hiw ${className}`.trim()}>
       {HOW_IT_WORKS_SECTIONS.map((s) => (
@@ -50,7 +52,7 @@ export default function HowItWorksBody({ heading: Heading = 'h2', className = ''
       ))}
       <section className="hiw-section hiw-private" aria-labelledby="hiw-private">
         <Heading id="hiw-private" className="ds-label hiw-label">{HOW_IT_WORKS_PRIVATE.label}</Heading>
-        <p className="hiw-text">{HOW_IT_WORKS_PRIVATE.text}</p>
+        <p className="hiw-text">{privateText(coach)}</p>
       </section>
     </div>
   );

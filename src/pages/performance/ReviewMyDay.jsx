@@ -686,6 +686,8 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       name: 'Numbers',
       // "Log today", as Home's Log today section (Tim, 5 Nov, 10:37).
       title: 'Log today',
+      // Every step but the commit can be skipped (Stage D question rules; the UI tester's fault 5).
+      skippable: true,
       render: () => (
         <div>
           {eye}

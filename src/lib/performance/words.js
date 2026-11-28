@@ -3,14 +3,19 @@
 // short dates the plan uses. No scores are worked out here (those are in
 // src/lib/scores); these only put numbers the person typed into words.
 
+import { getLocalDateKey } from '../dateFormatter.js';
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const CURRENCY = /^[£$€]/;
 
-/** "31 Dec 2027" from a "YYYY-MM-DD" key. */
-export function shortDate(key) {
+/**
+ * "31 Dec 2027" from a "YYYY-MM-DD" key, and "15 Dec" for a day this year (a date this year has no year: Tim's walk
+ * of Stage B; the Stage D UI tester's fault 4). `today`: today's key, the device's own day unless given.
+ */
+export function shortDate(key, today = getLocalDateKey()) {
   if (!key) return '';
   const [y, m, d] = key.split('-').map(Number);
-  return `${d} ${MONTHS[m - 1]} ${y}`;
+  return today && String(today).slice(0, 4) === String(y) ? `${d} ${MONTHS[m - 1]}` : `${d} ${MONTHS[m - 1]} ${y}`;
 }
 
 /** A number as people write it: "10,000", "1.5". */

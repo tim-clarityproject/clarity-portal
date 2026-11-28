@@ -193,7 +193,11 @@ function PreparingWatch({ userId }) {
 // still being prepared." page. Until the facts are known (the first visit on a device; after that the
 // device's copy answers at once) nothing of the tool is drawn, so it can't be used for a moment.
 const PREPARING_OPEN = ['/', '/welcome', '/my-account', '/edit-profile', '/about'];
-export const openWhilePreparing = (pathname) => PREPARING_OPEN.some((p) => pathname === p || (p !== '/' && pathname.startsWith(`${p}/`)));
+// How it works inside the portal is a page of the portal, not My Account's About: it waits too (the Stage D UI tester's
+// question 3).
+const PREPARING_SHUT = ['/about/how-it-works'];
+export const openWhilePreparing = (pathname) => !PREPARING_SHUT.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+  && PREPARING_OPEN.some((p) => pathname === p || (p !== '/' && pathname.startsWith(`${p}/`)));
 
 function PreparingGate({ userId, children }) {
   const { user } = useContext(AuthContext);

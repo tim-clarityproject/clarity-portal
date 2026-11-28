@@ -15,7 +15,7 @@ import { EMAIL_SIGN_OFF, oneLine, safeHref } from './template.js';
 import { greeting } from './emails.js';
 
 const firstOf = (name) => oneLine(name).split(' ')[0];
-const possessive = (name) => `${name}’s`;
+import { possessive } from '../possessive.js';
 
 function coachLine(coachFirst) {
   const name = firstOf(coachFirst).slice(0, 60);

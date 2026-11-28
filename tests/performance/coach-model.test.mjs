@@ -281,7 +281,7 @@ test('birthdays today, and the drafted note', () => {
   assert.deepEqual(birthdaysOn(abouts, profiles, '2026-11-19').map((p) => p.id), ['priya']);
   assert.deepEqual(birthdaysOn(abouts, profiles, '2026-11-20'), []);
   assert.equal(birthdayNote(profiles[0], 'Tim'), 'Happy birthday, Priya!\n\nI hope you get some proper time off today.\n\nTim');
-  assert.equal(possessive('Marcus'), 'Marcus’s');
+  assert.equal(possessive('Marcus'), 'Marcus’'); // a final s takes only the apostrophe (Stage D UI tester, polish 6)
 });
 
 test('Getting started ticks itself where the portal can tell', () => {

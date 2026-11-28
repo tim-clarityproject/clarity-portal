@@ -405,7 +405,8 @@
 }
 
 /* Back's chevron ink --back-gap (10px) from its word (rule 29t; backGaps): the link's 6px gap less the chevron's own inset. */
-.ui-root .ds-more .ds-more-back { margin-right: calc(var(--back-gap) - var(--space-px6) - var(--chev-right-inset)); }
+/* The chevron stands in its line (.ds-chevron-line, centred on the word since Stage D), so the line carries the space. */
+.ui-root .ds-more .ds-chevron-line:has(.ds-more-back) { margin-right: calc(var(--back-gap) - var(--space-px6) - var(--chev-right-inset)); }
 
 /* ---------- List rows (.li, rule 14) ---------- */
 .ui-root .ds-li {

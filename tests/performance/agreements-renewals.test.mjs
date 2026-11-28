@@ -8,7 +8,12 @@ test('ends Fri 12 Feb 2027: offered from Tue 12 Jan 2027', () => {
   assert.equal(r.renewalDue('2027-02-12'), '2027-01-12');
   assert.equal(r.renewalShows('2027-02-12', '2027-01-11'), false);
   assert.equal(r.renewalShows('2027-02-12', '2027-01-12'), true);
-  assert.equal(r.renewalLine('2027-02-12'), 'These 6 months end Fri 12 Feb, a month from now');
+  assert.equal(r.renewalLine('2027-02-12'), 'These 6 months end Fri 12 Feb');
+  // A true countdown and the term's own length (Stage D UI tester, fault 6).
+  assert.equal(r.renewalLine('2027-02-12', '2027-01-12'), 'These 6 months end Fri 12 Feb, 31 days to go');
+  assert.equal(r.renewalLine('2026-12-03', '2026-11-27', 12), 'These 12 months end Thu 3 Dec, 6 days to go');
+  assert.equal(r.renewalLine('2026-12-03', '2026-12-02'), 'These 6 months end Thu 3 Dec, 1 day to go');
+  assert.equal(r.renewalLine('2026-12-03', '2026-12-03'), 'These 6 months end today');
   assert.equal(r.termEnds('2027-01-04'), '2027-07-03');
 });
 

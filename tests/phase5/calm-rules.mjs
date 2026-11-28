@@ -166,7 +166,8 @@ const PAGES_ALL = [
   // from a check on the device (nothing saved).
   ['team-check-people', '/team-performance-check', 'team:0'],
   ['team-check-trust', '/team-performance-check', 'team:1'],
-  ['team-check-results', '/team-performance-check', 'team:16'],
+  // Index 22: the list, four screens for each of M10's five people (Draft 11 added What's working) and the commit.
+  ['team-check-results', '/team-performance-check', 'team:22'],
   // The Emotional wash (M10; Phase 8a step 3): what happened (the eye), the
   // words side by side, the story (See an example opens in place), a one-tap
   // check, Park and reflect and Accept and act with their follow-ups open
@@ -545,7 +546,7 @@ for (const width of PAGES.length ? WIDTHS : []) {
         }
         if (kind) {
           await page.waitForSelector(act === 'team:16' || act === 'wash:10' ? '.ds-guide-title' : '.ds-guide-question', { timeout: 20000 });
-          const want = { 'review:1': 'What worked best in this sprint?', 'review:2': 'What would make the next sprint even better?', 'build:4': 'Which days do you work?', 'unstuck:0': 'What do you want to achieve?', 'unstuck:1': 'What’s in the way of', 'unstuck:3': 'What could you do to reach', 'unstuck:6': 'Here’s your plan', 'team:0': 'Who reports to you?', 'team:1': 'How much does “Priya Shah” trust you as their leader?', 'team:16': 'YOUR TEAM', 'wash:0': 'What happened?', 'wash:2': 'Which word fits best?', 'wash:3': 'How strong is it right now?', 'wash:5': 'What other thoughts come with it?', 'wash:6': 'For “The chair has never rated me”, what will you do with it?', 'wash:9': 'What will you do about “I need to win the board back', 'wash:10': 'YOUR WASH' }[act];
+          const want = { 'review:1': 'What worked best in this sprint?', 'review:2': 'What would make the next sprint even better?', 'build:4': 'Which days do you work?', 'unstuck:0': 'What do you want to achieve?', 'unstuck:1': 'What’s in the way of', 'unstuck:3': 'What could you do to reach', 'unstuck:6': 'Here’s your plan', 'team:0': 'Who reports to you?', 'team:1': 'How much does Priya Shah trust you as their leader?', 'team:22': 'YOUR TEAM', 'wash:0': 'What happened?', 'wash:2': 'Which word fits best?', 'wash:3': 'How strong is it right now?', 'wash:5': 'What other thoughts come with it?', 'wash:6': 'For “The chair has never rated me”, what will you do with it?', 'wash:9': 'What will you do about “I need to win the board back', 'wash:10': 'YOUR WASH' }[act];
           const got = (await page.locator('.ds-guide-question, .ds-guide-title').first().innerText()).replace(/\s+/g, ' ').trim();
           pass(`${tag}: opened on "${want}"`, got.toUpperCase().startsWith(want.toUpperCase()), got);
           const eyes = await page.locator('.ds-guide-question .ds-who, .ds-guide-question .ds-page-aside, .ds-guide-title .ds-who').count();
@@ -931,7 +932,8 @@ if (CHEVRONS) {
         }
         await page.evaluate(() => document.fonts.ready);
         await sleep(600);
-        const guide = (await measureChevrons(page)).filter((c) => /ds-tool-back|ds-guide-back/.test(c.label));
+        // The label names the control's first class, which is MoreLink's ds-more ("ds-more \"Back\""), so the word is read too.
+        const guide = (await measureChevrons(page)).filter((c) => /ds-tool-back|ds-guide-back|^ds-more "Back"/.test(c.label));
         measured += guide.length;
         pass(`chevrons, a guided tool's Back ${width}px: centred on its word`, phone ? true : guide.length === 1 && chevronsOff(guide).length === 0, guide.length ? chevronsOff(guide).join('; ') : 'Back was not found');
       } catch (e) {
